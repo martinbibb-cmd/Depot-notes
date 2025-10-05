@@ -1,4 +1,6 @@
-const CACHE_NAME = 'depot-notes-v1';
+// Bump this any time you want clients to pull fresh assets
+const VERSION = 'v2025-10-05-15-16';
+const CACHE_NAME = `depot-notes-${VERSION}`;
 const ASSETS = [
   './index.html',
   './manifest.webmanifest',
