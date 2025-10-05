@@ -1,767 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Depot Notes Picker</title>
-<meta name="theme-color" content="#0b1220">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<style>
-  :root{ --gap:12px; --radius:12px; }
-  *{ box-sizing:border-box }
-  body{
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-    margin:0; padding:0; background:#0b1220; color:#e6ecff;
-  }
-  header{
-    position: sticky; top:0; z-index:20; backdrop-filter: blur(8px);
-    background: rgba(11,18,32,0.85);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    padding:10px var(--gap);
-  }
-  header h1{ font-size:18px; margin:4px 0 }
-  .bar{ display:flex; flex-wrap:wrap; gap: var(--gap); align-items:center }
-  select, input[type="search"]{
-    padding:10px 12px; border-radius:10px; background:#0f172a; color:#e5e7eb;
-    border:1px solid rgba(255,255,255,0.12); outline:none;
-  }
-  .btn{
-    border:1px solid rgba(255,255,255,0.14);
-    background:#111827; color:#e5e7eb; padding:9px 12px; border-radius:10px;
-    cursor:pointer; font-weight:600;
-  }
-  .btn:hover{ background:#1f2937 }
-  .container{ display:grid; grid-template-columns: 1fr; gap: var(--gap); padding: var(--gap) }
-  @media (min-width: 980px){
-    .container{ grid-template-columns: 1fr 420px; align-items:start }
-  }
-  .panel{
-    border:1px solid rgba(255,255,255,0.12); background:#0f172a; border-radius: var(--radius);
-    overflow:hidden;
-  }
-  .panel header{ position:unset; background:transparent; border:none; padding:12px }
-  .panel h2{ margin:0; font-size:16px }
-  .list{ display:flex; flex-direction:column; gap:8px; padding:12px; max-height: 60vh; overflow:auto }
-  .item{ display:flex; gap:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); background:#0b132a; border-radius:10px }
-  .code{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; opacity:0.8 }
-  .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
-  .meta{ opacity:0.75; font-size:12px }
-  textarea{
-    width:100%; min-height:160px; max-height:280px; padding:12px; border-radius:10px;
-    border:1px solid rgba(255,255,255,0.12); background:#0f172a; color:#e2e8f0;
-  }
-  .pill{ display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px }
-  .hint{ font-size:12px; opacity:0.8 }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes Picker</title>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root { --gap:12px; --radius:12px; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+                   "Apple Color Emoji","Segoe UI Emoji";
+      margin:0; padding:0; background:#0b1220; color:#e6ecff;
+    }
+    header.app {
+      position: sticky; top:0; z-index:20; backdrop-filter: blur(8px);
+      background: rgba(11,18,32,0.85);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      padding:10px var(--gap);
+    }
+    h1 { font-size:18px; margin:4px 0; }
+    .bar { display:flex; flex-wrap:wrap; gap:var(--gap); align-items:center }
+    select, input[type="search"] {
+      padding:10px 12px; border-radius:10px; background:#0f172a; color:#e5e7eb;
+      border:1px solid rgba(255,255,255,0.12); outline:none;
+    }
+    .btn {
+      border:1px solid rgba(255,255,255,0.14);
+      background:#111827; color:#e5e7eb; padding:9px 12px; border-radius:10px;
+      cursor:pointer; font-weight:600;
+    }
+    .btn:hover { background:#1f2937; }
+    .container { display:grid; grid-template-columns:1fr; gap:var(--gap); padding:var(--gap) }
+    @media (min-width: 980px) {
+      .container { grid-template-columns: 1fr 420px; align-items:start }
+    }
+    .panel {
+      border:1px solid rgba(255,255,255,0.12); background:#0f172a; border-radius: var(--radius);
+      overflow:hidden;
+    }
+    .panel header { position:unset; background:transparent; border:none; padding:12px }
+    .panel h2 { margin:0; font-size:16px }
+    .list { display:flex; flex-direction:column; gap:8px; padding:12px; max-height:60vh; overflow:auto }
+    .item { display:flex; gap:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); background:#0b132a; border-radius:10px }
+    .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+    .meta { opacity:0.75; font-size:12px }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px }
+    textarea {
+      width:100%; min-height:160px; max-height:280px; padding:12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,0.12); background:#0f172a; color:#e2e8f0;
+    }
+    .hint { font-size:12px; opacity:0.8 }
+    a.help { color:#9ecbff; text-decoration:none }
+  </style>
 </head>
 <body>
-<header>
-  <h1>Depot Notes Picker</h1>
-  <div class="bar">
-    <label class="hint">Section</label>
-    <select id="sectionSelect" aria-label="Choose section"></select>
-    <button class="btn" id="nextSectionBtn" title="Go to next section">Next section ➜</button>
-    <input id="search" type="search" placeholder="Filter within section… (e.g., 'loft', 'N12')" />
-    <button class="btn" id="selectAllVisible">Select all (visible)</button>
-    <button class="btn" id="clearSection">Clear section</button>
-    <span class="meta" id="countMeta">0 selected</span>
-  </div>
-</header>
 
-<div class="container">
-  <div class="panel" id="itemsPanel">
-    <header>
-      <div class="row">
-        <h2 id="sectionTitle">Section</h2>
-        <span class="pill" id="sectionPill">0 selected</span>
-      </div>
-    </header>
-    <div class="list" id="itemsList"></div>
-  </div>
+  <header class="app">
+    <h1>Depot Notes Picker</h1>
+    <div class="bar">
+      <label class="hint">Section</label>
+      <select id="sectionSelect" aria-label="Choose section"></select>
+      <button class="btn" id="nextSectionBtn" title="Go to next section">Next section ➜</button>
+      <input id="search" type="search" placeholder="Filter within section… (e.g., 'loft', 'N12')" />
+      <button class="btn" id="selectAllVisible">Select all (visible)</button>
+      <button class="btn" id="clearSection">Clear section</button>
+      <span class="meta" id="countMeta">0 selected</span>
+    </div>
+  </header>
 
-  <div class="panel">
-    <header><h2>Copy Box Output (; line breaks)</h2></header>
-    <div class="list" style="max-height:none">
-      <div class="row">
-        <button class="btn" id="copySemiBtn">Copy ;-lines</button>
-        <label class="row hint" style="gap:6px">
-          <input type="checkbox" id="includeHeaders" checked />
-          Include section headers
-        </label>
+  <div class="container">
+    <div class="panel" id="itemsPanel">
+      <header>
+        <div class="row">
+          <h2 id="sectionTitle">Section</h2>
+          <span class="pill" id="sectionPill">0 selected</span>
+        </div>
+      </header>
+      <div class="list" id="itemsList"></div>
+    </div>
+
+    <div class="panel">
+      <header><h2>Copy Box Output (; line breaks)</h2></header>
+      <div class="list" style="max-height:none">
+        <div class="row">
+          <button class="btn" id="copySemiBtn">Copy ;-lines</button>
+          <label class="row hint" style="gap:6px">
+            <input type="checkbox" id="includeHeaders" checked />
+            Include section headers
+          </label>
+        </div>
+        <textarea id="semiOutput" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
+        <div class="hint">Tip: Cmd/Ctrl + C inside this box also copies the output.</div>
       </div>
-      <textarea id="semiOutput" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
     </div>
   </div>
-</div>
 
-<script>
-// Register service worker (PWA)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js');
-  });
-}
-<script>
-async function loadConfig() {
-  // Always fresh because SW sets no-store for App_config.json
-  const resp = await fetch('./App_config.json', { cache: 'no-store' });
-  if (!resp.ok) throw new Error('Failed to load App_config.json');
-  return resp.json();
-}
-
-// Turn the “catalogs.system_characteristics” tree into section items
-function flattenSystemCharacteristics(cfg) {
-  const root = cfg.catalogs?.system_characteristics;
-  if (!root || !Array.isArray(root.children)) return {};
-
-  const sections = {}; // { sectionKey: [{code, text}] }
-
-  function walk(node, path=[]) {
-    if (node.type === 'group' && Array.isArray(node.children)) {
-      node.children.forEach(child => walk(child, path.concat(node.label)));
-      return;
-    }
-    if (node.type === 'single' && Array.isArray(node.options)) {
-      const sectionKey = 'system_characteristics';   // or split into sub-sections if you prefer
-      if (!sections[sectionKey]) sections[sectionKey] = [];
-      node.options.forEach(opt => {
-        sections[sectionKey].push({
-          code: node.id || opt,                      // use the id (e.g. S01, S04.type) as short code base
-          text: `${node.label}: ${opt}`              // user-facing phrase
-        });
+  <script>
+    // Register service worker (PWA). sw.js already handles versioning + cache cleanup.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js');
       });
     }
-  }
-  walk(root);
-  return sections;
-}
 
-(async () => {
-  const cfg = await loadConfig();
-  const sysSections = flattenSystemCharacteristics(cfg);
+    // --------------------------
+    // Data & State
+    // --------------------------
 
-  // Merge with your existing PHRASE_BANK (keeps your “needs” etc.)
-  window.PHRASE_BANK = window.PHRASE_BANK || {};
-  Object.assign(window.PHRASE_BANK, sysSections);
+    // Minimal starter so the UI isn't empty even if the JSON fails to load.
+    // You can extend or replace this with your full bank later.
+    const PHRASE_BANK = {
+      needs: [
+        { code: "N01", text: "Customer wants improved hot water performance" },
+        { code: "N02", text: "Customer requested quieter boiler operation" }
+      ]
+    };
 
-  // Ensure the section order includes the new key(s)
-  window.SECTION_ORDER = (window.SECTION_ORDER || []);
-  if (!window.SECTION_ORDER.includes('system_characteristics')) {
-    window.SECTION_ORDER.unshift('system_characteristics'); // put it first; move as you like
-  }
+    // Default section order (new sections from JSON will be unshifted to the front)
+    const SECTION_ORDER = ["needs"];
 
-  // Rebuild the UI using your existing functions
-  if (typeof populateSectionSelect === 'function') populateSectionSelect();
-  if (typeof renderSectionItems === 'function') renderSectionItems();
-})();
-</script>
-// ====== Data ======
-const PHRASE_BANK = {
-  "needs": [
-    {
-      "code": "N01",
-      "text": "Customer wants improved hot water performance"
-    },
-    {
-      "code": "N02",
-      "text": "Customer requested quieter boiler operation"
-    },
-    {
-      "code": "N03",
-      "text": "Customer wants faster heating response"
-    },
-    {
-      "code": "N04",
-      "text": "Customer requested better efficiency and lower bills"
-    },
-    {
-      "code": "N05",
-      "text": "Customer requested more cupboard space in kitchen"
-    },
-    {
-      "code": "N06",
-      "text": "Customer wants boiler relocated to loft for more space"
-    },
-    {
-      "code": "N07",
-      "text": "Customer prefers wireless controls for convenience"
-    },
-    {
-      "code": "N08",
-      "text": "Customer wants minimal disruption to kitchen"
-    },
-    {
-      "code": "N09",
-      "text": "Customer wants boiler concealed inside unit"
-    },
-    {
-      "code": "N10",
-      "text": "Customer requested quick turnaround due to no heat/hot water"
-    },
-    {
-      "code": "N11",
-      "text": "Customer prioritised neatness and clean pipework"
-    },
-    {
-      "code": "N12",
-      "text": "Customer wants improved shower pressure"
-    }
-  ],
-  "workingAtHeight": [
-    {
-      "code": "H01",
-      "text": "Loft access required for boiler location"
-    },
-    {
-      "code": "H02",
-      "text": "Extension roof access required for flue termination"
-    },
-    {
-      "code": "H03",
-      "text": "Ladder access required for vertical flue termination"
-    },
-    {
-      "code": "H04",
-      "text": "Two-storey property; external flue height approx. 5m"
-    },
-    {
-      "code": "H05",
-      "text": "Scaffolding may be required for rear elevation"
-    },
-    {
-      "code": "H06",
-      "text": "Loft boarded and light present"
-    },
-    {
-      "code": "H07",
-      "text": "Working at height limited to flue termination only"
-    },
-    {
-      "code": "H08",
-      "text": "No high-level work required"
-    },
-    {
-      "code": "H09",
-      "text": "Customer to provide clear access to loft hatch"
-    }
-  ],
-  "systemCharacteristics": [
-    {
-      "code": "S01",
-      "text": "Existing system open vented with cold feed and expansion tank"
-    },
-    {
-      "code": "S02",
-      "text": "Conversion to sealed system required"
-    },
-    {
-      "code": "S03",
-      "text": "Combi boiler replacing system boiler and cylinder"
-    },
-    {
-      "code": "S04",
-      "text": "Cylinder and tanks to be removed"
-    },
-    {
-      "code": "S05",
-      "text": "Existing primaries undersized upgraded to 22mm"
-    },
-    {
-      "code": "S06",
-      "text": "Condensate to be rerouted internally to waste"
-    },
-    {
-      "code": "S07",
-      "text": "System flush required prior to commissioning"
-    },
-    {
-      "code": "S08",
-      "text": "Magnetic filter to be installed on return"
-    },
-    {
-      "code": "S09",
-      "text": "Gas pipe upgraded to 22mm from meter"
-    },
-    {
-      "code": "S10",
-      "text": "All radiators to remain and system rebalanced"
-    }
-  ],
-  "hazards": [
-    {
-      "code": "Z01",
-      "text": "Steep driveway – delivery access limited"
-    },
-    {
-      "code": "Z02",
-      "text": "Electrical cables visible in loft area"
-    },
-    {
-      "code": "Z03",
-      "text": "Low headroom in loft"
-    },
-    {
-      "code": "Z04",
-      "text": "Asbestos panel behind existing boiler – not disturbed"
-    },
-    {
-      "code": "Z05",
-      "text": "Dog on site – customer to secure during visit"
-    },
-    {
-      "code": "Z06",
-      "text": "Elderly occupant – ensure heating operational overnight"
-    },
-    {
-      "code": "Z07",
-      "text": "Restricted access around flue area"
-    },
-    {
-      "code": "Z08",
-      "text": "Trip hazards in garden due to uneven paving"
-    },
-    {
-      "code": "Z09",
-      "text": "Limited parking – vehicle may need to park roadside"
-    }
-  ],
-  "componentsNeedingAssistance": [
-    {
-      "code": "C01",
-      "text": "Assistance required for flue alignment through extension wall"
-    },
-    {
-      "code": "C02",
-      "text": "Second installer required for boiler lift into loft"
-    },
-    {
-      "code": "C03",
-      "text": "Help required with cylinder removal"
-    },
-    {
-      "code": "C04",
-      "text": "Engineer support required for tight gas run under floor"
-    },
-    {
-      "code": "C05",
-      "text": "Assistance needed for flue sealing on vertical section"
-    },
-    {
-      "code": "C06",
-      "text": "Electrical assistance needed for complex control wiring"
-    },
-    {
-      "code": "C07",
-      "text": "Two-person lift required due to awkward access"
-    },
-    {
-      "code": "C08",
-      "text": "Help required to core drill due to thick wall"
-    }
-  ],
-  "restrictionsToAccess": [
-    {
-      "code": "R01",
-      "text": "No side access to property; entry through front only"
-    },
-    {
-      "code": "R02",
-      "text": "Rear garden via narrow alley; boiler delivery restricted"
-    },
-    {
-      "code": "R03",
-      "text": "Parking permit required for street access"
-    },
-    {
-      "code": "R04",
-      "text": "Parking limited to 1-hour bays"
-    },
-    {
-      "code": "R05",
-      "text": "Flue access behind lean-to; removal required"
-    },
-    {
-      "code": "R06",
-      "text": "Kitchen units restrict boiler access"
-    },
-    {
-      "code": "R07",
-      "text": "Loft hatch small; boiler casing may need removal"
-    },
-    {
-      "code": "R08",
-      "text": "Stairs narrow; carry boiler carefully"
-    }
-  ],
-  "deliveryNotes": [
-    {
-      "code": "D01",
-      "text": "Delivery via front entrance only"
-    },
-    {
-      "code": "D02",
-      "text": "Customer to clear hallway for boiler delivery"
-    },
-    {
-      "code": "D03",
-      "text": "Boiler to be delivered on installation morning"
-    },
-    {
-      "code": "D04",
-      "text": "Delivery van access via main road only"
-    },
-    {
-      "code": "D05",
-      "text": "Garage suitable for short-term storage"
-    },
-    {
-      "code": "D06",
-      "text": "Customer to ensure pets contained during delivery"
-    }
-  ],
-  "officeNotes": [
-    {
-      "code": "O01",
-      "text": "Confirm scaffold booking for rear elevation"
-    },
-    {
-      "code": "O02",
-      "text": "Notify customer 48 hours prior to delivery"
-    },
-    {
-      "code": "O03",
-      "text": "Arrange asbestos check before removal"
-    },
-    {
-      "code": "O04",
-      "text": "Check gas run pressure test prior to install"
-    },
-    {
-      "code": "O05",
-      "text": "Order extended flue kit for 5m run"
-    },
-    {
-      "code": "O06",
-      "text": "Arrange electrician for control wiring upgrade"
-    },
-    {
-      "code": "O07",
-      "text": "Check condensate route for external freezing risk"
-    },
-    {
-      "code": "O08",
-      "text": "Pre-site photos to be uploaded to Salesforce"
-    }
-  ],
-  "installerBoilerControls": [
-    {
-      "code": "B01",
-      "text": "Boiler to be installed in same location"
-    },
-    {
-      "code": "B02",
-      "text": "New boiler mounted to solid wall"
-    },
-    {
-      "code": "B03",
-      "text": "Condensate trap to discharge internally"
-    },
-    {
-      "code": "B04",
-      "text": "Smart control receiver to be installed near boiler"
-    },
-    {
-      "code": "B05",
-      "text": "Existing control wiring to be removed"
-    },
-    {
-      "code": "B06",
-      "text": "Wireless controller to be paired and tested"
-    },
-    {
-      "code": "B07",
-      "text": "Customer instructed on control use"
-    }
-  ],
-  "installerFlue": [
-    {
-      "code": "F01",
-      "text": "Flue to exit through rear wall in same position"
-    },
-    {
-      "code": "F02",
-      "text": "New flue sealed internally and externally"
-    },
-    {
-      "code": "F03",
-      "text": "Condensate run neatly clipped and lagged"
-    },
-    {
-      "code": "F04",
-      "text": "Terminal clearance confirmed compliant"
-    },
-    {
-      "code": "F05",
-      "text": "Flue elbow offset adjusted for correct slope"
-    },
-    {
-      "code": "F06",
-      "text": "Wall core drilled and edges sealed"
-    }
-  ],
-  "installerGasWater": [
-    {
-      "code": "G01",
-      "text": "Gas pipe upgraded to 22mm from meter"
-    },
-    {
-      "code": "G02",
-      "text": "Gas soundness test completed and passed"
-    },
-    {
-      "code": "G03",
-      "text": "System filled and pressure tested"
-    },
-    {
-      "code": "G04",
-      "text": "Condensate connected to internal waste"
-    },
-    {
-      "code": "G05",
-      "text": "All joints tested for leaks"
-    },
-    {
-      "code": "G06",
-      "text": "System flushed and inhibited"
-    }
-  ],
-  "installerDisruption": [
-    {
-      "code": "X01",
-      "text": "Minor disruption in kitchen during works"
-    },
-    {
-      "code": "X02",
-      "text": "Dust sheets to be used throughout"
-    },
-    {
-      "code": "X03",
-      "text": "Water and heating off during installation"
-    },
-    {
-      "code": "X04",
-      "text": "Noise from core drilling expected"
-    },
-    {
-      "code": "X05",
-      "text": "Customer informed of short-term loss of hot water"
-    },
-    {
-      "code": "X06",
-      "text": "Work area to be cleaned after installation"
-    }
-  ],
-  "customerAgreedActions": [
-    {
-      "code": "A01",
-      "text": "Customer to clear cupboard before installation"
-    },
-    {
-      "code": "A02",
-      "text": "Customer to secure pets during visit"
-    },
-    {
-      "code": "A03",
-      "text": "Customer to provide parking space on driveway"
-    },
-    {
-      "code": "A04",
-      "text": "Customer to remove stored items from loft"
-    },
-    {
-      "code": "A05",
-      "text": "Customer to provide access to garden for flue work"
-    },
-    {
-      "code": "A06",
-      "text": "Customer to move personal items from kitchen area"
-    }
-  ],
-  "installerSpecialReqs": [
-    {
-      "code": "Q01",
-      "text": "Boiler to be fitted inside kitchen cupboard"
-    },
-    {
-      "code": "Q02",
-      "text": "Pipework to be boxed in after install"
-    },
-    {
-      "code": "Q03",
-      "text": "Controller to be mounted in hallway at eye level"
-    },
-    {
-      "code": "Q04",
-      "text": "Boiler casing to align with existing unit fronts"
-    },
-    {
-      "code": "Q05",
-      "text": "Customer requested minimal visible pipework"
-    },
-    {
-      "code": "Q06",
-      "text": "Boiler not to be installed during school hours"
-    }
-  ]
-};
+    // Tracks selected codes by section
+    const selections = {}; // { sectionKey: Set<string> }
+    let currentSection = SECTION_ORDER[0];
 
-// ====== State ======
-const selections = {}; // { sectionKey: Set<code> }
-let currentSection = null;
-const SECTION_ORDER = Object.keys(PHRASE_BANK);
+    // --------------------------
+    // Helpers
+    // --------------------------
 
-// ====== Helpers ======
-const LABELS = {
-  needs: "Needs",
-  workingAtHeight: "Working at Height",
-  systemCharacteristics: "System Characteristics",
-  hazards: "Hazards",
-  componentsNeedingAssistance: "Components – Needing Assistance",
-  restrictionsToAccess: "Restrictions to Access",
-  deliveryNotes: "Delivery Notes",
-  officeNotes: "Office Notes",
-  installerBoilerControls: "Installer – Boiler & Controls",
-  installerFlue: "Installer – Flue",
-  installerGasWater: "Installer – Gas & Water",
-  installerDisruption: "Installer – Disruption",
-  customerAgreedActions: "Customer – Agreed Actions",
-  installerSpecialReqs: "Installer – Special Requirements"
-};
-function labelOf(key){ return LABELS[key] || key; }
-function ensureBucket(key){ if(!selections[key]) selections[key] = new Set(); }
-function filterItems(items, q){
-  if(!q) return items;
-  const needle = q.trim().toLowerCase();
-  return items.filter(it => it.code.toLowerCase().includes(needle) || it.text.toLowerCase().includes(needle));
-}
-function updateTotals(){
-  const n = selections[currentSection]?.size || 0;
-  document.getElementById("sectionPill").textContent = `${n} selected`;
-  let total = 0; Object.values(selections).forEach(s => total += s.size);
-  document.getElementById("countMeta").textContent = `${total} selected`;
-}
-function buildSemicolonText(){
-  const includeHeaders = document.getElementById("includeHeaders").checked;
-  const blocks = [];
-  for(const key of SECTION_ORDER){
-    const set = selections[key];
-    if(!set || set.size === 0) continue;
-    const lookup = new Map(PHRASE_BANK[key].map(it => [it.code, it.text]));
-    const phrases = Array.from(set).map(c => lookup.get(c)).filter(Boolean);
-    if(phrases.length === 0) continue;
-    if(includeHeaders){
-      blocks.push(`${labelOf(key)}: ${phrases.join(" ; ")} ;`);
-    } else {
-      blocks.push(`${phrases.join(" ; ")} ;`);
+    function ensureBucket(section) {
+      if (!selections[section]) selections[section] = new Set();
     }
-  }
-  const text = blocks.join(" ");
-  document.getElementById("semiOutput").value = text;
-  return text;
-}
-function renderSectionItems(){
-  const list = document.getElementById("itemsList");
-  list.innerHTML = "";
-  const q = document.getElementById("search").value;
-  const items = filterItems(PHRASE_BANK[currentSection] || [], q);
-  items.forEach(it => {
-    const row = document.createElement("label");
-    row.className = "item";
-    const cb = document.createElement("input"); cb.type = "checkbox";
-    cb.checked = selections[currentSection]?.has(it.code) || false;
-    cb.addEventListener("change", () => {
-      ensureBucket(currentSection);
-      if(cb.checked) selections[currentSection].add(it.code);
-      else selections[currentSection].delete(it.code);
+
+    function labelOf(sectionKey) {
+      // For now just title-case the key; you can map custom labels if you prefer.
+      if (sectionKey === 'system_characteristics') return 'System Characteristics';
+      return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function filterItems(items, query) {
+      if (!query) return items;
+      const q = query.trim().toLowerCase();
+      return items.filter(it => (it.code + ' ' + it.text).toLowerCase().includes(q));
+    }
+
+    function buildSemicolonText() {
+      const includeHeaders = document.getElementById('includeHeaders').checked;
+      let out = '';
+      SECTION_ORDER.forEach(section => {
+        const chosen = [...(selections[section] || [])];
+        if (chosen.length === 0) return;
+        const phrases = (PHRASE_BANK[section] || []).filter(it => chosen.includes(it.code));
+        if (phrases.length === 0) return;
+
+        if (includeHeaders) out += `${labelOf(section)}: `;
+        out += phrases.map(p => p.text).join(' ; ');
+        out += ' ;\n';
+      });
+      document.getElementById('semiOutput').value = out.trim();
+      return out.trim();
+    }
+
+    function updateTotals() {
+      const n = selections[currentSection]?.size || 0;
+      document.getElementById('sectionPill').textContent = `${n} selected`;
+      let total = 0; Object.values(selections).forEach(s => total += s.size);
+      document.getElementById('countMeta').textContent = `${total} selected`;
+    }
+
+    // --------------------------
+    // Rendering
+    // --------------------------
+
+    function populateSectionSelect() {
+      const sel = document.getElementById('sectionSelect');
+      sel.innerHTML = '';
+      SECTION_ORDER.forEach(k => {
+        if (!PHRASE_BANK[k]) return;
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = labelOf(k);
+        sel.appendChild(opt);
+      });
+      sel.value = currentSection;
+      document.getElementById('sectionTitle').textContent = labelOf(currentSection);
+      renderSectionItems();
+    }
+
+    function renderSectionItems() {
+      const wrap = document.getElementById('itemsList');
+      wrap.innerHTML = '';
+      const items = PHRASE_BANK[currentSection] || [];
+      const q = document.getElementById('search').value;
+      const visible = filterItems(items, q);
+
+      visible.forEach(it => {
+        const row = document.createElement('label');
+        row.className = 'item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = selections[currentSection]?.has(it.code) || false;
+        cb.addEventListener('change', () => {
+          ensureBucket(currentSection);
+          if (cb.checked) selections[currentSection].add(it.code);
+          else selections[currentSection].delete(it.code);
+          updateTotals();
+          buildSemicolonText();
+        });
+        const txt = document.createElement('div');
+        txt.innerHTML = `<div><strong>${it.code}</strong> — ${it.text}</div>`;
+        row.appendChild(cb);
+        row.appendChild(txt);
+        wrap.appendChild(row);
+      });
+
       updateTotals();
       buildSemicolonText();
+    }
+
+    function nextSection() {
+      const idx = SECTION_ORDER.indexOf(currentSection);
+      const next = SECTION_ORDER[(idx + 1) % SECTION_ORDER.length];
+      currentSection = next;
+      document.getElementById('sectionSelect').value = next;
+      document.getElementById('sectionTitle').textContent = labelOf(next);
+      renderSectionItems();
+      updateTotals();
+    }
+
+    // --------------------------
+    // JSON loader for System Characteristics
+    // --------------------------
+
+    async function loadConfigJSON() {
+      // sw.js already forces no-store for this path; we keep it here too for safety.
+      const resp = await fetch('./App_config.json', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('Failed to load App_config.json');
+      return resp.json();
+    }
+
+    function flattenSystemCharacteristics(cfg) {
+      const root = cfg?.catalogs?.system_characteristics;
+      if (!root || !Array.isArray(root.children)) return {};
+
+      const sections = {}; // { sectionKey: [{code, text}] }
+
+      function walk(node) {
+        if (node.type === 'group' && Array.isArray(node.children)) {
+          node.children.forEach(walk);
+          return;
+        }
+        if (node.type === 'single' && Array.isArray(node.options)) {
+          const key = 'system_characteristics'; // keep as a single section for now
+          if (!sections[key]) sections[key] = [];
+          node.options.forEach(opt => {
+            sections[key].push({
+              code: node.id || String(opt),
+              text: `${node.label}: ${opt}`
+            });
+          });
+        }
+      }
+
+      root.children.forEach(walk);
+      return sections;
+    }
+
+    async function bootstrapSystemCharacteristics() {
+      try {
+        const cfg = await loadConfigJSON();
+        const sys = flattenSystemCharacteristics(cfg);
+
+        // Merge into phrase bank
+        Object.assign(PHRASE_BANK, sys);
+
+        // Ensure section appears at the front if not already present
+        if (!SECTION_ORDER.includes('system_characteristics')) {
+          SECTION_ORDER.unshift('system_characteristics');
+        }
+
+        // If this is the first load, set currentSection to system_characteristics
+        if (!currentSection && SECTION_ORDER.length) {
+          currentSection = SECTION_ORDER[0];
+        }
+
+        // Rebuild UI with new data
+        populateSectionSelect();
+        renderSectionItems();
+
+        console.log('System Characteristics loaded from App_config.json');
+      } catch (err) {
+        console.warn('App_config.json not loaded (using built-in phrases only):', err);
+        // Still render the UI with built-ins
+        populateSectionSelect();
+        renderSectionItems();
+      }
+    }
+
+    // --------------------------
+    // Events & init
+    // --------------------------
+
+    document.getElementById('search').addEventListener('input', renderSectionItems);
+    document.getElementById('sectionSelect').addEventListener('change', (e) => {
+      currentSection = e.target.value;
+      document.getElementById('sectionTitle').textContent = labelOf(currentSection);
+      renderSectionItems(); updateTotals();
     });
-    const wrap = document.createElement("div");
-    const code = document.createElement("div"); code.className = "code"; code.textContent = it.code;
-    const text = document.createElement("div"); text.textContent = it.text;
-    wrap.appendChild(code); wrap.appendChild(text);
-    row.appendChild(cb); row.appendChild(wrap);
-    list.appendChild(row);
-  });
-}
-function populateSectionSelect(){
-  const sel = document.getElementById("sectionSelect");
-  sel.innerHTML = "";
-  SECTION_ORDER.forEach(key => {
-    ensureBucket(key);
-    const opt = document.createElement("option"); opt.value = key; opt.textContent = labelOf(key);
-    sel.appendChild(opt);
-  });
-  currentSection = SECTION_ORDER[0];
-  sel.value = currentSection;
-  document.getElementById("sectionTitle").textContent = labelOf(currentSection);
-  renderSectionItems(); updateTotals(); buildSemicolonText();
-}
-function nextSection(){
-  const idx = SECTION_ORDER.indexOf(currentSection);
-  const next = (idx + 1) % SECTION_ORDER.length;
-  currentSection = SECTION_ORDER[next];
-  const sel = document.getElementById("sectionSelect");
-  sel.value = currentSection;
-  document.getElementById("sectionTitle").textContent = labelOf(currentSection);
-  document.getElementById("search").value = "";
-  renderSectionItems(); updateTotals();
-}
+    document.getElementById('nextSectionBtn').addEventListener('click', nextSection);
+    document.getElementById('selectAllVisible').addEventListener('click', () => {
+      const q = document.getElementById('search').value;
+      const items = filterItems(PHRASE_BANK[currentSection] || [], q);
+      ensureBucket(currentSection);
+      items.forEach(it => selections[currentSection].add(it.code));
+      renderSectionItems(); updateTotals(); buildSemicolonText();
+    });
+    document.getElementById('clearSection').addEventListener('click', () => {
+      ensureBucket(currentSection); selections[currentSection].clear();
+      renderSectionItems(); updateTotals(); buildSemicolonText();
+    });
+    document.getElementById('copySemiBtn').addEventListener('click', async () => {
+      const text = buildSemicolonText();
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // Fallback: select textarea and copy
+          const ta = document.getElementById('semiOutput');
+          ta.focus(); ta.select(); document.execCommand('copy');
+        }
+      } catch (e) { console.warn('Copy failed:', e); }
+    });
 
-// Keyboard shortcuts: Cmd/Ctrl + ArrowRight (next section) & Cmd/Ctrl + C (copy)
-document.addEventListener('keydown', (e) => {
-  const mod = e.metaKey || e.ctrlKey;
-  if(!mod) return;
-  if(e.key === 'ArrowRight'){ e.preventDefault(); nextSection(); }
-  if(e.key.toLowerCase() === 'c'){ 
-    e.preventDefault();
-    const text = buildSemicolonText();
-    if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text);
-  }
-});
+    // Keyboard shortcuts: Cmd/Ctrl + → (next section), Cmd/Ctrl + C copies output
+    document.addEventListener('keydown', (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === 'ArrowRight') { e.preventDefault(); nextSection(); }
+      if (mod && (e.key.toLowerCase() === 'c')) {
+        e.preventDefault(); buildSemicolonText();
+        const ta = document.getElementById('semiOutput');
+        ta.focus(); ta.select(); document.execCommand('copy');
+      }
+    });
 
-// ====== Events ======
-document.getElementById("search").addEventListener("input", renderSectionItems);
-document.getElementById("sectionSelect").addEventListener("change", (e) => {
-  currentSection = e.target.value;
-  document.getElementById("sectionTitle").textContent = labelOf(currentSection);
-  renderSectionItems(); updateTotals();
-});
-document.getElementById("nextSectionBtn").addEventListener("click", nextSection);
-document.getElementById("selectAllVisible").addEventListener("click", () => {
-  const q = document.getElementById("search").value;
-  const items = filterItems(PHRASE_BANK[currentSection] || [], q);
-  ensureBucket(currentSection);
-  items.forEach(it => selections[currentSection].add(it.code));
-  renderSectionItems(); updateTotals(); buildSemicolonText();
-});
-document.getElementById("clearSection").addEventListener("click", () => {
-  ensureBucket(currentSection); selections[currentSection].clear();
-  renderSectionItems(); updateTotals(); buildSemicolonText();
-});
-document.getElementById("copySemiBtn").addEventListener("click", async () => {
-  const text = buildSemicolonText();
-  if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
-});
-document.getElementById("includeHeaders").addEventListener("change", buildSemicolonText);
+    // Boot
+    // (We call bootstrap which will render even if JSON fails.)
+    bootstrapSystemCharacteristics();
+  </script>
 
-// ====== Init ======
-populateSectionSelect();
-</script>
+  <!-- Optional hook for future update logic; add a tiny update.js to avoid 404 -->
+  <script src="./update.js"></script>
 </body>
 </html>
-<!-- Add this right before the closing </body> tag -->
-<script src="./update.js"></script>
-
-
