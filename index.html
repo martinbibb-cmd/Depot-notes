@@ -385,3 +385,571 @@
   <script src="./update.js"></script>
 </body>
 </html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>JSON Section Editor (Add Items)</title>
+<style>
+  :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  body { margin: 0; background:#0b0c10; color:#e8e8e8; }
+  header { padding:16px 20px; border-bottom:1px solid #2c2f36; }
+  main { padding: 14px 20px 40px; display:grid; gap:16px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 18px; margin:0; }
+  .grid { display:grid; gap:14px; grid-template-columns: 1fr; }
+  @media (min-width: 980px){ .grid { grid-template-columns: 2fr 1fr; } }
+  .card { background:#14171f; border:1px solid #2c2f36; border-radius:10px; padding:14px; }
+  .row { display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
+  .row-3 { display:grid; gap:10px; grid-template-columns: 1fr 1fr 1fr; }
+  label { font-size: 12.5px; color:#bfc7d5; display:block; margin-bottom:6px; }
+  input[type="text"], input[type="password"], input[type="url"], select, textarea {
+    width:100%; background:#0f1218; color:#e8e8e8; border:1px solid #2c2f36; border-radius:8px; padding:10px 12px;
+  }
+  textarea { min-height: 160px; }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9px; border:1px solid #2c2f36; background:#1a1f29; color:#e8e8e8; cursor:pointer; }
+  .btn:hover { background:#202737; }
+  .btn.primary { background:#2b66ff; border-color:#2b66ff; }
+  .btn.warn { background:#a63b3b; border-color:#a63b3b; }
+  .btn.ghost { background:#0f1218; }
+  .muted { color:#9aa4b2; font-size: 12px; }
+  .pill { font-size:12px; padding:2px 8px; background:#0f1218; border:1px solid #2c2f36; border-radius:999px; display:inline-block; margin-left:6px; color:#bfc7d5; }
+  ul { list-style:none; padding:0; margin:0; }
+  li.item { border-bottom:1px dashed #2c2f36; padding:8px 0; display:flex; justify-content:space-between; gap:8px; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0b0d12; border:1px solid #2c2f36; padding:2px 6px; border-radius:6px; color:#b1d2ff; }
+  .flex { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .right { margin-left:auto; }
+  .ok { color:#78ff9f; }
+  .err { color:#ff8a8a; }
+</style>
+</head>
+<body>
+<header>
+  <div class="flex">
+    <h1>JSON Section Editor</h1>
+    <span id="status" class="pill">idle</span>
+    <span id="origin" class="pill">no file</span>
+    <span id="sha" class="pill" title="GitHub file SHA used for updates">sha: –</span>
+    <span class="right muted">Tip: load JSON → pick section → add item → Save</span>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- Left: Data load and section/items -->
+    <section class="card">
+      <div class="flex" style="justify-content:space-between;">
+        <h2 style="margin:0;font-size:16px;">1) Load / View JSON</h2>
+        <div class="flex">
+          <input type="file" id="fileInput" accept=".json,application/json" />
+          <button class="btn ghost" id="btnLoadExample">Load example</button>
+        </div>
+      </div>
+      <p class="muted">Paste JSON or open a .json file. We’ll auto-detect sections (keys with array values). Your last edit is backed up locally.</p>
+      <textarea id="jsonInput" placeholder='Paste JSON here...'></textarea>
+      <div class="flex" style="margin-top:8px;">
+        <button class="btn" id="btnParse">Parse JSON</button>
+        <button class="btn" id="btnPretty">Pretty-print</button>
+        <button class="btn warn" id="btnReset">Reset (clear)</button>
+        <span class="muted">Backup: <span id="backupState">none</span></span>
+      </div>
+    </section>
+
+    <!-- Right: GitHub remote -->
+    <aside class="card">
+      <h2 style="margin:0;font-size:16px;">(Optional) 2) Connect GitHub for Direct Save</h2>
+      <p class="muted">Fill these to load/save from a repo file. PAT needs <em>repo:contents</em> on private repos (or none for public). Values persist locally.</p>
+      <div class="row">
+        <div>
+          <label>Owner / Org</label>
+          <input type="text" id="ghOwner" placeholder="e.g. martinbibb-cmd" />
+        </div>
+        <div>
+          <label>Repo</label>
+          <input type="text" id="ghRepo" placeholder="e.g. Depot-notes" />
+        </div>
+      </div>
+      <div>
+        <label>File path (in repo)</label>
+        <input type="text" id="ghPath" placeholder="e.g. data/system_characteristics.json" />
+      </div>
+      <div class="row">
+        <div>
+          <label>Branch</label>
+          <input type="text" id="ghBranch" placeholder="main" />
+        </div>
+        <div>
+          <label>GitHub Token (PAT)</label>
+          <input type="password" id="ghToken" placeholder="ghp_••• (stored only in your browser)" />
+        </div>
+      </div>
+      <div class="flex" style="margin-top:8px;">
+        <button class="btn" id="btnGitLoad">Fetch from GitHub</button>
+        <button class="btn primary" id="btnGitSave">Commit to GitHub</button>
+      </div>
+      <p id="ghMsg" class="muted"></p>
+    </aside>
+  </div>
+
+  <!-- Section picker + add item -->
+  <section class="card">
+    <h2 style="margin:0;font-size:16px;">3) Choose Section & Add Item</h2>
+    <div class="row">
+      <div>
+        <label>Section (array in your JSON)</label>
+        <select id="sectionSelect"></select>
+      </div>
+      <div>
+        <label>Current items</label>
+        <div class="pill" id="itemCount">0</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Item text</label>
+        <input type="text" id="itemText" placeholder="e.g. Sealed (expansion vessel)" />
+      </div>
+      <div>
+        <label>Short code</label>
+        <input type="text" id="itemCode" placeholder="e.g. PR-SEAL" />
+      </div>
+    </div>
+    <div class="flex" style="margin-top:8px;">
+      <button class="btn" id="btnAdd">Add to section</button>
+      <button class="btn ghost" id="btnSort">Sort (by text)</button>
+      <span class="muted">If your section was strings, we’ll convert them to {code,text} automatically.</span>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>Preview of selected section</label>
+      <ul id="list"></ul>
+    </div>
+  </section>
+
+  <!-- Save/export -->
+  <section class="card">
+    <h2 style="margin:0;font-size:16px;">4) Save / Export</h2>
+    <div class="flex">
+      <button class="btn" id="btnDownload">Download updated JSON</button>
+      <button class="btn" id="btnCopy">Copy to clipboard</button>
+      <span class="muted">Or use “Commit to GitHub” above for direct save to the repo.</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  /*** State ***/
+  let data = null;           // Parsed JSON object
+  let githubSha = null;      // Current file SHA for GitHub updates
+  let origin = 'no file';    // human label
+  const statusEl = document.getElementById('status');
+  const originEl = document.getElementById('origin');
+  const shaEl = document.getElementById('sha');
+  const backupEl = document.getElementById('backupState');
+
+  /*** DOM refs ***/
+  const jsonInput = document.getElementById('jsonInput');
+  const fileInput = document.getElementById('fileInput');
+  const btnLoadExample = document.getElementById('btnLoadExample');
+  const btnParse = document.getElementById('btnParse');
+  const btnPretty = document.getElementById('btnPretty');
+  const btnReset = document.getElementById('btnReset');
+
+  const sectionSelect = document.getElementById('sectionSelect');
+  const itemCount = document.getElementById('itemCount');
+  const itemText = document.getElementById('itemText');
+  const itemCode = document.getElementById('itemCode');
+  const btnAdd = document.getElementById('btnAdd');
+  const btnSort = document.getElementById('btnSort');
+  const list = document.getElementById('list');
+
+  const btnDownload = document.getElementById('btnDownload');
+  const btnCopy = document.getElementById('btnCopy');
+
+  const ghOwner = document.getElementById('ghOwner');
+  const ghRepo = document.getElementById('ghRepo');
+  const ghPath = document.getElementById('ghPath');
+  const ghBranch = document.getElementById('ghBranch');
+  const ghToken = document.getElementById('ghToken');
+  const btnGitLoad = document.getElementById('btnGitLoad');
+  const btnGitSave = document.getElementById('btnGitSave');
+  const ghMsg = document.getElementById('ghMsg');
+
+  /*** Utilities ***/
+  function setStatus(text, ok=false, err=false){
+    statusEl.textContent = text;
+    statusEl.className = 'pill ' + (ok ? 'ok' : err ? 'err' : '');
+  }
+  function setOrigin(text){
+    origin = text; originEl.textContent = text;
+  }
+  function setSha(text){
+    githubSha = text || null;
+    shaEl.textContent = 'sha: ' + (githubSha ? githubSha.slice(0,7) : '–');
+  }
+  function saveBackup(){
+    try {
+      localStorage.setItem('json_section_editor_backup', JSON.stringify(data));
+      backupEl.textContent = 'saved';
+    } catch(e){
+      backupEl.textContent = 'failed';
+    }
+  }
+  function loadBackup(){
+    try {
+      const raw = localStorage.getItem('json_section_editor_backup');
+      if(!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){ return null; }
+  }
+  function persistGhFields(){
+    const payload = {
+      owner: ghOwner.value.trim(),
+      repo: ghRepo.value.trim(),
+      path: ghPath.value.trim(),
+      branch: ghBranch.value.trim(),
+      token: ghToken.value // keep as-is
+    };
+    try { localStorage.setItem('json_section_editor_gh', JSON.stringify(payload)); } catch(e){}
+  }
+  function restoreGhFields(){
+    try {
+      const raw = localStorage.getItem('json_section_editor_gh');
+      if(!raw) return;
+      const v = JSON.parse(raw);
+      ghOwner.value = v.owner || '';
+      ghRepo.value = v.repo || '';
+      ghPath.value = v.path || '';
+      ghBranch.value = v.branch || '';
+      ghToken.value = v.token || '';
+    } catch(e){}
+  }
+
+  /*** Section helpers ***/
+  function discoverSections(obj){
+    // returns array of keys where value is an array
+    return Object.keys(obj)
+      .filter(k => Array.isArray(obj[k]));
+  }
+  function normaliseArray(arr){
+    // Convert string items to {code,text}
+    return arr.map(item => {
+      if (typeof item === 'string') {
+        return { code: slug(item), text: item };
+      }
+      if (item && typeof item === 'object') {
+        // ensure both fields
+        return { code: item.code ?? slug(item.text ?? ''), text: item.text ?? String(item.code ?? '') };
+      }
+      return { code: '', text: String(item) };
+    });
+  }
+  function slug(s){
+    return String(s || '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g,'-')
+      .replace(/[^A-Z0-9\-]/g,'')
+      .slice(0,24);
+  }
+  function refreshSectionUI(){
+    sectionSelect.innerHTML = '';
+    if(!data){ itemCount.textContent='0'; list.innerHTML=''; return; }
+    const keys = discoverSections(data);
+    if(keys.length === 0){
+      sectionSelect.innerHTML = '<option value="">(No array sections found)</option>';
+      itemCount.textContent='0'; list.innerHTML='';
+      return;
+    }
+    for(const k of keys){
+      const opt = document.createElement('option');
+      opt.value = k; opt.textContent = k;
+      sectionSelect.appendChild(opt);
+    }
+    renderList();
+  }
+  function renderList(){
+    const key = sectionSelect.value;
+    list.innerHTML = '';
+    if (!key || !data || !Array.isArray(data[key])) { itemCount.textContent='0'; return; }
+    const arr = data[key];
+    // Ensure normalized display
+    const norm = normaliseArray(arr);
+    // Write back normalization (one-time)
+    data[key] = norm;
+
+    itemCount.textContent = String(norm.length);
+    norm.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.className = 'item';
+      li.innerHTML = `
+        <div>
+          <span class="code" title="short code">${escapeHtml(it.code || '')}</span>
+          &nbsp;—&nbsp;${escapeHtml(it.text || '')}
+        </div>
+        <div class="flex">
+          <button class="btn ghost" data-act="up" data-i="${idx}" title="Move up">↑</button>
+          <button class="btn ghost" data-act="down" data-i="${idx}" title="Move down">↓</button>
+          <button class="btn warn" data-act="del" data-i="${idx}" title="Delete">Delete</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  /*** Events: Load / Parse ***/
+  fileInput.addEventListener('change', async (e)=>{
+    const f = e.target.files?.[0];
+    if(!f) return;
+    const text = await f.text();
+    jsonInput.value = text;
+    setOrigin(`file: ${f.name}`);
+    setSha(null);
+    setStatus('file loaded');
+  });
+
+  btnLoadExample.addEventListener('click', ()=>{
+    const example = {
+      "system_type": [
+        {"code":"ST-COMBI","text":"Combi boiler"},
+        {"code":"ST-SYSTEM","text":"System (with cylinder)"},
+        {"code":"ST-REG","text":"Heat-only (regular)"}
+      ],
+      "pressurisation": [
+        "Sealed (expansion vessel)",
+        "Open-vented (F&E tank)"
+      ],
+      "primary_circuit": [
+        {"code":"PC-PUMP","text":"Fully pumped"},
+        {"code":"PC-GRAV","text":"Gravity primaries (legacy)"}
+      ],
+      "hot_water_strategy": [
+        {"code":"DHW-INST","text":"Instantaneous DHW"},
+        {"code":"DHW-STORED-UV","text":"Stored DHW (unvented)"},
+        {"code":"DHW-STORED-V","text":"Stored DHW (vented)"}
+      ]
+    };
+    jsonInput.value = JSON.stringify(example, null, 2);
+    setOrigin('example');
+    setSha(null);
+    setStatus('example loaded', true);
+  });
+
+  btnParse.addEventListener('click', ()=>{
+    try {
+      const obj = JSON.parse(jsonInput.value || '{}');
+      data = obj;
+      setStatus('parsed ✓', true);
+      refreshSectionUI();
+      saveBackup();
+    } catch(e){
+      setStatus('invalid JSON', false, true);
+      alert('JSON parse error: ' + e.message);
+    }
+  });
+
+  btnPretty.addEventListener('click', ()=>{
+    try {
+      const obj = JSON.parse(jsonInput.value || '{}');
+      jsonInput.value = JSON.stringify(obj, null, 2);
+      setStatus('pretty-printed', true);
+    } catch(e){
+      setStatus('invalid JSON', false, true);
+      alert('Cannot pretty-print: ' + e.message);
+    }
+  });
+
+  btnReset.addEventListener('click', ()=>{
+    if(!confirm('Clear editor and state?')) return;
+    jsonInput.value = '';
+    data = null;
+    setOrigin('no file');
+    setSha(null);
+    refreshSectionUI();
+    setStatus('reset');
+  });
+
+  /*** Section + items ***/
+  sectionSelect.addEventListener('change', renderList);
+
+  btnAdd.addEventListener('click', ()=>{
+    if(!data){ return alert('Load/parse JSON first.'); }
+    const key = sectionSelect.value;
+    if(!key){ return alert('Select a section.'); }
+    if(!Array.isArray(data[key])) data[key] = [];
+    const text = itemText.value.trim();
+    if(!text) return alert('Enter item text.');
+    const code = (itemCode.value.trim() || slug(text));
+    data[key].push({ code, text });
+    itemText.value = '';
+    itemCode.value = '';
+    renderList();
+    saveBackup();
+    setStatus(`added to "${key}"`, true);
+  });
+
+  btnSort.addEventListener('click', ()=>{
+    if(!data) return;
+    const key = sectionSelect.value;
+    if(!key) return;
+    if(!Array.isArray(data[key])) return;
+    data[key] = normaliseArray(data[key]).sort((a,b)=>a.text.localeCompare(b.text, undefined, {sensitivity:'base'}));
+    renderList();
+    saveBackup();
+    setStatus('sorted by text', true);
+  });
+
+  list.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    const action = btn.getAttribute('data-act');
+    const i = Number(btn.getAttribute('data-i'));
+    const key = sectionSelect.value;
+    if(!key || !Array.isArray(data[key])) return;
+
+    const arr = data[key];
+    if(action === 'del'){
+      if(!confirm('Delete this item?')) return;
+      arr.splice(i,1);
+    } else if (action === 'up'){
+      if(i>0){ [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; }
+    } else if (action === 'down'){
+      if(i < arr.length-1){ [arr[i], arr[i+1]] = [arr[i+1], arr[i]]; }
+    }
+    renderList();
+    saveBackup();
+    setStatus(action==='del'?'deleted':'reordered', true);
+  });
+
+  /*** Save / Export ***/
+  btnDownload.addEventListener('click', ()=>{
+    if(!data) return alert('Nothing to save: load/parse JSON first.');
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const path = (ghPath.value.trim() || 'updated.json').split('/').pop();
+    a.download = path || 'updated.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setStatus('downloaded', true);
+  });
+
+  btnCopy.addEventListener('click', async ()=>{
+    if(!data) return alert('Nothing to copy.');
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      setStatus('copied to clipboard', true);
+    } catch(e){
+      setStatus('copy failed', false, true);
+      alert('Clipboard failed: ' + e.message);
+    }
+  });
+
+  /*** GitHub integration ***/
+  [ghOwner,ghRepo,ghPath,ghBranch,ghToken].forEach(el => el.addEventListener('input', persistGhFields));
+  restoreGhFields();
+
+  async function ghFetchFile(owner, repo, path, branch, token){
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch||'main')}`;
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if(!res.ok) throw new Error(`GitHub GET ${res.status}: ${await res.text()}`);
+    return res.json(); // includes content (base64) and sha
+  }
+
+  async function ghPutFile(owner, repo, path, branch, token, contentStr, sha, message){
+    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}`;
+    const body = {
+      message: message || `chore: update ${path}`,
+      content: btoa(unescape(encodeURIComponent(contentStr))), // base64
+      branch: branch || 'main'
+    };
+    if(sha) body.sha = sha;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type':'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok) throw new Error(`GitHub PUT ${res.status}: ${await res.text()}`);
+    return res.json(); // returns content + commit info
+  }
+
+  btnGitLoad.addEventListener('click', async ()=>{
+    try {
+      ghMsg.textContent = '';
+      const owner = ghOwner.value.trim();
+      const repo = ghRepo.value.trim();
+      const path = ghPath.value.trim();
+      const branch = ghBranch.value.trim() || 'main';
+      const token = ghToken.value;
+
+      if(!owner || !repo || !path){
+        return alert('Fill owner, repo, and path.');
+      }
+      setStatus('fetching from GitHub…');
+      const json = await ghFetchFile(owner, repo, path, branch, token);
+      const decoded = decodeURIComponent(escape(atob(json.content)));
+      jsonInput.value = decoded;
+      setOrigin(`github: ${owner}/${repo}/${path}@${branch}`);
+      setSha(json.sha);
+      setStatus('GitHub file loaded ✓', true);
+    } catch(e){
+      setStatus('GitHub load failed', false, true);
+      ghMsg.textContent = e.message;
+    }
+  });
+
+  btnGitSave.addEventListener('click', async ()=>{
+    if(!jsonInput.value.trim()){
+      return alert('Nothing to save. Parse JSON or paste it first.');
+    }
+    try {
+      ghMsg.textContent = '';
+      const owner = ghOwner.value.trim();
+      const repo = ghRepo.value.trim();
+      const path = ghPath.value.trim();
+      const branch = ghBranch.value.trim() || 'main';
+      const token = ghToken.value;
+
+      if(!owner || !repo || !path){
+        return alert('Fill owner, repo, and path.');
+      }
+      // ensure JSON is valid and sync textarea with in-memory data
+      const obj = data ?? JSON.parse(jsonInput.value);
+      const contentStr = JSON.stringify(obj, null, 2);
+
+      setStatus('committing to GitHub…');
+      const out = await ghPutFile(owner, repo, path, branch, token, contentStr, githubSha, `chore: update ${path} via section editor`);
+      setSha(out.content?.sha || null);
+      setOrigin(`github: ${owner}/${repo}/${path}@${branch}`);
+      setStatus('GitHub commit ✓', true);
+      ghMsg.textContent = `Saved to ${owner}/${repo}/${path} on ${branch}.`;
+    } catch(e){
+      setStatus('GitHub save failed', false, true);
+      ghMsg.textContent = e.message;
+    }
+  });
+
+  /*** Auto-restore backup on load ***/
+  window.addEventListener('load', ()=>{
+    const backup = loadBackup();
+    if(backup){
+      data = backup;
+      jsonInput.value = JSON.stringify(backup, null, 2);
+      refreshSectionUI();
+      setStatus('backup restored', true);
+      setOrigin('backup');
+    }
+  });
+})();
+</script>
+</body>
+</html>
