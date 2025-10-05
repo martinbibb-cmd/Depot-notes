@@ -1,0 +1,116 @@
+{
+  "catalogs": {
+    "system_characteristics": {
+      "label": "System Characteristics",
+      "type": "group",
+      "children": [
+        { "id": "S01", "label": "System Type", "type": "single",
+          "options": ["Combi", "System (with cylinder)", "Heat-only (regular)", "Back boiler"] },
+        { "id": "S02", "label": "Pressurisation", "type": "single",
+          "options": ["Sealed (expansion vessel)", "Open-vented (F&E tank)"] },
+        { "id": "S03", "label": "Primary Circuit", "type": "single",
+          "options": ["Fully pumped", "Gravity-primaries (legacy)"] },
+
+        { "id": "S04", "label": "Hot Water", "type": "group", "children": [
+          { "id": "S04.type", "label": "Strategy", "type": "single",
+            "options": ["Instantaneous DHW", "Stored DHW (vented)", "Stored DHW (unvented)"] },
+          { "id": "S04.capacity", "label": "Cylinder Capacity (L)", "type": "single",
+            "options": ["≤120", "120–150", "150–210", "210–300", "300+", "Unknown"] },
+          { "id": "S11", "label": "Cylinder Type", "type": "single",
+            "options": ["Vented", "Unvented", "None"] },
+          { "id": "S13", "label": "Coil / HX", "type": "single",
+            "options": ["Single coil", "Twin coil (solar)", "Plate heat exchanger", "Unknown"] },
+          { "id": "S12", "label": "Cylinder Condition", "type": "single",
+            "options": ["Good", "Poor", "Unknown"] },
+          { "id": "S14", "label": "Stat Pocket Present", "type": "single",
+            "options": ["Yes", "No"] }
+        ]},
+
+        { "id": "S05", "label": "Heating Circuit", "type": "group", "children": [
+          { "id": "S06", "label": "Topology", "type": "single",
+            "options": ["Two-pipe", "One-pipe", "Mixed"] },
+          { "id": "S07", "label": "Zones & Valve Plan", "type": "single",
+            "options": ["Single zone", "Multi-zone", "S-plan (2-port)", "Y-plan (mid-position)", "Other"] },
+          { "id": "S08", "label": "Emitters", "type": "single",
+            "options": ["Radiators only", "Radiators + UFH (mixed)", "UFH only"] }
+        ]},
+
+        { "id": "S06_boiler", "label": "Boiler", "type": "group", "children": [
+          { "id": "S09", "label": "Technology (Existing)", "type": "single",
+            "options": ["Condensing", "Non-condensing"] },
+          { "id": "S10", "label": "Output Class (kW)", "type": "single",
+            "options": ["≤24", "25–30", "35+", "Unknown"] }
+        ]},
+
+        { "id": "S07_hydraulics", "label": "Hydraulics & Pipework", "type": "group", "children": [
+          { "id": "S15", "label": "Bypass / DPC", "type": "single",
+            "options": ["Automatic bypass present", "Manual bypass", "None"] },
+          { "id": "S18", "label": "Pipework (only if restrictive)", "type": "single",
+            "options": ["Undersized primaries (e.g. 15 mm for >24 kW)", "Extensive microbore (8/10 mm)", "None"] },
+          { "id": "S19", "label": "Return Temperature Trend", "type": "single",
+            "options": ["High return (poor condensing)", "Low return (good condensing)", "Unknown"] },
+          { "id": "S20", "label": "Known Hydraulic Constraints", "type": "single",
+            "options": ["Mixed emitter temps – no blending valve", "Long primary runs (head loss)", "None"] }
+        ]},
+
+        { "id": "S08_treatment", "label": "Water Treatment & Filtration", "type": "group", "children": [
+          { "id": "S16", "label": "Treatment", "type": "single",
+            "options": ["Inhibitor present", "Inhibitor unknown", "No inhibitor"] },
+          { "id": "S17", "label": "Magnetic Filter", "type": "single",
+            "options": ["Present", "Not present"] }
+        ]}
+      ]
+    }
+  },
+
+  "value_map": {
+    "Combi": "combi", "System (with cylinder)": "system_with_cylinder",
+    "Heat-only (regular)": "heat_only_regular", "Back boiler": "back_boiler",
+    "Sealed (expansion vessel)": "sealed_expansion_vessel", "Open-vented (F&E tank)": "open_vented_fe_tank",
+    "Fully pumped": "fully_pumped", "Gravity-primaries (legacy)": "gravity_primaries_legacy",
+    "Instantaneous DHW": "instantaneous_dhw", "Stored DHW (vented)": "stored_dhw_vented", "Stored DHW (unvented)": "stored_dhw_unvented",
+    "≤120": "le_120", "120–150": "120_150", "150–210": "150_210", "210–300": "210_300", "300+": "ge_300", "Unknown": "unknown",
+    "Vented": "vented", "Unvented": "unvented", "None": "none",
+    "Single coil": "single_coil", "Twin coil (solar)": "twin_coil_solar", "Plate heat exchanger": "plate_heat_exchanger",
+    "Good": "good", "Poor": "poor",
+    "Yes": "yes", "No": "no",
+    "Two-pipe": "two_pipe", "One-pipe": "one_pipe", "Mixed": "mixed",
+    "Single zone": "single_zone", "Multi-zone": "multi_zone",
+    "S-plan (2-port)": "s_plan_two_port", "Y-plan (mid-position)": "y_plan_mid_position", "Other": "other",
+    "Radiators only": "radiators_only", "Radiators + UFH (mixed)": "radiators_plus_ufh", "UFH only": "ufh_only",
+    "Condensing": "condensing", "Non-condensing": "non_condensing",
+    "≤24": "le_24", "25–30": "25_30", "35+": "ge_35",
+    "Automatic bypass present": "auto_bypass_present", "Manual bypass": "manual_bypass",
+    "Undersized primaries (e.g. 15 mm for >24 kW)": "undersized_primaries",
+    "Extensive microbore (8/10 mm)": "extensive_microbore",
+    "High return (poor condensing)": "high_return_poor_condensing",
+    "Low return (good condensing)": "low_return_good_condensing",
+    "Mixed emitter temps – no blending valve": "mixed_emitter_no_blending_valve",
+    "Long primary runs (head loss)": "long_primary_runs_high_head_loss",
+    "Inhibitor present": "inhibitor_present", "Inhibitor unknown": "inhibitor_unknown", "No inhibitor": "no_inhibitor",
+    "Present": "present", "Not present": "not_present"
+  },
+
+  "flatten_rule": {
+    "S01": "S01_system_type",
+    "S02": "S02_pressurisation",
+    "S03": "S03_primary_circuit",
+    "S04.type": "S04_hot_water_strategy",
+    "S04.capacity": "S05_cylinder_capacity_litres",
+    "S11": "S11_cylinder_type",
+    "S13": "S13_cylinder_coil_type",
+    "S12": "S12_cylinder_condition",
+    "S14": "S14_cylinder_stat_pocket_present",
+    "S06": "S06_heating_circuit_topology",
+    "S07": "S07_zones_and_valve_plan",
+    "S08": "S08_emitters",
+    "S09": "S09_boiler_technology_existing",
+    "S10": "S10_boiler_output_class_kw",
+    "S15": "S15_bypass_or_dpc",
+    "S18": "S18_pipework_restriction",
+    "S19": "S19_return_temperature_trend",
+    "S20": "S20_known_hydraulic_constraints",
+    "S16": "S16_water_treatment_state",
+    "S17": "S17_magnetic_filter_present"
+  }
+}
