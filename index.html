@@ -9,51 +9,48 @@
   <link rel="apple-touch-icon" href="icon-192.png" />
   <style>
     :root { --gap:12px; --radius:12px; }
-    * { box-sizing: border-box; }
-    body {
+    * { box-sizing:border-box }
+    body{
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
                    "Apple Color Emoji","Segoe UI Emoji";
       margin:0; padding:0; background:#0b1220; color:#e6ecff;
     }
-    header.app {
-      position: sticky; top:0; z-index:20; backdrop-filter: blur(8px);
-      background: rgba(11,18,32,0.85);
+    header.app{
+      position:sticky; top:0; z-index:20; backdrop-filter: blur(8px);
+      background:rgba(11,18,32,0.85);
       border-bottom:1px solid rgba(255,255,255,0.08);
       padding:10px var(--gap);
     }
-    h1 { font-size:18px; margin:4px 0; }
-    .bar { display:flex; flex-wrap:wrap; gap:var(--gap); align-items:center }
-    select, input[type="search"] {
+    h1{ font-size:18px; margin:4px 0 }
+    .bar{ display:flex; flex-wrap:wrap; gap:var(--gap); align-items:center }
+    select, input[type="search"]{
       padding:10px 12px; border-radius:10px; background:#0f172a; color:#e5e7eb;
       border:1px solid rgba(255,255,255,0.12); outline:none;
     }
-    .btn {
+    .btn{
       border:1px solid rgba(255,255,255,0.14);
       background:#111827; color:#e5e7eb; padding:9px 12px; border-radius:10px;
       cursor:pointer; font-weight:600;
     }
-    .btn:hover { background:#1f2937; }
-    .container { display:grid; grid-template-columns:1fr; gap:var(--gap); padding:var(--gap) }
-    @media (min-width: 980px) {
-      .container { grid-template-columns: 1fr 420px; align-items:start }
-    }
-    .panel {
-      border:1px solid rgba(255,255,255,0.12); background:#0f172a; border-radius: var(--radius);
+    .btn:hover{ background:#1f2937 }
+    .container{ display:grid; grid-template-columns:1fr; gap:var(--gap); padding:var(--gap) }
+    @media (min-width:980px){ .container{ grid-template-columns:1fr 420px; align-items:start } }
+    .panel{
+      border:1px solid rgba(255,255,255,0.12); background:#0f172a; border-radius:var(--radius);
       overflow:hidden;
     }
-    .panel header { position:unset; background:transparent; border:none; padding:12px }
-    .panel h2 { margin:0; font-size:16px }
-    .list { display:flex; flex-direction:column; gap:8px; padding:12px; max-height:60vh; overflow:auto }
-    .item { display:flex; gap:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); background:#0b132a; border-radius:10px }
-    .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap }
-    .meta { opacity:0.75; font-size:12px }
-    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px }
-    textarea {
+    .panel header{ position:unset; background:transparent; border:none; padding:12px }
+    .panel h2{ margin:0; font-size:16px }
+    .list{ display:flex; flex-direction:column; gap:8px; padding:12px; max-height:60vh; overflow:auto }
+    .item{ display:flex; gap:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); background:#0b132a; border-radius:10px }
+    .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
+    .meta{ opacity:0.75; font-size:12px }
+    .pill{ display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px }
+    textarea{
       width:100%; min-height:160px; max-height:280px; padding:12px; border-radius:10px;
       border:1px solid rgba(255,255,255,0.12); background:#0f172a; color:#e2e8f0;
     }
-    .hint { font-size:12px; opacity:0.8 }
-    a.help { color:#9ecbff; text-decoration:none }
+    .hint{ font-size:12px; opacity:0.8 }
   </style>
 </head>
 <body>
@@ -93,95 +90,49 @@
           </label>
         </div>
         <textarea id="semiOutput" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
-        <div class="hint">Tip: Cmd/Ctrl + C inside this box also copies the output.</div>
       </div>
     </div>
   </div>
 
   <script>
-    // Register service worker (PWA). sw.js already handles versioning + cache cleanup.
+    // Register service worker (PWA)
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js');
-      });
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
     }
 
-    // --------------------------
-    // Data & State
-    // --------------------------
-
-    // Minimal starter so the UI isn't empty even if the JSON fails to load.
-    // You can extend or replace this with your full bank later.
+    // ========= Data & State =========
+    // Starter bank so UI isn't empty if JSON fails
     const PHRASE_BANK = {
       needs: [
-        { code: "N01", text: "Customer wants improved hot water performance" },
-        { code: "N02", text: "Customer requested quieter boiler operation" }
+        { code: 'N01', text: 'Customer wants improved hot water performance' },
+        { code: 'N02', text: 'Customer requested quieter boiler operation' }
       ]
     };
-
-    // Default section order (new sections from JSON will be unshifted to the front)
-    const SECTION_ORDER = ["needs"];
-
-    // Tracks selected codes by section
-    const selections = {}; // { sectionKey: Set<string> }
+    const SECTION_ORDER = ['needs']; // JSON sections will be unshifted in front
+    const selections = {};           // { sectionKey: Set<string> }
     let currentSection = SECTION_ORDER[0];
 
-    // --------------------------
-    // Helpers
-    // --------------------------
+    // ========= Helpers =========
+    function ensureBucket(section){ if(!selections[section]) selections[section] = new Set(); }
+    function toTitle(s){ return String(s).replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
 
-    function ensureBucket(section) {
-      if (!selections[section]) selections[section] = new Set();
-    }
-
-    function labelOf(sectionKey) {
-      // For now just title-case the key; you can map custom labels if you prefer.
+    function labelOf(sectionKey){
+      if (!sectionKey) return 'Section';
+      if (sectionKey.startsWith('system_characteristics__')) {
+        const tail = sectionKey.slice('system_characteristics__'.length);
+        return toTitle(tail); // Show just the subgroup name
+      }
       if (sectionKey === 'system_characteristics') return 'System Characteristics';
-      return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      return toTitle(sectionKey);
     }
 
-    function flattenSystemCharacteristics(cfg) {
-  const root = cfg?.catalogs?.system_characteristics;
-  if (!root || !Array.isArray(root.children)) return {};
-
-  const sections = {}; // e.g. { 'system_characteristics__hot_water': [...] }
-
-  // Each top-level group becomes its own section
-  root.children.forEach(group => {
-    if (group.type !== 'group') return;
-    const baseKey = `system_characteristics__${group.label
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '')}`;
-
-    const items = [];
-
-    function walk(node, path = []) {
-      if (node.type === 'group' && Array.isArray(node.children)) {
-        node.children.forEach(child => walk(child, path.concat(node.label)));
-        return;
-      }
-      if (node.type === 'single' && Array.isArray(node.options)) {
-        node.options.forEach(opt => {
-          items.push({
-            code: node.id || opt,
-            text: `${node.label}: ${opt}`
-          });
-        });
-      }
+    function filterItems(items, q){
+      if(!q) return items;
+      const s = q.trim().toLowerCase();
+      return items.filter(it => (it.code + ' ' + it.text).toLowerCase().includes(s));
     }
 
-    if (Array.isArray(group.children)) group.children.forEach(walk);
-    if (items.length > 0) sections[baseKey] = items;
-  });
-
-  return sections;
-}
-      return items.filter(it => (it.code + ' ' + it.text).toLowerCase().includes(q));
-    }
-
-    function buildSemicolonText() {
+    function buildSemicolonText(){
       const includeHeaders = document.getElementById('includeHeaders').checked;
       let out = '';
       SECTION_ORDER.forEach(section => {
@@ -189,7 +140,6 @@
         if (chosen.length === 0) return;
         const phrases = (PHRASE_BANK[section] || []).filter(it => chosen.includes(it.code));
         if (phrases.length === 0) return;
-
         if (includeHeaders) out += `${labelOf(section)}: `;
         out += phrases.map(p => p.text).join(' ; ');
         out += ' ;\n';
@@ -198,33 +148,51 @@
       return out.trim();
     }
 
-    function updateTotals() {
+    function updateTotals(){
       const n = selections[currentSection]?.size || 0;
       document.getElementById('sectionPill').textContent = `${n} selected`;
       let total = 0; Object.values(selections).forEach(s => total += s.size);
       document.getElementById('countMeta').textContent = `${total} selected`;
     }
 
-    // --------------------------
-    // Rendering
-    // --------------------------
-
-    function populateSectionSelect() {
+    // ========= Rendering =========
+    function populateSectionSelect(){
       const sel = document.getElementById('sectionSelect');
+
+      // If SECTION_ORDER empty, rebuild from PHRASE_BANK keys
+      if (!Array.isArray(SECTION_ORDER) || SECTION_ORDER.length === 0) {
+        Object.keys(PHRASE_BANK).forEach(k => SECTION_ORDER.push(k));
+      }
+
+      // Ensure currentSection is valid
+      if (!PHRASE_BANK[currentSection]) {
+        currentSection = SECTION_ORDER.find(k => PHRASE_BANK[k]) || SECTION_ORDER[0];
+      }
+
       sel.innerHTML = '';
       SECTION_ORDER.forEach(k => {
-        if (!PHRASE_BANK[k]) return;
+        if (!PHRASE_BANK[k] || PHRASE_BANK[k].length === 0) return;
         const opt = document.createElement('option');
-        opt.value = k;
-        opt.textContent = labelOf(k);
+        opt.value = k; opt.textContent = labelOf(k);
         sel.appendChild(opt);
       });
+
+      if (!sel.options.length) {
+        document.getElementById('itemsList').innerHTML =
+          '<div class="meta">No sections available. Check console for errors.</div>';
+        console.warn('populateSectionSelect: no sections', { PHRASE_BANK, SECTION_ORDER });
+        return;
+      }
+
+      if (!currentSection || !PHRASE_BANK[currentSection]) {
+        currentSection = sel.options[0].value;
+      }
       sel.value = currentSection;
       document.getElementById('sectionTitle').textContent = labelOf(currentSection);
       renderSectionItems();
     }
 
-    function renderSectionItems() {
+    function renderSectionItems(){
       const wrap = document.getElementById('itemsList');
       wrap.innerHTML = '';
       const items = PHRASE_BANK[currentSection] || [];
@@ -246,8 +214,7 @@
         });
         const txt = document.createElement('div');
         txt.innerHTML = `<div><strong>${it.code}</strong> — ${it.text}</div>`;
-        row.appendChild(cb);
-        row.appendChild(txt);
+        row.appendChild(cb); row.appendChild(txt);
         wrap.appendChild(row);
       });
 
@@ -255,87 +222,107 @@
       buildSemicolonText();
     }
 
-    function nextSection() {
+    function nextSection(){
       const idx = SECTION_ORDER.indexOf(currentSection);
       const next = SECTION_ORDER[(idx + 1) % SECTION_ORDER.length];
       currentSection = next;
       document.getElementById('sectionSelect').value = next;
       document.getElementById('sectionTitle').textContent = labelOf(next);
-      renderSectionItems();
-      updateTotals();
+      renderSectionItems(); updateTotals();
     }
 
-    // --------------------------
-    // JSON loader for System Characteristics
-    // --------------------------
-
-    async function loadConfigJSON() {
-      // sw.js already forces no-store for this path; we keep it here too for safety.
+    // ========= JSON loader (groups → sections) =========
+    async function loadConfigJSON(){
       const resp = await fetch('./App_config.json', { cache: 'no-store' });
       if (!resp.ok) throw new Error('Failed to load App_config.json');
       return resp.json();
     }
 
-    function flattenSystemCharacteristics(cfg) {
+    function slugifyLabel(label){
+      return String(label).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    }
+
+    // Each top-level group in App_config.json becomes its own section
+    function flattenSystemCharacteristics(cfg){
       const root = cfg?.catalogs?.system_characteristics;
-      if (!root || !Array.isArray(root.children)) return {};
-
-      const sections = {}; // { sectionKey: [{code, text}] }
-
-      function walk(node) {
-        if (node.type === 'group' && Array.isArray(node.children)) {
-          node.children.forEach(walk);
-          return;
-        }
-        if (node.type === 'single' && Array.isArray(node.options)) {
-          const key = 'system_characteristics'; // keep as a single section for now
-          if (!sections[key]) sections[key] = [];
-          node.options.forEach(opt => {
-            sections[key].push({
-              code: node.id || String(opt),
-              text: `${node.label}: ${opt}`
-            });
-          });
-        }
+      if (!root || !Array.isArray(root.children)) {
+        console.warn('flattenSystemCharacteristics: missing system_characteristics root');
+        return {};
       }
 
-      root.children.forEach(walk);
+      const sections = {}; // { 'system_characteristics__hot_water': [{code,text},...] }
+
+      root.children.forEach(group => {
+        if (!group || group.type !== 'group') return;
+
+        const baseKey = `system_characteristics__${slugifyLabel(group.label || 'group')}`;
+        const items = [];
+
+        function walk(node){
+          if (!node) return;
+          if (node.type === 'group' && Array.isArray(node.children)) {
+            node.children.forEach(walk); return;
+          }
+          if (node.type === 'single' && Array.isArray(node.options)) {
+            const nodeLabel = node.label || 'Option';
+            node.options.forEach(opt => {
+              items.push({ code: node.id || String(opt), text: `${nodeLabel}: ${opt}` });
+            });
+          }
+        }
+
+        if (Array.isArray(group.children)) group.children.forEach(walk);
+        if (items.length) sections[baseKey] = items;
+      });
+
+      // Fallback: if no groups produced items, flatten everything into one section
+      if (Object.keys(sections).length === 0) {
+        const flat = [];
+        function walkAll(node){
+          if (!node) return;
+          if (node.type === 'group' && Array.isArray(node.children)) { node.children.forEach(walkAll); return; }
+          if (node.type === 'single' && Array.isArray(node.options)) {
+            const nodeLabel = node.label || 'Option';
+            node.options.forEach(opt => flat.push({ code: node.id || String(opt), text: `${nodeLabel}: ${opt}` }));
+          }
+        }
+        root.children.forEach(walkAll);
+        if (flat.length) sections['system_characteristics'] = flat;
+      }
+
       return sections;
     }
 
-    async function bootstrapSystemCharacteristics() {
-  try {
-    const cfg = await loadConfigJSON();
-    const sysSections = flattenSystemCharacteristics(cfg);
+    async function bootstrapSystemCharacteristics(){
+      try{
+        const cfg = await loadConfigJSON();
+        const sysSections = flattenSystemCharacteristics(cfg);
+        const keys = Object.keys(sysSections);
 
-    // Merge all separate group sections into PHRASE_BANK
-    Object.assign(PHRASE_BANK, sysSections);
+        // Merge into PHRASE_BANK
+        Object.assign(PHRASE_BANK, sysSections);
 
-    // Add each new section key (in visible order)
-    Object.keys(sysSections)
-      .reverse() // reverse so they appear top-down in JSON order
-      .forEach(key => {
-        if (!SECTION_ORDER.includes(key)) SECTION_ORDER.unshift(key);
-      });
+        // Insert new sections at the front in JSON order
+        keys.slice().reverse().forEach(k => {
+          if (!SECTION_ORDER.includes(k)) SECTION_ORDER.unshift(k);
+        });
 
-    // Rebuild UI
-    populateSectionSelect();
-    renderSectionItems();
+        // Ensure a valid currentSection
+        if (!currentSection || !PHRASE_BANK[currentSection]) {
+          currentSection = keys[0] || SECTION_ORDER.find(k => PHRASE_BANK[k]) || SECTION_ORDER[0];
+        }
 
-    console.log('System Characteristics groups loaded:', Object.keys(sysSections));
-  } catch (err) {
-    console.warn('App_config.json not loaded (using built-in phrases only):', err);
-    populateSectionSelect();
-    renderSectionItems();
-  }
-}
+        populateSectionSelect();
+        renderSectionItems();
+        console.log('Loaded sections:', Object.keys(PHRASE_BANK));
+      }catch(err){
+        console.error('bootstrapSystemCharacteristics failed:', err);
+        populateSectionSelect();
+        renderSectionItems();
       }
     }
 
-    // --------------------------
-    // Events & init
-    // --------------------------
-
+    // ========= Events & boot =========
     document.getElementById('search').addEventListener('input', renderSectionItems);
     document.getElementById('sectionSelect').addEventListener('change', (e) => {
       currentSection = e.target.value;
@@ -356,34 +343,31 @@
     });
     document.getElementById('copySemiBtn').addEventListener('click', async () => {
       const text = buildSemicolonText();
-      try {
+      try{
         if (navigator.clipboard && window.isSecureContext) {
           await navigator.clipboard.writeText(text);
         } else {
-          // Fallback: select textarea and copy
           const ta = document.getElementById('semiOutput');
           ta.focus(); ta.select(); document.execCommand('copy');
         }
-      } catch (e) { console.warn('Copy failed:', e); }
+      }catch(e){ console.warn('Copy failed:', e); }
     });
 
-    // Keyboard shortcuts: Cmd/Ctrl + → (next section), Cmd/Ctrl + C copies output
     document.addEventListener('keydown', (e) => {
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key === 'ArrowRight') { e.preventDefault(); nextSection(); }
-      if (mod && (e.key.toLowerCase() === 'c')) {
+      if (mod && e.key.toLowerCase() === 'c') {
         e.preventDefault(); buildSemicolonText();
         const ta = document.getElementById('semiOutput');
         ta.focus(); ta.select(); document.execCommand('copy');
       }
     });
 
-    // Boot
-    // (We call bootstrap which will render even if JSON fails.)
+    // Boot once definitions are in place
     bootstrapSystemCharacteristics();
   </script>
 
-  <!-- Optional hook for future update logic; add a tiny update.js to avoid 404 -->
+  <!-- Optional hook so you can add update UI later (create update.js to avoid 404) -->
   <script src="./update.js"></script>
 </body>
 </html>
