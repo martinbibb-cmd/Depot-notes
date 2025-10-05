@@ -231,12 +231,26 @@
       renderSectionItems(); updateTotals();
     }
 
-    // ========= JSON loader (groups → sections) =========
     async function loadConfigJSON(){
-      const resp = await fetch('./App_config.json', { cache: 'no-store' });
-      if (!resp.ok) throw new Error('Failed to load App_config.json');
-      return resp.json();
+  // First check for a local override saved by editor.html
+  const OVERRIDE_KEY = 'depot_notes_config_override_v1';
+  const raw = localStorage.getItem(OVERRIDE_KEY);
+
+  if (raw) {
+    try {
+      const obj = JSON.parse(raw);
+      console.log('Loaded local override from JSON editor');
+      return obj; // use local override if valid
+    } catch (e) {
+      console.warn('Local override invalid, falling back to network');
     }
+  }
+
+  // Otherwise, fetch the live App_config.json from GitHub Pages
+  const resp = await fetch('./App_config.json', { cache: 'no-store' });
+  if (!resp.ok) throw new Error('Failed to load App_config.json');
+  return resp.json();
+}
 
     function slugifyLabel(label){
       return String(label).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
