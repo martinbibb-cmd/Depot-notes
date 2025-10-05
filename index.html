@@ -140,9 +140,44 @@
       return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    function filterItems(items, query) {
-      if (!query) return items;
-      const q = query.trim().toLowerCase();
+    function flattenSystemCharacteristics(cfg) {
+  const root = cfg?.catalogs?.system_characteristics;
+  if (!root || !Array.isArray(root.children)) return {};
+
+  const sections = {}; // e.g. { 'system_characteristics__hot_water': [...] }
+
+  // Each top-level group becomes its own section
+  root.children.forEach(group => {
+    if (group.type !== 'group') return;
+    const baseKey = `system_characteristics__${group.label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')}`;
+
+    const items = [];
+
+    function walk(node, path = []) {
+      if (node.type === 'group' && Array.isArray(node.children)) {
+        node.children.forEach(child => walk(child, path.concat(node.label)));
+        return;
+      }
+      if (node.type === 'single' && Array.isArray(node.options)) {
+        node.options.forEach(opt => {
+          items.push({
+            code: node.id || opt,
+            text: `${node.label}: ${opt}`
+          });
+        });
+      }
+    }
+
+    if (Array.isArray(group.children)) group.children.forEach(walk);
+    if (items.length > 0) sections[baseKey] = items;
+  });
+
+  return sections;
+}
       return items.filter(it => (it.code + ' ' + it.text).toLowerCase().includes(q));
     }
 
@@ -269,33 +304,31 @@
     }
 
     async function bootstrapSystemCharacteristics() {
-      try {
-        const cfg = await loadConfigJSON();
-        const sys = flattenSystemCharacteristics(cfg);
+  try {
+    const cfg = await loadConfigJSON();
+    const sysSections = flattenSystemCharacteristics(cfg);
 
-        // Merge into phrase bank
-        Object.assign(PHRASE_BANK, sys);
+    // Merge all separate group sections into PHRASE_BANK
+    Object.assign(PHRASE_BANK, sysSections);
 
-        // Ensure section appears at the front if not already present
-        if (!SECTION_ORDER.includes('system_characteristics')) {
-          SECTION_ORDER.unshift('system_characteristics');
-        }
+    // Add each new section key (in visible order)
+    Object.keys(sysSections)
+      .reverse() // reverse so they appear top-down in JSON order
+      .forEach(key => {
+        if (!SECTION_ORDER.includes(key)) SECTION_ORDER.unshift(key);
+      });
 
-        // If this is the first load, set currentSection to system_characteristics
-        if (!currentSection && SECTION_ORDER.length) {
-          currentSection = SECTION_ORDER[0];
-        }
+    // Rebuild UI
+    populateSectionSelect();
+    renderSectionItems();
 
-        // Rebuild UI with new data
-        populateSectionSelect();
-        renderSectionItems();
-
-        console.log('System Characteristics loaded from App_config.json');
-      } catch (err) {
-        console.warn('App_config.json not loaded (using built-in phrases only):', err);
-        // Still render the UI with built-ins
-        populateSectionSelect();
-        renderSectionItems();
+    console.log('System Characteristics groups loaded:', Object.keys(sysSections));
+  } catch (err) {
+    console.warn('App_config.json not loaded (using built-in phrases only):', err);
+    populateSectionSelect();
+    renderSectionItems();
+  }
+}
       }
     }
 
