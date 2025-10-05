@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Depot Notes – Free-type JSON Editor</title>
+<meta name="theme-color" content="#0b1220" />
+<link rel="manifest" href="manifest.webmanifest" />
+<style>
+  :root{--bg:#0b1220;--panel:#0f172a;--ink:#e6ecff;--mut:#9aa6bf;--ok:#22c55e;--err:#ef4444;--line:#1e293b;--br:12px;--gap:12px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  header{position:sticky;top:0;z-index:2;backdrop-filter:blur(8px);background:rgba(11,18,32,.85);border-bottom:1px solid rgba(255,255,255,.08)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px}
+  h1{font-size:18px;margin:0 8px 0 0}
+  button{background:#111827;color:var(--ink);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}
+  button:hover{background:#1f2937}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#1f2937;font-size:12px}
+  .ok{color:var(--ok)} .err{color:var(--err)} .mut{color:var(--mut)}
+  main{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);padding:var(--gap)}
+  @media (max-width:1100px){main{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid rgba(255,255,255,.12);border-radius:var(--br);overflow:hidden}
+  .panel header{background:transparent;border:none;padding:12px}
+  .panel .body{padding:var(--gap)}
+  textarea{width:100%;min-height:65vh;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#dbeafe;background:#0b132a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px;resize:vertical;tab-size:2}
+  pre{margin:0;white-space:pre-wrap;word-break:break-word;font:12px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#bfdbfe;background:#0b132a;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:12px;min-height:65vh}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .sp{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Free-type JSON Editor</h1>
+    <button id="loadCurrentBtn" title="Load current App_config.json as free-text">Load current JSON</button>
+    <button id="fromJSONBtn" title="Paste JSON → Free-text">JSON → Free-text</button>
+    <button id="toJSONBtn" title="Free-text → JSON (generate)">Generate JSON</button>
+    <button id="applyBtn" title="Use in app (local override)">Apply to app</button>
+    <button id="downloadBtn" title="Download App_config.json">Download</button>
+    <div class="sp"></div>
+    <button id="resetSWBtn">Reset caches & SW</button>
+    <span id="status" class="pill mut">Idle</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <header><strong>Free-type input</strong> <span class="mut">(# group, then fields)</span></header>
+    <div class="body">
+      <textarea id="free" spellcheck="false" placeholder="# System Type
+System Type [id=S01]: Combi | System (with cylinder) | Heat-only (regular) | Back boiler
+
+# Pressurisation
+Pressurisation [id=S02]: Sealed (expansion vessel) | Open-vented (F&E tank)
+
+# Primary Circuit
+Primary Circuit [id=S03]: Fully pumped | Gravity-primaries (legacy)
+
+# Hot Water
+Strategy [id=S04.type]: Instantaneous DHW | Stored DHW (vented) | Stored DHW (unvented)
+Cylinder Capacity (L) [id=S04.capacity]: ≤120 | 120–150 | 150–210 | 210–300 | 300+ | Unknown
+Cylinder Type [id=S11]: Vented | Unvented | None
+Coil / HX [id=S13]: Single coil | Twin coil (solar) | Plate heat exchanger | Unknown
+Cylinder Condition [id=S12]: Good | Poor | Unknown
+Stat Pocket Present [id=S14]: Yes | No
+
+# Heating Circuit
+Topology [id=S06]: Two-pipe | One-pipe | Mixed
+Zones & Valve Plan [id=S07]: Single zone | Multi-zone | S-plan (2-port) | Y-plan (mid-position) | Other
+Emitters [id=S08]: Radiators only | Radiators + UFH (mixed) | UFH only
+
+# Boiler
+Technology (Existing) [id=S09]: Condensing | Non-condensing
+Output Class (kW) [id=S10]: ≤24 | 25–30 | 35+ | Unknown
+
+# Hydraulics & Pipework
+Bypass / DPC [id=S15]: Automatic bypass present | Manual bypass | None
+Pipework (only if restrictive) [id=S18]: Undersized primaries (e.g. 15 mm for >24 kW) | Extensive microbore (8/10 mm) | None
+Return Temperature Trend [id=S19]: High return (poor condensing) | Low return (good condensing) | Unknown
+Known Hydraulic Constraints [id=S20]: Mixed emitter temps – no blending valve | Long primary runs (head loss) | None
+
+# Water Treatment & Filtration
+Treatment [id=S16]: Inhibitor present | Inhibitor unknown | No inhibitor
+Magnetic Filter [id=S17]: Present | Not present
+"></textarea>
+      <div class="row" style="margin-top:8px"><span class="mut">Tip: each field line is “Label [id=Sxx or Sxx.sub]: opt1 | opt2 | …”</span></div>
+    </div>
+  </section>
+  <aside class="panel">
+    <header><strong>Generated App_config.json</strong> <span class="mut">(live preview)</span></header>
+    <div class="body">
+      <pre id="preview">{ }</pre>
+    </div>
+  </aside>
+</main>
+
+<script>
+const statusEl = document.getElementById('status');
+const freeEl   = document.getElementById('free');
+const prevEl   = document.getElementById('preview');
+const OVERRIDE_KEY = 'depot_notes_config_override_v1';
+
+function setStatus(msg, ok=null){
+  statusEl.textContent = msg;
+  statusEl.classList.remove('ok','err');
+  if (ok === true) statusEl.classList.add('ok');
+  if (ok === false) statusEl.classList.add('err');
+}
+
+function slug(s){ return String(s).trim().replace(/\s+/g,' '); }
+
+function nextIdGen(){
+  let i = 1;
+  return function(){ const n = i++; return 'S' + String(n).padStart(2,'0'); };
+}
+const nextId = nextIdGen();
+
+function parseFreeText(src){
+  const lines = src.split(/\r?\n/);
+  const groups = [];
+  let current = null;
+
+  for (let raw of lines){
+    const line = raw.trim();
+    if (!line) continue;
+
+    // Group line: starts with '#'
+    if (/^#\s+/.test(line)){
+      const label = slug(line.replace(/^#\s+/, ''));
+      current = { label, type: 'group', children: [] };
+      groups.push(current);
+      continue;
+    }
+
+    // Field line: Label [id=...] : options | options | ...
+    const m = line.match(/^(.+?)(?:\s*\[id\s*=\s*([A-Za-z0-9_.-]+)\s*\])?\s*:\s*(.+)$/);
+    if (m){
+      if (!current){
+        // if field appears before any group, auto-create "General"
+        current = { label: 'General', type: 'group', children: [] };
+        groups.push(current);
+      }
+      const fieldLabel = slug(m[1]);
+      const fieldId    = (m[2] ? String(m[2]).trim() : nextId());
+      const options    = m[3].split('|').map(s => slug(s)).filter(Boolean);
+
+      current.children.push({
+        id: fieldId,
+        label: fieldLabel,
+        type: 'single',
+        options
+      });
+      continue;
+    }
+
+    // If it doesn't match, treat as comment/ignore
+  }
+
+  return {
+    catalogs: {
+      system_characteristics: {
+        label: "System Characteristics",
+        type: "group",
+        children: groups
+      }
+    }
+  };
+}
+
+function render(){
+  try{
+    const obj = parseFreeText(freeEl.value);
+    prevEl.textContent = JSON.stringify(obj, null, 2);
+    setStatus('Generated', true);
+  }catch(e){
+    prevEl.textContent = '{ /* parse failed */ }';
+    console.error(e);
+    setStatus('Parse failed', false);
+  }
+}
+
+// Convert existing JSON → free-text (best-effort)
+function jsonToFree(obj){
+  const root = obj?.catalogs?.system_characteristics;
+  if (!root || !Array.isArray(root.children)) return '# (empty)';
+  const out = [];
+  for (const group of root.children){
+    if (group?.type !== 'group') continue;
+    out.push('# ' + group.label);
+    for (const node of (group.children||[])){
+      if (node.type === 'single'){
+        const id = node.id ? ` [id=${node.id}]` : '';
+        const opts = (node.options||[]).join(' | ');
+        out.push(`${node.label}${id}: ${opts}`);
+      }
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+
+async function loadCurrent(){
+  try{
+    setStatus('Loading current App_config.json…');
+    const resp = await fetch('./App_config.json', { cache:'no-store' });
+    if (!resp.ok) throw new Error(resp.status);
+    const obj = await resp.json();
+    freeEl.value = jsonToFree(obj);
+    render();
+    setStatus('Loaded current JSON', true);
+  }catch(e){
+    console.error(e);
+    setStatus('Load failed', false);
+  }
+}
+
+function applyToApp(){
+  try{
+    const obj = JSON.parse(prevEl.textContent);
+    localStorage.setItem(OVERRIDE_KEY, JSON.stringify(obj));
+    setStatus('Applied to app (local override saved)', true);
+  }catch(e){
+    console.error(e);
+    setStatus('Apply failed', false);
+  }
+}
+
+function downloadJSON(){
+  try{
+    const obj = JSON.parse(prevEl.textContent);
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'App_config.json';
+    a.click();
+    setStatus('Downloaded App_config.json', true);
+  }catch(e){
+    console.error(e);
+    setStatus('Download failed', false);
+  }
+}
+
+document.getElementById('toJSONBtn').onclick = render;
+document.getElementById('applyBtn').onclick = applyToApp;
+document.getElementById('downloadBtn').onclick = downloadJSON;
+document.getElementById('loadCurrentBtn').onclick = loadCurrent;
+document.getElementById('resetSWBtn').onclick = ()=>{ location.href = './sw-reset.html'; };
+
+// paste raw JSON on left → convert to free-text
+document.getElementById('fromJSONBtn').onclick = async ()=>{
+  const txt = prompt('Paste JSON here to convert to free-text:');
+  if (!txt) return;
+  try{
+    const obj = JSON.parse(txt);
+    freeEl.value = jsonToFree(obj);
+    render();
+    setStatus('Converted JSON → free-text', true);
+  }catch(e){
+    console.error(e);
+    setStatus('Invalid JSON pasted', false);
+  }
+};
+
+// live preview as you type (debounced)
+let t; freeEl.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(render, 250); });
+
+// initial render (with the starter example in the textarea)
+render();
+</script>
+
+<!-- Optional hook (won’t error if missing; add placeholder update.js if you like) -->
+<script src="./update.js"></script>
+</body>
+</html>
