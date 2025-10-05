@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Depot Notes – JSON Editor</title>
+  <meta name="theme-color" content="#0b1220" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <style>
+    :root { --bg:#0b1220; --panel:#0f172a; --ink:#e6ecff; --mut:#9aa6bf; --ok:#22c55e; --err:#ef4444; --line:#1e293b; --br:12px; --gap:12px; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
+    header { position:sticky; top:0; z-index:2; backdrop-filter:blur(8px); background:rgba(11,18,32,.85); border-bottom:1px solid rgba(255,255,255,.08); }
+    .bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:10px 12px; }
+    h1 { font-size:18px; margin:0 8px 0 0; }
+    button, select, input[type="file"]::file-selector-button {
+      background:#111827; color:var(--ink); border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:8px 12px; cursor:pointer; font-weight:600;
+    }
+    button:hover { background:#1f2937; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px; }
+    .ok { color:var(--ok); } .err{ color:var(--err); }
+    main { display:grid; grid-template-columns: 1fr 420px; gap:var(--gap); padding:var(--gap); }
+    @media (max-width: 1100px){ main{ grid-template-columns:1fr; } }
+    .panel { background:var(--panel); border:1px solid rgba(255,255,255,.12); border-radius:var(--br); overflow:hidden; }
+    .panel header { background:transparent; border:none; }
+    .panel .body { padding:var(--gap); }
+    textarea {
+      width:100%; min-height:65vh; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color:#dbeafe; background:#0b132a; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:12px; resize:vertical;
+      tab-size:2;
+    }
+    pre.tree { margin:0; white-space:pre-wrap; word-break:break-word; font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color:#bfdbfe; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .mut { color:var(--mut); font-size:12px; }
+    .sp { flex:1; }
+    .danger { border-color: rgba(239,68,68,.4) !important; }
+    a { color:#9ecbff; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <h1>JSON Editor</h1>
+      <button id="loadBtn">Load from App_config.json</button>
+      <input id="fileIn" type="file" accept="application/json" />
+      <button id="prettyBtn">Pretty-print</button>
+      <button id="minBtn">Minify</button>
+      <button id="sortBtn" title="Sort keys (shallow)">Sort keys</button>
+      <button id="copyBtn">Copy</button>
+      <button id="downloadBtn">Download</button>
+      <button id="applyBtn" title="Use this JSON in the app (local override)">Apply to app</button>
+      <span class="sp"></span>
+      <button id="clearOverrideBtn" title="Remove local override">Clear override</button>
+      <button id="resetSWBtn" title="Unregister SW & clear caches">Reset caches & SW</button>
+      <span id="status" class="pill mut">Idle</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="body">
+        <textarea id="editor" spellcheck="false" placeholder="{\n  \"catalogs\": { ... }\n}"></textarea>
+        <div class="row" style="margin-top:8px">
+          <span class="mut">Tip: Cmd/Ctrl+S downloads a backup. Works offline once loaded.</span>
+        </div>
+      </div>
+    </section>
+    <aside class="panel">
+      <div class="body">
+        <div class="row" style="margin-bottom:6px"><strong>Structure</strong><span class="mut">(live preview)</span></div>
+        <pre id="tree" class="tree">// structure will appear here</pre>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const el = (id)=>document.getElementById(id);
+    const editor = el('editor');
+    const tree = el('tree');
+    const status = el('status');
+    const OVERRIDE_KEY = 'depot_notes_config_override_v1';
+
+    function setStatus(txt, ok=null){
+      status.textContent = txt;
+      status.classList.remove('ok','err');
+      if (ok === true) status.classList.add('ok');
+      if (ok === false) status.classList.add('err');
+    }
+
+    function safeParse(s){
+      try{
+        const obj = JSON.parse(s);
+        return { ok:true, value:obj };
+      }catch(e){
+        // Try to extract line/column from error message
+        let hint = e.message;
+        setStatus('Invalid JSON', false);
+        editor.classList.add('danger');
+        console.error('JSON parse error:', e);
+        return { ok:false, error:hint };
+      }
+    }
+
+    function pretty(){
+      const p = safeParse(editor.value);
+      if (!p.ok) return;
+      editor.value = JSON.stringify(p.value, null, 2);
+      renderTree(p.value);
+      editor.classList.remove('danger');
+      setStatus('Pretty-printed', true);
+    }
+
+    function minify(){
+      const p = safeParse(editor.value);
+      if (!p.ok) return;
+      editor.value = JSON.stringify(p.value);
+      renderTree(p.value);
+      editor.classList.remove('danger');
+      setStatus('Minified', true);
+    }
+
+    function shallowSortKeys(){
+      const p = safeParse(editor.value);
+      if (!p.ok) return;
+      const sorted = {};
+      Object.keys(p.value).sort().forEach(k => sorted[k] = p.value[k]);
+      editor.value = JSON.stringify(sorted, null, 2);
+      renderTree(sorted);
+      editor.classList.remove('danger');
+      setStatus('Keys sorted (shallow)', true);
+    }
+
+    function copyText(){
+      editor.select();
+      document.execCommand('copy');
+      setStatus('Copied to clipboard', true);
+    }
+
+    function downloadFile(){
+      const p = safeParse(editor.value);
+      if (!p.ok) return;
+      const blob = new Blob([JSON.stringify(p.value, null, 2)], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'App_config.json';
+      a.click();
+      setStatus('Downloaded App_config.json', true);
+    }
+
+    function renderTree(obj){
+      try{
+        const lines = [];
+        function walk(node, path=[]){
+          if (node && typeof node === 'object' && !Array.isArray(node)) {
+            const keys = Object.keys(node);
+            lines.push(path.join('.') || '(root)');
+            keys.forEach(k => walk(node[k], path.concat(k)));
+          } else if (Array.isArray(node)) {
+            lines.push(path.join('.') + '  [array len=' + node.length + ']');
+            node.forEach((v,i)=>walk(v, path.concat('['+i+']')));
+          } else {
+            const val = (node===null) ? 'null' : typeof node;
+            lines.push(path.join('.') + '  (' + val + ')');
+          }
+        }
+        walk(obj);
+        tree.textContent = lines.join('\n');
+      }catch(e){
+        tree.textContent = '// failed to render structure';
+      }
+    }
+
+    async function loadFromNetwork(){
+      setStatus('Loading from App_config.json …');
+      const resp = await fetch('./App_config.json', { cache: 'no-store' });
+      if (!resp.ok) throw new Error('Fetch failed: ' + resp.status);
+      const txt = await resp.text();
+      editor.value = txt;
+      const p = safeParse(txt);
+      if (p.ok){ renderTree(p.value); editor.classList.remove('danger'); setStatus('Loaded from network', true); }
+      else { setStatus('Loaded with errors (fix JSON)', false); }
+    }
+
+    function applyOverride(){
+      const p = safeParse(editor.value);
+      if (!p.ok) return;
+      localStorage.setItem(OVERRIDE_KEY, JSON.stringify(p.value));
+      setStatus('Applied to app (local override saved)', true);
+    }
+
+    function clearOverride(){
+      localStorage.removeItem(OVERRIDE_KEY);
+      setStatus('Local override cleared', true);
+    }
+
+    function handleFile(e){
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.value = String(reader.result || '');
+        const p = safeParse(editor.value);
+        if (p.ok){ renderTree(p.value); editor.classList.remove('danger'); setStatus('Loaded from file', true); }
+        else { setStatus('File loaded with errors (fix JSON)', false); }
+      };
+      reader.readAsText(f);
+    }
+
+    // keyboard save → download
+    window.addEventListener('keydown', (e)=>{
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='s'){
+        e.preventDefault(); downloadFile();
+      }
+    });
+
+    // wire buttons
+    el('prettyBtn').onclick = pretty;
+    el('minBtn').onclick = minify;
+    el('sortBtn').onclick = shallowSortKeys;
+    el('copyBtn').onclick = copyText;
+    el('downloadBtn').onclick = downloadFile;
+    el('applyBtn').onclick = applyOverride;
+    el('clearOverrideBtn').onclick = clearOverride;
+    el('fileIn').onchange = handleFile;
+    el('loadBtn').onclick = async ()=>{ try{ await loadFromNetwork(); } catch(e){ setStatus('Network load failed', false); console.error(e);} };
+    el('resetSWBtn').onclick = ()=>{ location.href = './sw-reset.html'; };
+
+    // initial: try local override, then network
+    (async function init(){
+      const raw = localStorage.getItem(OVERRIDE_KEY);
+      if (raw){
+        try{
+          const obj = JSON.parse(raw);
+          editor.value = JSON.stringify(obj, null, 2);
+          renderTree(obj);
+          setStatus('Loaded local override', true);
+          return;
+        }catch(_){}
+      }
+      try { await loadFromNetwork(); } catch(e){
+        editor.value = '{\n  "catalogs": {}\n}\n';
+        setStatus('Offline/no config — start editing', false);
+      }
+    })();
+  </script>
+  <script src="./update.js"></script>
+</body>
+</html>
