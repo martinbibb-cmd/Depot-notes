@@ -1,0 +1,15 @@
+<!doctype html>
+<html><body>
+<h3>Resetting caches & service workers…</h3>
+<script>
+(async () => {
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) { await r.unregister(); }
+    const keys = await caches.keys();
+    for (const k of keys) { await caches.delete(k); }
+  } catch (e) { console.log(e); }
+  location.href = './?reset=' + Date.now();
+})();
+</script>
+</body></html>
