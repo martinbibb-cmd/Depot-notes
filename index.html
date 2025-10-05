@@ -102,7 +102,60 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
   });
 }
+<script>
+async function loadConfig() {
+  // Always fresh because SW sets no-store for App_config.json
+  const resp = await fetch('./App_config.json', { cache: 'no-store' });
+  if (!resp.ok) throw new Error('Failed to load App_config.json');
+  return resp.json();
+}
 
+// Turn the “catalogs.system_characteristics” tree into section items
+function flattenSystemCharacteristics(cfg) {
+  const root = cfg.catalogs?.system_characteristics;
+  if (!root || !Array.isArray(root.children)) return {};
+
+  const sections = {}; // { sectionKey: [{code, text}] }
+
+  function walk(node, path=[]) {
+    if (node.type === 'group' && Array.isArray(node.children)) {
+      node.children.forEach(child => walk(child, path.concat(node.label)));
+      return;
+    }
+    if (node.type === 'single' && Array.isArray(node.options)) {
+      const sectionKey = 'system_characteristics';   // or split into sub-sections if you prefer
+      if (!sections[sectionKey]) sections[sectionKey] = [];
+      node.options.forEach(opt => {
+        sections[sectionKey].push({
+          code: node.id || opt,                      // use the id (e.g. S01, S04.type) as short code base
+          text: `${node.label}: ${opt}`              // user-facing phrase
+        });
+      });
+    }
+  }
+  walk(root);
+  return sections;
+}
+
+(async () => {
+  const cfg = await loadConfig();
+  const sysSections = flattenSystemCharacteristics(cfg);
+
+  // Merge with your existing PHRASE_BANK (keeps your “needs” etc.)
+  window.PHRASE_BANK = window.PHRASE_BANK || {};
+  Object.assign(window.PHRASE_BANK, sysSections);
+
+  // Ensure the section order includes the new key(s)
+  window.SECTION_ORDER = (window.SECTION_ORDER || []);
+  if (!window.SECTION_ORDER.includes('system_characteristics')) {
+    window.SECTION_ORDER.unshift('system_characteristics'); // put it first; move as you like
+  }
+
+  // Rebuild the UI using your existing functions
+  if (typeof populateSectionSelect === 'function') populateSectionSelect();
+  if (typeof renderSectionItems === 'function') renderSectionItems();
+})();
+</script>
 // ====== Data ======
 const PHRASE_BANK = {
   "needs": [
