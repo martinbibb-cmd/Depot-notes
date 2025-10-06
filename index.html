@@ -1,379 +1,335 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Depot Notes — Options Picker</title>
-  <style>
-    :root { --bg:#0f172a; --panel:#0b1222; --muted:#93a4c8; --text:#e6ecff; --chip:#1f2b46; --accent:#9ec1ff; }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui, -apple-system, Segoe UI, Roboto, Arial}
-    .wrap{max-width:980px;margin:24px auto;padding:0 16px}
-    h1{font-size:20px;margin:0 0 16px}
-    .card{background:var(--panel);border:1px solid #1b2440;border-radius:14px;padding:14px;margin:12px 0}
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .row > *{flex:0 0 auto}
-    select,input[type="text"],textarea{background:#0f1a33;border:1px solid #22305b;color:var(--text);border-radius:10px;padding:10px}
-    select{min-width:240px}
-    textarea{width:100%;min-height:140px;resize:vertical}
-    button{background:#1a2650;border:1px solid #2a3c7a;color:#eaf1ff;padding:10px 12px;border-radius:10px;cursor:pointer}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    .btn-accent{background:#21407c;border-color:#3b63b3}
-    .muted{color:var(--muted);font-size:13px}
-    .pill{background:var(--chip);padding:4px 8px;border-radius:999px;font-size:12px;color:#cfe0ff}
-    .list label{display:block;background:#0e1a35;border:1px solid #1e2b55;border-radius:12px;margin:6px 0;padding:10px 12px;cursor:pointer}
-    .list input{transform:translateY(1px)}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
-    .grow{flex:1 1 200px}
-    .titlebar{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-    code{background:#0f1a33;border:1px solid #22305b;padding:1px 6px;border-radius:6px}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Depot Notes – Picker</title>
+<style>
+  :root { --fg:#111; --muted:#666; --bg:#fff; --ui:#f4f4f4; --line:#ddd; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--fg); background:var(--bg); }
+  header { padding:16px; border-bottom:1px solid var(--line); background:var(--ui); }
+  h1 { margin:0 0 6px; font-size:18px; }
+  .container { max-width:1100px; margin:0 auto; padding:16px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; }
+  .col { flex:1 1 360px; min-width:320px; }
+  label { display:block; font-weight:600; margin:6px 0; }
+  select, input[type="text"], textarea { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background: #fff; }
+  select[multiple] { height:440px; }
+  .controls { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 12px; }
+  button { padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:6px; cursor:pointer; }
+  button:hover { background:#f9f9f9; }
+  .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:#eee; border:1px solid var(--line); }
+  .out { width:100%; min-height:140px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .muted { color:var(--muted); font-size:13px; }
+  details { margin-top:28px; border-top:1px dashed var(--line); padding-top:12px; }
+  summary { font-weight:700; cursor:pointer; }
+  .divider { color:#999; }
+  .sticky { position:sticky; top:12px; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>Depot Notes — Options loader & picker</h1>
+<header>
+  <h1>Depot Notes – Picker</h1>
+  <div class="muted">Fast picker for sections. Advanced editing is hidden below.</div>
+</header>
 
-    <!-- IMPORT: plain text (options.txt) -->
-    <div class="card">
-      <div class="titlebar">
-        <strong>Import from plain text (Options.txt)</strong>
-        <span class="muted">Format: <code>[section_key]</code> then lines like <code>CODE | Label</code>. Lines starting with <code>#</code> are comments.</span>
+<div class="container">
+
+  <div class="row">
+    <div class="col sticky">
+      <label for="section-select">Section</label>
+      <select id="section-select"></select>
+
+      <div class="controls">
+        <input id="filter" type="text" placeholder="Filter visible options…" />
+        <button id="btn-select-all" class="pill" title="Select all visible">Select all (visible)</button>
+        <button id="btn-clear" class="pill" title="Clear selection">Clear</button>
       </div>
-      <textarea id="options-src" placeholder="[system_type]
-ST-COMBI | Combi boiler
-ST-SYSTEM | System (with cylinder)"></textarea>
-      <div class="toolbar">
-        <button id="btn-parse" class="btn-accent">Parse text → JSON</button>
-        <input id="file-open" type="file" accept=".txt,text/plain" style="display:none">
-        <button id="btn-open">Open .txt file…</button>
-        <button id="btn-load">Load Options.txt (auto)</button>
-        <span id="load-status" class="muted"></span>
-      </div>
-      <div class="muted">Tip: keep your master list in <strong>Options.txt</strong> (same folder as this page), or paste it above and hit “Parse”.</div>
+
+      <label for="options-list">Options</label>
+      <select id="options-list" multiple></select>
+      <div class="muted">Tip: hold Ctrl/Cmd to select multiple items.</div>
     </div>
 
-    <!-- PICKER -->
-    <div class="card">
-      <h2 style="margin:0 0 8px">Depot Notes Picker</h2>
-      <div class="toolbar">
-        <label class="muted">Section</label>
-        <select id="section-select"></select>
-        <button id="btn-next">Next section ➜</button>
-        <input id="filter" class="grow" type="text" placeholder="Filter within section… (e.g., plume)">
+    <div class="col">
+      <label for="output">Copy Box Output (; line breaks)</label>
+      <textarea id="output" class="out" readonly></textarea>
+      <div class="controls">
+        <label><input type="checkbox" id="include-headers" /> Include section headers</label>
+        <button id="btn-copy">Copy</button>
+        <button id="btn-rebuild">Rebuild from selection</button>
       </div>
 
-      <div class="toolbar">
-        <button id="btn-all">Select all (visible)</button>
-        <button id="btn-clear">Clear section</button>
-        <span id="sel-count" class="pill">0 selected</span>
+      <label for="json-output">JSON (current section)</label>
+      <textarea id="json-output" class="out" readonly></textarea>
+      <div class="controls">
+        <button id="btn-json-copy">Copy JSON</button>
       </div>
-
-      <div id="section-title" class="muted" style="margin:4px 0 6px"></div>
-      <div id="items-list" class="list"></div>
-    </div>
-
-    <!-- COPY BOX -->
-    <div class="card">
-      <h3 style="margin:0 0 8px">Copy Box Output (; line breaks)</h3>
-      <div class="toolbar">
-        <button id="btn-copy" class="btn-accent">Copy ;-lines</button>
-        <label><input id="inc-headers" type="checkbox" checked> Include section headers</label>
-      </div>
-      <textarea id="copy-out" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
+      <div class="muted">Dividers are ignored in JSON. Sub-items are included under <code>subcategories</code>.</div>
     </div>
   </div>
 
-  <script>
-    // ---------- tiny utils ----------
-    const $ = sel => document.querySelector(sel);
-    function niceTitle(key){ return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
+  <!-- Advanced editor hidden by default -->
+  <details>
+    <summary>Advanced / Editor (hidden by default)</summary>
+    <p class="muted">Paste/modify <code>options.txt</code> here to preview without touching the live file. Nothing is saved automatically.</p>
+    <div class="row">
+      <div class="col">
+        <label for="txt-editor">options.txt (preview / local)</label>
+        <textarea id="txt-editor" style="height:320px" placeholder="Customer Needs:\n[Water & Hot Water]\nCN01|Better water pressure\n..."></textarea>
+        <div class="controls">
+          <button id="btn-load-remote">Load from options.txt</button>
+          <button id="btn-apply-local">Apply this text</button>
+          <button id="btn-reset">Reset to remote</button>
+        </div>
+      </div>
+      <div class="col">
+        <label for="parsed-preview">Parsed (debug)</label>
+        <textarea id="parsed-preview" class="out" style="height:320px" readonly></textarea>
+      </div>
+    </div>
+  </details>
 
-    // ---------- state ----------
-    const State = {
-      db: {},                 // { section: [{code,label}] }
-      order: [],              // section order
-      idx: 0,                 // current section index
-      selected: new Map(),    // section -> Set of code strings
-    };
+</div>
 
-    // ---------- parser ----------
-    function parseOptionsTxt(txt){
-      const db = {}; let section = null;
-      for (const raw of txt.split(/\r?\n/)){
-        const line = raw.trim();
-        if (!line || line.startsWith('#')) continue;
-        const sec = line.match(/^\[([^\]]+)\]$/);
-        if (sec){ section = sec[1].trim(); db[section] = []; continue; }
-        if (!section) continue;
-        const parts = line.split('|').map(s => s.trim());
-if (parts.length >= 2) {
-  const code = parts[0];
-  const label = parts[1] || '';
-  const subcategories = parts.slice(2).filter(Boolean); // NEW
+<script>
+// ------------------------------
+// Data loading & parsing
+// ------------------------------
+const State = {
+  sections: {},        // { SectionName: [entries...] }
+  order: [],           // section order as found
+  current: null,       // current section name
+  rawTxt: '',          // last loaded options.txt
+};
 
-  if (code) {
-    db[section].push({
-      code,
-      label,
-      subcategories: subcategories.length ? subcategories : null // NEW
-    });
-  }
+async function fetchTxt(url) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load options.txt');
+  return await res.text();
 }
+
+// Parse options.txt format:
+// "Section Name:"    -> start of section
+// "[Category Name]"  -> divider line (non-selectable)
+// "CODE|Label|Sub1|Sub2..." -> item with optional subcategories
+function parseOptionsText(txt) {
+  const db = {};
+  let section = null;
+
+  for (const raw of txt.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('//') || line.startsWith(';')) continue;
+
+    // Section: "Customer Needs:"
+    const secColon = line.match(/^(.+?):$/);
+    if (secColon) {
+      section = secColon[1].trim();
+      if (!db[section]) db[section] = [];
+      continue;
+    }
+    if (!section) continue; // ignore junk before first section
+
+    // Divider: "[Water & Hot Water]"
+    const cat = line.match(/^\[([^\]]+)\]$/);
+    if (cat) {
+      db[section].push({ type: 'divider', label: cat[1].trim() });
+      continue;
+    }
+
+    // Item: code|label|...extras
+    const parts = line.split('|').map(s => s.trim());
+    if (parts.length >= 2) {
+      const code = parts[0];
+      const label = parts[1] || '';
+      const extras = parts.slice(2).filter(Boolean);
+      if (code) {
+        db[section].push({
+          type: 'item',
+          code,
+          label,
+          subcategories: extras.length ? extras : null
+        });
       }
-      return db;
     }
+  }
+  return db;
+}
 
-    // ---------- rendering ----------
-    function populateSectionDropdown(){
-      const sel = $('#section-select');
-      sel.innerHTML = '';
-      State.order.forEach(k => {
-        const opt = document.createElement('option');
-        opt.value = k; opt.textContent = k;
-        sel.appendChild(opt);
-      });
-      sel.value = State.order[State.idx] || '';
+// ------------------------------
+// Rendering
+// ------------------------------
+function $(sel){ return document.querySelector(sel); }
+
+function populateSectionDropdown() {
+  const sel = $('#section-select');
+  sel.innerHTML = '';
+  State.order = Object.keys(State.sections);
+  State.order.forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k; opt.textContent = k;
+    sel.appendChild(opt);
+  });
+  if (!State.current) State.current = State.order[0] || null;
+  sel.value = State.current || '';
+}
+
+function buildOptionsForCurrent(filterText='') {
+  const list = $('#options-list');
+  const items = (State.sections[State.current] || []);
+  const q = (filterText || '').toLowerCase();
+  list.innerHTML = '';
+
+  // Add options (parent + sub-items), dividers disabled
+  const addOption = (value, text, disabled=false) => {
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = text;
+    if (disabled) o.disabled = true;
+    list.appendChild(o);
+  };
+
+  items.forEach(entry => {
+    if (entry.type === 'divider') {
+      const txt = `— ${entry.label} —`;
+      if (!q || txt.toLowerCase().includes(q)) addOption('', txt, true);
+      return;
     }
+    if (entry.type === 'item') {
+      const labelTxt = entry.label || entry.code;
+      const parentMatches = !q || labelTxt.toLowerCase().includes(q);
 
-    function applyFilter(text){
-      $('#filter').value = text || '';
-      renderCurrentSection();
-    }
+      if (parentMatches) addOption(entry.code, labelTxt, false);
 
-    function getVisibleItems(items, filterText){
-      if (!filterText) return items;
-      const q = filterText.trim().toLowerCase();
-      return items.filter(it => it.label.toLowerCase().includes(q) || it.code.toLowerCase().includes(q));
-    }
-
-    function updateSelectedChip(){
-      const key = State.order[State.idx];
-      const set = State.selected.get(key) || new Set();
-      $('#sel-count').textContent = `${set.size} selected`;
-    }
-// Render an <option> list with optional sub-items (backward compatible)
-function addOptionsWithSubcategories(selectEl, items) {
-  // clear existing
-  while (selectEl.firstChild) selectEl.removeChild(selectEl.firstChild);
-
-  // placeholder
-  const ph = document.createElement('option');
-  ph.value = '';
-  ph.disabled = true;
-  ph.selected = true;
-  ph.textContent = 'Select…';
-  selectEl.appendChild(ph);
-
-addOptionsWithSubcategories(sel, items);
-
-    // subcategories (NEW)
-    if (Array.isArray(it.subcategories) && it.subcategories.length) {
-      it.subcategories.forEach(sub => {
-        const subOpt = document.createElement('option');
-        subOpt.value = it.code; // or `${it.code}:${sub}` for unique IDs
-        subOpt.textContent = `↳ ${it.label} — ${sub}`;
-        selectEl.appendChild(subOpt);
-      });
+      if (Array.isArray(entry.subcategories) && entry.subcategories.length) {
+        entry.subcategories.forEach(sub => {
+          const subTxt = `↳ ${labelTxt} — ${sub}`;
+          if (!q || subTxt.toLowerCase().includes(q)) {
+            // keep same value for backward-compat; change to `${entry.code}:${sub}` if you want unique values
+            addOption(entry.code, subTxt, false);
+          }
+        });
+      }
     }
   });
 }
-    function renderCurrentSection(){
-      const key = State.order[State.idx];
-      const container = $('#items-list');
-      const title = $('#section-title');
-      title.textContent = niceTitle(key || '');
 
-      container.innerHTML = '';
-      if (!key) return;
+function selectedValuesToCopy() {
+  const list = $('#options-list');
+  const selected = [...list.selectedOptions].map(o => o.textContent).filter(Boolean);
+  const secHead = $('#include-headers').checked ? (State.current + ':') : null;
+  const lines = [];
+  if (secHead) lines.push(secHead);
+  lines.push(...selected);
+  return lines.join(';\n');
+}
 
-      const items = State.db[key] || [];
-      const filtered = getVisibleItems(items, $('#filter').value);
+function exportSectionToJson(sectionName) {
+  const items = (State.sections[sectionName] || []);
+  const arr = items
+    .filter(it => it && it.type === 'item' && it.code)
+    .map(it => ({
+      code: it.code,
+      label: it.label,
+      subcategories: it.subcategories || []
+    }));
+  return JSON.stringify(arr, null, 2);
+}
 
-      const selectedSet = State.selected.get(key) || new Set();
+// ------------------------------
+// Events
+// ------------------------------
+$('#section-select').addEventListener('change', e => {
+  State.current = e.target.value;
+  buildOptionsForCurrent($('#filter').value);
+  $('#json-output').value = exportSectionToJson(State.current);
+});
 
-      filtered.forEach(({code, label})=>{
-        const row = document.createElement('label');
-        row.style.display = 'block';
-        row.style.margin = '6px 0';
-        row.style.padding = '8px 10px';
-        row.style.borderRadius = '10px';
-        row.style.background = 'rgba(255,255,255,.04)';
+$('#filter').addEventListener('input', e => {
+  buildOptionsForCurrent(e.target.value);
+});
 
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = selectedSet.has(code);
-        cb.addEventListener('change', ()=>{
-          const set = State.selected.get(key) || new Set();
-          if (cb.checked) set.add(code); else set.delete(code);
-          State.selected.set(key, set);
-          updateSelectedChip();
-          buildCopyBox(); // keep output live
-        });
+$('#btn-select-all').addEventListener('click', () => {
+  const list = $('#options-list');
+  [...list.options].forEach(o => { if (!o.disabled) o.selected = true; });
+  $('#output').value = selectedValuesToCopy();
+});
 
-        const span = document.createElement('span');
-        span.textContent = ' ' + label;
+$('#btn-clear').addEventListener('click', () => {
+  const list = $('#options-list');
+  [...list.options].forEach(o => o.selected = false);
+  $('#output').value = '';
+});
 
-        row.appendChild(cb);
-        row.appendChild(span);
-        container.appendChild(row);
-      });
+$('#btn-rebuild').addEventListener('click', () => {
+  $('#output').value = selectedValuesToCopy();
+});
 
-      updateSelectedChip();
-    }
+$('#btn-copy').addEventListener('click', async () => {
+  const text = $('#output').value || selectedValuesToCopy();
+  try { await navigator.clipboard.writeText(text); } catch {}
+});
 
-    // ---------- copy box ----------
-    function buildCopyBox(){
-      const includeHeaders = $('#inc-headers').checked;
-      const chunks = [];
+$('#btn-json-copy').addEventListener('click', async () => {
+  const text = $('#json-output').value;
+  try { await navigator.clipboard.writeText(text); } catch {}
+});
 
-      State.order.forEach(sec=>{
-        const set = State.selected.get(sec);
-        if (!set || set.size === 0) return;
+// Advanced/editor actions
+$('#btn-load-remote').addEventListener('click', async () => {
+  try {
+    const txt = await fetchTxt('options.txt');
+    $('#txt-editor').value = txt;
+  } catch (e) {
+    $('#txt-editor').value = `Error: ${e.message}`;
+  }
+});
 
-        const labels = (State.db[sec]||[])
-          .filter(it => set.has(it.code))
-          .map(it => it.label);
+$('#btn-apply-local').addEventListener('click', () => {
+  const local = $('#txt-editor').value || '';
+  try {
+    const parsed = parseOptionsText(local);
+    State.sections = parsed;
+    State.current = Object.keys(parsed)[0] || null;
+    populateSectionDropdown();
+    buildOptionsForCurrent($('#filter').value);
+    $('#json-output').value = exportSectionToJson(State.current);
+    $('#parsed-preview').value = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    $('#parsed-preview').value = `Parse error: ${e.message}`;
+  }
+});
 
-        if (labels.length === 0) return;
+$('#btn-reset').addEventListener('click', async () => {
+  await init(); // reload from remote
+  $('#txt-editor').value = State.rawTxt;
+  $('#parsed-preview').value = '';
+});
 
-        if (includeHeaders){
-          chunks.push(`${niceTitle(sec)}: ${labels.join(' ; ')}`);
-        } else {
-          chunks.push(labels.join(' ; '));
-        }
-      });
-
-      $('#copy-out').value = chunks.join('\n');
-    }
-
-    async function copyToClipboard(){
-      buildCopyBox();
-      const text = $('#copy-out').value;
-      try {
-        await navigator.clipboard.writeText(text);
-        $('#btn-copy').textContent = 'Copied ✓';
-        setTimeout(()=>{$('#btn-copy').textContent='Copy ;-lines';}, 1200);
-      } catch {
-        // iOS fallback: select + prompt user
-        $('#copy-out').focus();
-        $('#copy-out').select();
-      }
-    }
-
-    // ---------- load helpers ----------
-    async function fetchOptionsTxtAuto(){
-      const status = $('#load-status');
-      const candidates = [
-        './Options.txt?v=' + Date.now(),
-        './data/Options.txt?v=' + Date.now(),
-        './config/Options.txt?v=' + Date.now()
-      ];
-      let lastErr;
-      for (const url of candidates){
-        try{
-          status.textContent = `Trying ${url.replace(/\?.*/,'')} …`;
-          const res = await fetch(url, { cache:'no-store' });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const txt = await res.text();
-          if (!/\[[^\]]+\]/.test(txt)) throw new Error('File does not look like Options.txt format');
-          status.textContent = `Loaded from ${url.replace(/\?.*/,'')}`;
-          return txt;
-        }catch(e){ lastErr = e; }
-      }
-      status.textContent = '';
-      throw lastErr || new Error('Could not find Options.txt');
-    }
-
-    function applyDatabase(db){
-      State.db = db;
-      State.order = Object.keys(db);
-      State.idx = 0;
-      State.selected = new Map(); // reset selections
-      populateSectionDropdown();
-      renderCurrentSection();
-      buildCopyBox();
-    }
-
-    // ---------- wire UI ----------
-    function wireUI(){
-      $('#btn-parse').addEventListener('click', ()=>{
-        const txt = $('#options-src').value || '';
-        const db = parseOptionsTxt(txt);
-        applyDatabase(db);
-      });
-
-      $('#btn-open').addEventListener('click', ()=>$('#file-open').click());
-      $('#file-open').addEventListener('change', async (e)=>{
-        const f = e.target.files[0];
-        if (!f) return;
-        const txt = await f.text();
-        $('#options-src').value = txt;
-        const db = parseOptionsTxt(txt);
-        applyDatabase(db);
-      });
-
-      $('#btn-load').addEventListener('click', async ()=>{
-        try{
-          const txt = await fetchOptionsTxtAuto();
-          $('#options-src').value = txt;      // keep a visible copy
-          const db = parseOptionsTxt(txt);
-          applyDatabase(db);
-        }catch(e){
-          alert('Could not load Options.txt — check it is next to index.html (case-sensitive). ' + e);
-        }
-      });
-
-      $('#section-select').addEventListener('change', (e)=>{
-        const val = e.target.value;
-        const idx = State.order.indexOf(val);
-        if (idx >= 0) State.idx = idx;
-        renderCurrentSection();
-      });
-
-      $('#btn-next').addEventListener('click', (e)=>{
-        e.preventDefault?.();
-        if (State.order.length === 0) return;
-        State.idx = (State.idx + 1) % State.order.length;
-        $('#section-select').value = State.order[State.idx];
-        renderCurrentSection();
-      });
-
-      $('#filter').addEventListener('input', ()=>renderCurrentSection());
-
-      $('#btn-all').addEventListener('click', ()=>{
-        const key = State.order[State.idx];
-        const items = State.db[key] || [];
-        const visible = getVisibleItems(items, $('#filter').value);
-        const set = State.selected.get(key) || new Set();
-        visible.forEach(({code})=> set.add(code));
-        State.selected.set(key, set);
-        renderCurrentSection();
-        buildCopyBox();
-      });
-
-      $('#btn-clear').addEventListener('click', ()=>{
-        const key = State.order[State.idx];
-        State.selected.set(key, new Set());
-        renderCurrentSection();
-        buildCopyBox();
-      });
-
-      $('#inc-headers').addEventListener('change', buildCopyBox);
-      $('#btn-copy').addEventListener('click', copyToClipboard);
-    }
-
-    // ---------- boot ----------
-    document.addEventListener('DOMContentLoaded', async ()=>{
-      wireUI();
-      // Try to auto-load Options.txt on first load; if it fails the user can paste or open a file
-      try{
-        const txt = await fetchOptionsTxtAuto();
-        $('#options-src').value = txt;
-        applyDatabase(parseOptionsTxt(txt));
-      }catch(_e){
-        // silent; user can paste and press Parse
-      }
-    });
-  </script>
+// ------------------------------
+// Boot
+// ------------------------------
+async function init() {
+  const txt = await fetchTxt('options.txt').catch(()=>'');
+  if (txt) {
+    State.rawTxt = txt;
+    State.sections = parseOptionsText(txt);
+  } else {
+    // Minimal fallback so the UI still loads
+    const fallback = `Customer Needs:
+[Water & Hot Water]
+CN01|Better water pressure
+CN02|Faster hot water delivery`;
+    State.rawTxt = fallback;
+    State.sections = parseOptionsText(fallback);
+  }
+  State.current = Object.keys(State.sections)[0] || null;
+  populateSectionDropdown();
+  buildOptionsForCurrent('');
+  $('#json-output').value = exportSectionToJson(State.current);
+}
+init();
+</script>
 </body>
 </html>
