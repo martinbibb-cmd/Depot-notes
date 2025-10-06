@@ -1,1281 +1,346 @@
-<section class="card">
-  <h2 style="margin:0;font-size:16px;">Import from plain text (options.txt)</h2>
-  <p class="muted">Format: one section per [section_key], items as <code>CODE | Text</code>. Lines starting with <code>#</code> are comments.</p>
-  <textarea id="txtInput" placeholder="[system_type]
-ST-COMBI | Combi boiler
-ST-SYSTEM | System (with cylinder)"></textarea>
-  <div class="flex" style="margin-top:8px;">
-    <button class="btn" id="btnParseTxt">Parse text → JSON</button>
-    <button class="btn ghost" id="btnLoadTxtFile">Open .txt file…</button>
-    <input type="file" id="txtFile" accept=".txt,text/plain" style="display:none;">
-  </div>
-  <p class="muted">Tip: keep your master list in a plain <code>options.txt</code>, paste it here to sync JSON.</p>
-</section>
-<! DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Depot Notes Picker</title>
-  <meta name="theme-color" content="#0b1220" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Depot Notes — Options Picker</title>
   <style>
-    :root { --gap:12px; --radius:12px; }
-    * { box-sizing:border-box }
-    body{
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
-                   "Apple Color Emoji","Segoe UI Emoji";
-      margin:0; padding:0; background:#0b1220; color:#e6ecff;
-    }
-    header.app{
-      position:sticky; top:0; z-index:20; backdrop-filter: blur(8px);
-      background:rgba(11,18,32,0.85);
-      border-bottom:1px solid rgba(255,255,255,0.08);
-      padding:10px var(--gap);
-    }
-    h1{ font-size:18px; margin:4px 0 }
-    .bar{ display:flex; flex-wrap:wrap; gap:var(--gap); align-items:center }
-    select, input[type="search"]{
-      padding:10px 12px; border-radius:10px; background:#0f172a; color:#e5e7eb;
-      border:1px solid rgba(255,255,255,0.12); outline:none;
-    }
-    .btn{
-      border:1px solid rgba(255,255,255,0.14);
-      background:#111827; color:#e5e7eb; padding:9px 12px; border-radius:10px;
-      cursor:pointer; font-weight:600;
-    }
-    .btn:hover{ background:#1f2937 }
-    .container{ display:grid; grid-template-columns:1fr; gap:var(--gap); padding:var(--gap) }
-    @media (min-width:980px){ .container{ grid-template-columns:1fr 420px; align-items:start } }
-    .panel{
-      border:1px solid rgba(255,255,255,0.12); background:#0f172a; border-radius:var(--radius);
-      overflow:hidden;
-    }
-    .panel header{ position:unset; background:transparent; border:none; padding:12px }
-    .panel h2{ margin:0; font-size:16px }
-    .list{ display:flex; flex-direction:column; gap:8px; padding:12px; max-height:60vh; overflow:auto }
-    .item{ display:flex; gap:10px; padding:10px; border:1px solid rgba(255,255,255,0.08); background:#0b132a; border-radius:10px }
-    .row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap }
-    .meta{ opacity:0.75; font-size:12px }
-    .pill{ display:inline-block; padding:4px 8px; border-radius:999px; background:#1f2937; font-size:12px }
-    textarea{
-      width:100%; min-height:160px; max-height:280px; padding:12px; border-radius:10px;
-      border:1px solid rgba(255,255,255,0.12); background:#0f172a; color:#e2e8f0;
-    }
-    .hint{ font-size:12px; opacity:0.8 }
+    :root { --bg:#0f172a; --panel:#0b1222; --muted:#93a4c8; --text:#e6ecff; --chip:#1f2b46; --accent:#9ec1ff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui, -apple-system, Segoe UI, Roboto, Arial}
+    .wrap{max-width:980px;margin:24px auto;padding:0 16px}
+    h1{font-size:20px;margin:0 0 16px}
+    .card{background:var(--panel);border:1px solid #1b2440;border-radius:14px;padding:14px;margin:12px 0}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .row > *{flex:0 0 auto}
+    select,input[type="text"],textarea{background:#0f1a33;border:1px solid #22305b;color:var(--text);border-radius:10px;padding:10px}
+    select{min-width:240px}
+    textarea{width:100%;min-height:140px;resize:vertical}
+    button{background:#1a2650;border:1px solid #2a3c7a;color:#eaf1ff;padding:10px 12px;border-radius:10px;cursor:pointer}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .btn-accent{background:#21407c;border-color:#3b63b3}
+    .muted{color:var(--muted);font-size:13px}
+    .pill{background:var(--chip);padding:4px 8px;border-radius:999px;font-size:12px;color:#cfe0ff}
+    .list label{display:block;background:#0e1a35;border:1px solid #1e2b55;border-radius:12px;margin:6px 0;padding:10px 12px;cursor:pointer}
+    .list input{transform:translateY(1px)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+    .grow{flex:1 1 200px}
+    .titlebar{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+    code{background:#0f1a33;border:1px solid #22305b;padding:1px 6px;border-radius:6px}
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <h1>Depot Notes — Options loader & picker</h1>
 
-  <header class="app">
-    <h1>Depot Notes Picker</h1>
-    <div class="bar">
-      <label class="hint">Section</label>
-      <select id="sectionSelect" aria-label="Choose section"></select>
-      <button class="btn" id="nextSectionBtn" title="Go to next section">Next section ➜</button>
-      <input id="search" type="search" placeholder="Filter within section… (e.g., 'loft', 'N12')" />
-      <button class="btn" id="selectAllVisible">Select all (visible)</button>
-      <button class="btn" id="clearSection">Clear section</button>
-      <span class="meta" id="countMeta">0 selected</span>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="panel" id="itemsPanel">
-      <header>
-        <div class="row">
-          <h2 id="sectionTitle">Section</h2>
-          <span class="pill" id="sectionPill">0 selected</span>
-        </div>
-      </header>
-      <div class="list" id="itemsList"></div>
-    </div>
-
-    <div class="panel">
-      <header><h2>Copy Box Output (; line breaks)</h2></header>
-      <div class="list" style="max-height:none">
-        <div class="row">
-          <button class="btn" id="copySemiBtn">Copy ;-lines</button>
-          <label class="row hint" style="gap:6px">
-            <input type="checkbox" id="includeHeaders" checked />
-            Include section headers
-          </label>
-        </div>
-        <textarea id="semiOutput" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
+    <!-- IMPORT: plain text (options.txt) -->
+    <div class="card">
+      <div class="titlebar">
+        <strong>Import from plain text (Options.txt)</strong>
+        <span class="muted">Format: <code>[section_key]</code> then lines like <code>CODE | Label</code>. Lines starting with <code>#</code> are comments.</span>
       </div>
+      <textarea id="options-src" placeholder="[system_type]
+ST-COMBI | Combi boiler
+ST-SYSTEM | System (with cylinder)"></textarea>
+      <div class="toolbar">
+        <button id="btn-parse" class="btn-accent">Parse text → JSON</button>
+        <input id="file-open" type="file" accept=".txt,text/plain" style="display:none">
+        <button id="btn-open">Open .txt file…</button>
+        <button id="btn-load">Load Options.txt (auto)</button>
+        <span id="load-status" class="muted"></span>
+      </div>
+      <div class="muted">Tip: keep your master list in <strong>Options.txt</strong> (same folder as this page), or paste it above and hit “Parse”.</div>
+    </div>
+
+    <!-- PICKER -->
+    <div class="card">
+      <h2 style="margin:0 0 8px">Depot Notes Picker</h2>
+      <div class="toolbar">
+        <label class="muted">Section</label>
+        <select id="section-select"></select>
+        <button id="btn-next">Next section ➜</button>
+        <input id="filter" class="grow" type="text" placeholder="Filter within section… (e.g., plume)">
+      </div>
+
+      <div class="toolbar">
+        <button id="btn-all">Select all (visible)</button>
+        <button id="btn-clear">Clear section</button>
+        <span id="sel-count" class="pill">0 selected</span>
+      </div>
+
+      <div id="section-title" class="muted" style="margin:4px 0 6px"></div>
+      <div id="items-list" class="list"></div>
+    </div>
+
+    <!-- COPY BOX -->
+    <div class="card">
+      <h3 style="margin:0 0 8px">Copy Box Output (; line breaks)</h3>
+      <div class="toolbar">
+        <button id="btn-copy" class="btn-accent">Copy ;-lines</button>
+        <label><input id="inc-headers" type="checkbox" checked> Include section headers</label>
+      </div>
+      <textarea id="copy-out" placeholder="e.g., 'Needs: phrase ; phrase ; …'"></textarea>
     </div>
   </div>
 
   <script>
-    // Register service worker (PWA)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
-    }
+    // ---------- tiny utils ----------
+    const $ = sel => document.querySelector(sel);
+    function niceTitle(key){ return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
 
-    // ========= Data & State =========
-    // Starter bank so UI isn't empty if JSON fails
-    const PHRASE_BANK = {
-      needs: [
-        { code: 'N01', text: 'Customer wants improved hot water performance' },
-        { code: 'N02', text: 'Customer requested quieter boiler operation' }
-      ]
+    // ---------- state ----------
+    const State = {
+      db: {},                 // { section: [{code,label}] }
+      order: [],              // section order
+      idx: 0,                 // current section index
+      selected: new Map(),    // section -> Set of code strings
     };
-    const SECTION_ORDER = ['needs']; // JSON sections will be unshifted in front
-    const selections = {};           // { sectionKey: Set<string> }
-    let currentSection = SECTION_ORDER[0];
 
-    // ========= Helpers =========
-    function ensureBucket(section){ if(!selections[section]) selections[section] = new Set(); }
-    function toTitle(s){ return String(s).replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()); }
-
-    function labelOf(sectionKey){
-      if (!sectionKey) return 'Section';
-      if (sectionKey.startsWith('system_characteristics__')) {
-        const tail = sectionKey.slice('system_characteristics__'.length);
-        return toTitle(tail); // Show just the subgroup name
+    // ---------- parser ----------
+    function parseOptionsTxt(txt){
+      const db = {}; let section = null;
+      for (const raw of txt.split(/\r?\n/)){
+        const line = raw.trim();
+        if (!line || line.startsWith('#')) continue;
+        const sec = line.match(/^\[([^\]]+)\]$/);
+        if (sec){ section = sec[1].trim(); db[section] = []; continue; }
+        if (!section) continue;
+        const parts = line.split('|');
+        if (parts.length >= 2){
+          const code = parts[0].trim();
+          const label = parts.slice(1).join('|').trim();
+          if (code) db[section].push({ code, label });
+        }
       }
-      if (sectionKey === 'system_characteristics') return 'System Characteristics';
-      return toTitle(sectionKey);
+      return db;
     }
 
-    function filterItems(items, q){
-      if(!q) return items;
-      const s = q.trim().toLowerCase();
-      return items.filter(it => (it.code + ' ' + it.text).toLowerCase().includes(s));
-    }
-
-    function buildSemicolonText(){
-      const includeHeaders = document.getElementById('includeHeaders').checked;
-      let out = '';
-      SECTION_ORDER.forEach(section => {
-        const chosen = [...(selections[section] || [])];
-        if (chosen.length === 0) return;
-        const phrases = (PHRASE_BANK[section] || []).filter(it => chosen.includes(it.code));
-        if (phrases.length === 0) return;
-        if (includeHeaders) out += `${labelOf(section)}: `;
-        out += phrases.map(p => p.text).join(' ; ');
-        out += ' ;\n';
-      });
-      document.getElementById('semiOutput').value = out.trim();
-      return out.trim();
-    }
-
-    function updateTotals(){
-      const n = selections[currentSection]?.size || 0;
-      document.getElementById('sectionPill').textContent = `${n} selected`;
-      let total = 0; Object.values(selections).forEach(s => total += s.size);
-      document.getElementById('countMeta').textContent = `${total} selected`;
-    }
-
-    // ========= Rendering =========
-    function populateSectionSelect(){
-      const sel = document.getElementById('sectionSelect');
-
-      // If SECTION_ORDER empty, rebuild from PHRASE_BANK keys
-      if (!Array.isArray(SECTION_ORDER) || SECTION_ORDER.length === 0) {
-        Object.keys(PHRASE_BANK).forEach(k => SECTION_ORDER.push(k));
-      }
-
-      // Ensure currentSection is valid
-      if (!PHRASE_BANK[currentSection]) {
-        currentSection = SECTION_ORDER.find(k => PHRASE_BANK[k]) || SECTION_ORDER[0];
-      }
-
+    // ---------- rendering ----------
+    function populateSectionDropdown(){
+      const sel = $('#section-select');
       sel.innerHTML = '';
-      SECTION_ORDER.forEach(k => {
-        if (!PHRASE_BANK[k] || PHRASE_BANK[k].length === 0) return;
+      State.order.forEach(k => {
         const opt = document.createElement('option');
-        opt.value = k; opt.textContent = labelOf(k);
+        opt.value = k; opt.textContent = k;
         sel.appendChild(opt);
       });
-
-      if (!sel.options.length) {
-        document.getElementById('itemsList').innerHTML =
-          '<div class="meta">No sections available. Check console for errors.</div>';
-        console.warn('populateSectionSelect: no sections', { PHRASE_BANK, SECTION_ORDER });
-        return;
-      }
-
-      if (!currentSection || !PHRASE_BANK[currentSection]) {
-        currentSection = sel.options[0].value;
-      }
-      sel.value = currentSection;
-      document.getElementById('sectionTitle').textContent = labelOf(currentSection);
-      renderSectionItems();
+      sel.value = State.order[State.idx] || '';
     }
 
-    function renderSectionItems(){
-      const wrap = document.getElementById('itemsList');
-      wrap.innerHTML = '';
-      const items = PHRASE_BANK[currentSection] || [];
-      const q = document.getElementById('search').value;
-      const visible = filterItems(items, q);
+    function applyFilter(text){
+      $('#filter').value = text || '';
+      renderCurrentSection();
+    }
 
-      visible.forEach(it => {
+    function getVisibleItems(items, filterText){
+      if (!filterText) return items;
+      const q = filterText.trim().toLowerCase();
+      return items.filter(it => it.label.toLowerCase().includes(q) || it.code.toLowerCase().includes(q));
+    }
+
+    function updateSelectedChip(){
+      const key = State.order[State.idx];
+      const set = State.selected.get(key) || new Set();
+      $('#sel-count').textContent = `${set.size} selected`;
+    }
+
+    function renderCurrentSection(){
+      const key = State.order[State.idx];
+      const container = $('#items-list');
+      const title = $('#section-title');
+      title.textContent = niceTitle(key || '');
+
+      container.innerHTML = '';
+      if (!key) return;
+
+      const items = State.db[key] || [];
+      const filtered = getVisibleItems(items, $('#filter').value);
+
+      const selectedSet = State.selected.get(key) || new Set();
+
+      filtered.forEach(({code, label})=>{
         const row = document.createElement('label');
-        row.className = 'item';
+        row.style.display = 'block';
+        row.style.margin = '6px 0';
+        row.style.padding = '8px 10px';
+        row.style.borderRadius = '10px';
+        row.style.background = 'rgba(255,255,255,.04)';
+
         const cb = document.createElement('input');
         cb.type = 'checkbox';
-        cb.checked = selections[currentSection]?.has(it.code) || false;
-        cb.addEventListener('change', () => {
-          ensureBucket(currentSection);
-          if (cb.checked) selections[currentSection].add(it.code);
-          else selections[currentSection].delete(it.code);
-          updateTotals();
-          buildSemicolonText();
-        });
-        const txt = document.createElement('div');
-        txt.innerHTML = `<div><strong>${it.code}</strong> — ${it.text}</div>`;
-        row.appendChild(cb); row.appendChild(txt);
-        wrap.appendChild(row);
-      });
-
-      updateTotals();
-      buildSemicolonText();
-    }
-
-    function nextSection(){
-      const idx = SECTION_ORDER.indexOf(currentSection);
-      const next = SECTION_ORDER[(idx + 1) % SECTION_ORDER.length];
-      currentSection = next;
-      document.getElementById('sectionSelect').value = next;
-      document.getElementById('sectionTitle').textContent = labelOf(next);
-      renderSectionItems(); updateTotals();
-    }
-
-    async function loadConfigJSON(){
-  // First check for a local override saved by editor.html
-  const OVERRIDE_KEY = 'depot_notes_config_override_v1';
-  const raw = localStorage.getItem(OVERRIDE_KEY);
-
-  if (raw) {
-    try {
-      const obj = JSON.parse(raw);
-      console.log('Loaded local override from JSON editor');
-      return obj; // use local override if valid
-    } catch (e) {
-      console.warn('Local override invalid, falling back to network');
-    }
-  }
-
-  // Otherwise, fetch the live App_config.json from GitHub Pages
-  const resp = await fetch('./App_config.json', { cache: 'no-store' });
-  if (!resp.ok) throw new Error('Failed to load App_config.json');
-  return resp.json();
-}
-
-    function slugifyLabel(label){
-      return String(label).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
-    }
-
-    // Each top-level group in App_config.json becomes its own section
-    function flattenSystemCharacteristics(cfg){
-      const root = cfg?.catalogs?.system_characteristics;
-      if (!root || !Array.isArray(root.children)) {
-        console.warn('flattenSystemCharacteristics: missing system_characteristics root');
-        return {};
-      }
-
-      const sections = {}; // { 'system_characteristics__hot_water': [{code,text},...] }
-
-      root.children.forEach(group => {
-        if (!group || group.type !== 'group') return;
-
-        const baseKey = `system_characteristics__${slugifyLabel(group.label || 'group')}`;
-        const items = [];
-
-        function walk(node){
-          if (!node) return;
-          if (node.type === 'group' && Array.isArray(node.children)) {
-            node.children.forEach(walk); return;
-          }
-          if (node.type === 'single' && Array.isArray(node.options)) {
-            const nodeLabel = node.label || 'Option';
-            node.options.forEach(opt => {
-              items.push({ code: node.id || String(opt), text: `${nodeLabel}: ${opt}` });
-            });
-          }
-        }
-
-        if (Array.isArray(group.children)) group.children.forEach(walk);
-        if (items.length) sections[baseKey] = items;
-      });
-
-      // Fallback: if no groups produced items, flatten everything into one section
-      if (Object.keys(sections).length === 0) {
-        const flat = [];
-        function walkAll(node){
-          if (!node) return;
-          if (node.type === 'group' && Array.isArray(node.children)) { node.children.forEach(walkAll); return; }
-          if (node.type === 'single' && Array.isArray(node.options)) {
-            const nodeLabel = node.label || 'Option';
-            node.options.forEach(opt => flat.push({ code: node.id || String(opt), text: `${nodeLabel}: ${opt}` }));
-          }
-        }
-        root.children.forEach(walkAll);
-        if (flat.length) sections['system_characteristics'] = flat;
-      }
-
-      return sections;
-    }
-
-    async function bootstrapSystemCharacteristics(){
-      try{
-        const cfg = await loadConfigJSON();
-        const sysSections = flattenSystemCharacteristics(cfg);
-        const keys = Object.keys(sysSections);
-
-        // Merge into PHRASE_BANK
-        Object.assign(PHRASE_BANK, sysSections);
-
-        // Insert new sections at the front in JSON order
-        keys.slice().reverse().forEach(k => {
-          if (!SECTION_ORDER.includes(k)) SECTION_ORDER.unshift(k);
+        cb.checked = selectedSet.has(code);
+        cb.addEventListener('change', ()=>{
+          const set = State.selected.get(key) || new Set();
+          if (cb.checked) set.add(code); else set.delete(code);
+          State.selected.set(key, set);
+          updateSelectedChip();
+          buildCopyBox(); // keep output live
         });
 
-        // Ensure a valid currentSection
-        if (!currentSection || !PHRASE_BANK[currentSection]) {
-          currentSection = keys[0] || SECTION_ORDER.find(k => PHRASE_BANK[k]) || SECTION_ORDER[0];
-        }
+        const span = document.createElement('span');
+        span.textContent = ' ' + label;
 
-        populateSectionSelect();
-        renderSectionItems();
-        console.log('Loaded sections:', Object.keys(PHRASE_BANK));
-      }catch(err){
-        console.error('bootstrapSystemCharacteristics failed:', err);
-        populateSectionSelect();
-        renderSectionItems();
-      }
+        row.appendChild(cb);
+        row.appendChild(span);
+        container.appendChild(row);
+      });
+
+      updateSelectedChip();
     }
 
-    // ========= Events & boot =========
-    document.getElementById('search').addEventListener('input', renderSectionItems);
-    document.getElementById('sectionSelect').addEventListener('change', (e) => {
-      currentSection = e.target.value;
-      document.getElementById('sectionTitle').textContent = labelOf(currentSection);
-      renderSectionItems(); updateTotals();
-    });
-    document.getElementById('nextSectionBtn').addEventListener('click', nextSection);
-    document.getElementById('selectAllVisible').addEventListener('click', () => {
-      const q = document.getElementById('search').value;
-      const items = filterItems(PHRASE_BANK[currentSection] || [], q);
-      ensureBucket(currentSection);
-      items.forEach(it => selections[currentSection].add(it.code));
-      renderSectionItems(); updateTotals(); buildSemicolonText();
-    });
-    document.getElementById('clearSection').addEventListener('click', () => {
-      ensureBucket(currentSection); selections[currentSection].clear();
-      renderSectionItems(); updateTotals(); buildSemicolonText();
-    });
-    document.getElementById('copySemiBtn').addEventListener('click', async () => {
-      const text = buildSemicolonText();
-      try{
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(text);
+    // ---------- copy box ----------
+    function buildCopyBox(){
+      const includeHeaders = $('#inc-headers').checked;
+      const chunks = [];
+
+      State.order.forEach(sec=>{
+        const set = State.selected.get(sec);
+        if (!set || set.size === 0) return;
+
+        const labels = (State.db[sec]||[])
+          .filter(it => set.has(it.code))
+          .map(it => it.label);
+
+        if (labels.length === 0) return;
+
+        if (includeHeaders){
+          chunks.push(`${niceTitle(sec)}: ${labels.join(' ; ')}`);
         } else {
-          const ta = document.getElementById('semiOutput');
-          ta.focus(); ta.select(); document.execCommand('copy');
+          chunks.push(labels.join(' ; '));
         }
-      }catch(e){ console.warn('Copy failed:', e); }
-    });
+      });
 
-    document.addEventListener('keydown', (e) => {
-      const mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key === 'ArrowRight') { e.preventDefault(); nextSection(); }
-      if (mod && e.key.toLowerCase() === 'c') {
-        e.preventDefault(); buildSemicolonText();
-        const ta = document.getElementById('semiOutput');
-        ta.focus(); ta.select(); document.execCommand('copy');
+      $('#copy-out').value = chunks.join('\n');
+    }
+
+    async function copyToClipboard(){
+      buildCopyBox();
+      const text = $('#copy-out').value;
+      try {
+        await navigator.clipboard.writeText(text);
+        $('#btn-copy').textContent = 'Copied ✓';
+        setTimeout(()=>{$('#btn-copy').textContent='Copy ;-lines';}, 1200);
+      } catch {
+        // iOS fallback: select + prompt user
+        $('#copy-out').focus();
+        $('#copy-out').select();
+      }
+    }
+
+    // ---------- load helpers ----------
+    async function fetchOptionsTxtAuto(){
+      const status = $('#load-status');
+      const candidates = [
+        './Options.txt?v=' + Date.now(),
+        './data/Options.txt?v=' + Date.now(),
+        './config/Options.txt?v=' + Date.now()
+      ];
+      let lastErr;
+      for (const url of candidates){
+        try{
+          status.textContent = `Trying ${url.replace(/\?.*/,'')} …`;
+          const res = await fetch(url, { cache:'no-store' });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const txt = await res.text();
+          if (!/\[[^\]]+\]/.test(txt)) throw new Error('File does not look like Options.txt format');
+          status.textContent = `Loaded from ${url.replace(/\?.*/,'')}`;
+          return txt;
+        }catch(e){ lastErr = e; }
+      }
+      status.textContent = '';
+      throw lastErr || new Error('Could not find Options.txt');
+    }
+
+    function applyDatabase(db){
+      State.db = db;
+      State.order = Object.keys(db);
+      State.idx = 0;
+      State.selected = new Map(); // reset selections
+      populateSectionDropdown();
+      renderCurrentSection();
+      buildCopyBox();
+    }
+
+    // ---------- wire UI ----------
+    function wireUI(){
+      $('#btn-parse').addEventListener('click', ()=>{
+        const txt = $('#options-src').value || '';
+        const db = parseOptionsTxt(txt);
+        applyDatabase(db);
+      });
+
+      $('#btn-open').addEventListener('click', ()=>$('#file-open').click());
+      $('#file-open').addEventListener('change', async (e)=>{
+        const f = e.target.files[0];
+        if (!f) return;
+        const txt = await f.text();
+        $('#options-src').value = txt;
+        const db = parseOptionsTxt(txt);
+        applyDatabase(db);
+      });
+
+      $('#btn-load').addEventListener('click', async ()=>{
+        try{
+          const txt = await fetchOptionsTxtAuto();
+          $('#options-src').value = txt;      // keep a visible copy
+          const db = parseOptionsTxt(txt);
+          applyDatabase(db);
+        }catch(e){
+          alert('Could not load Options.txt — check it is next to index.html (case-sensitive). ' + e);
+        }
+      });
+
+      $('#section-select').addEventListener('change', (e)=>{
+        const val = e.target.value;
+        const idx = State.order.indexOf(val);
+        if (idx >= 0) State.idx = idx;
+        renderCurrentSection();
+      });
+
+      $('#btn-next').addEventListener('click', (e)=>{
+        e.preventDefault?.();
+        if (State.order.length === 0) return;
+        State.idx = (State.idx + 1) % State.order.length;
+        $('#section-select').value = State.order[State.idx];
+        renderCurrentSection();
+      });
+
+      $('#filter').addEventListener('input', ()=>renderCurrentSection());
+
+      $('#btn-all').addEventListener('click', ()=>{
+        const key = State.order[State.idx];
+        const items = State.db[key] || [];
+        const visible = getVisibleItems(items, $('#filter').value);
+        const set = State.selected.get(key) || new Set();
+        visible.forEach(({code})=> set.add(code));
+        State.selected.set(key, set);
+        renderCurrentSection();
+        buildCopyBox();
+      });
+
+      $('#btn-clear').addEventListener('click', ()=>{
+        const key = State.order[State.idx];
+        State.selected.set(key, new Set());
+        renderCurrentSection();
+        buildCopyBox();
+      });
+
+      $('#inc-headers').addEventListener('change', buildCopyBox);
+      $('#btn-copy').addEventListener('click', copyToClipboard);
+    }
+
+    // ---------- boot ----------
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      wireUI();
+      // Try to auto-load Options.txt on first load; if it fails the user can paste or open a file
+      try{
+        const txt = await fetchOptionsTxtAuto();
+        $('#options-src').value = txt;
+        applyDatabase(parseOptionsTxt(txt));
+      }catch(_e){
+        // silent; user can paste and press Parse
       }
     });
-
-    // Boot once definitions are in place
-    bootstrapSystemCharacteristics();
   </script>
-
-  <!-- Optional hook so you can add update UI later (create update.js to avoid 404) -->
-  <script src="./update.js"></script>
 </body>
 </html>
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>JSON Section Editor (Add Items)</title>
-<style>
-  :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-  body { margin: 0; background:#0b0c10; color:#e8e8e8; }
-  header { padding:16px 20px; border-bottom:1px solid #2c2f36; }
-  main { padding: 14px 20px 40px; display:grid; gap:16px; max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 18px; margin:0; }
-  .grid { display:grid; gap:14px; grid-template-columns: 1fr; }
-  @media (min-width: 980px){ .grid { grid-template-columns: 2fr 1fr; } }
-  .card { background:#14171f; border:1px solid #2c2f36; border-radius:10px; padding:14px; }
-  .row { display:grid; gap:10px; grid-template-columns: 1fr 1fr; }
-  .row-3 { display:grid; gap:10px; grid-template-columns: 1fr 1fr 1fr; }
-  label { font-size: 12.5px; color:#bfc7d5; display:block; margin-bottom:6px; }
-  input[type="text"], input[type="password"], input[type="url"], select, textarea {
-    width:100%; background:#0f1218; color:#e8e8e8; border:1px solid #2c2f36; border-radius:8px; padding:10px 12px;
-  }
-  textarea { min-height: 160px; }
-  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9px; border:1px solid #2c2f36; background:#1a1f29; color:#e8e8e8; cursor:pointer; }
-  .btn:hover { background:#202737; }
-  .btn.primary { background:#2b66ff; border-color:#2b66ff; }
-  .btn.warn { background:#a63b3b; border-color:#a63b3b; }
-  .btn.ghost { background:#0f1218; }
-  .muted { color:#9aa4b2; font-size: 12px; }
-  .pill { font-size:12px; padding:2px 8px; background:#0f1218; border:1px solid #2c2f36; border-radius:999px; display:inline-block; margin-left:6px; color:#bfc7d5; }
-  ul { list-style:none; padding:0; margin:0; }
-  li.item { border-bottom:1px dashed #2c2f36; padding:8px 0; display:flex; justify-content:space-between; gap:8px; }
-  .code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#0b0d12; border:1px solid #2c2f36; padding:2px 6px; border-radius:6px; color:#b1d2ff; }
-  .flex { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .right { margin-left:auto; }
-  .ok { color:#78ff9f; }
-  .err { color:#ff8a8a; }
-</style>
-</head>
-<body>
-<header>
-  <div class="flex">
-    <h1>JSON Section Editor</h1>
-    <span id="status" class="pill">idle</span>
-    <span id="origin" class="pill">no file</span>
-    <span id="sha" class="pill" title="GitHub file SHA used for updates">sha: –</span>
-    <span class="right muted">Tip: load JSON → pick section → add item → Save</span>
-  </div>
-</header>
-
-<main>
-  <div class="grid">
-    <!-- Left: Data load and section/items -->
-    <section class="card">
-      <div class="flex" style="justify-content:space-between;">
-        <h2 style="margin:0;font-size:16px;">1) Load / View JSON</h2>
-        <div class="flex">
-          <input type="file" id="fileInput" accept=".json,application/json" />
-          <button class="btn ghost" id="btnLoadExample">Load example</button>
-        </div>
-      </div>
-      <p class="muted">Paste JSON or open a .json file. We’ll auto-detect sections (keys with array values). Your last edit is backed up locally.</p>
-      <textarea id="jsonInput" placeholder='Paste JSON here...'></textarea>
-      <div class="flex" style="margin-top:8px;">
-        <button class="btn" id="btnParse">Parse JSON</button>
-        <button class="btn" id="btnPretty">Pretty-print</button>
-        <button class="btn warn" id="btnReset">Reset (clear)</button>
-        <span class="muted">Backup: <span id="backupState">none</span></span>
-      </div>
-    </section>
-
-    <!-- Right: GitHub remote -->
-    <aside class="card">
-      <h2 style="margin:0;font-size:16px;">(Optional) 2) Connect GitHub for Direct Save</h2>
-      <p class="muted">Fill these to load/save from a repo file. PAT needs <em>repo:contents</em> on private repos (or none for public). Values persist locally.</p>
-      <div class="row">
-        <div>
-          <label>Owner / Org</label>
-          <input type="text" id="ghOwner" placeholder="e.g. martinbibb-cmd" />
-        </div>
-        <div>
-          <label>Repo</label>
-          <input type="text" id="ghRepo" placeholder="e.g. Depot-notes" />
-        </div>
-      </div>
-      <div>
-        <label>File path (in repo)</label>
-        <input type="text" id="ghPath" placeholder="e.g. data/system_characteristics.json" />
-      </div>
-      <div class="row">
-        <div>
-          <label>Branch</label>
-          <input type="text" id="ghBranch" placeholder="main" />
-        </div>
-        <div>
-          <label>GitHub Token (PAT)</label>
-          <input type="password" id="ghToken" placeholder="ghp_••• (stored only in your browser)" />
-        </div>
-      </div>
-      <div class="flex" style="margin-top:8px;">
-        <button class="btn" id="btnGitLoad">Fetch from GitHub</button>
-        <button class="btn primary" id="btnGitSave">Commit to GitHub</button>
-      </div>
-      <p id="ghMsg" class="muted"></p>
-    </aside>
-  </div>
-
-  <!-- Section picker + add item -->
-  <section class="card">
-    <h2 style="margin:0;font-size:16px;">3) Choose Section & Add Item</h2>
-    <div class="row">
-      <div>
-        <label>Section (array in your JSON)</label>
-        <select id="sectionSelect"></select>
-      </div>
-      <div>
-        <label>Current items</label>
-        <div class="pill" id="itemCount">0</div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label>Item text</label>
-        <input type="text" id="itemText" placeholder="e.g. Sealed (expansion vessel)" />
-      </div>
-      <div>
-        <label>Short code</label>
-        <input type="text" id="itemCode" placeholder="e.g. PR-SEAL" />
-      </div>
-    </div>
-    <div class="flex" style="margin-top:8px;">
-      <button class="btn" id="btnAdd">Add to section</button>
-      <button class="btn ghost" id="btnSort">Sort (by text)</button>
-      <span class="muted">If your section was strings, we’ll convert them to {code,text} automatically.</span>
-    </div>
-
-    <div style="margin-top:14px;">
-      <label>Preview of selected section</label>
-      <ul id="list"></ul>
-    </div>
-  </section>
-
-  <!-- Save/export -->
-  <section class="card">
-    <h2 style="margin:0;font-size:16px;">4) Save / Export</h2>
-    <div class="flex">
-      <button class="btn" id="btnDownload">Download updated JSON</button>
-      <button class="btn" id="btnCopy">Copy to clipboard</button>
-      <span class="muted">Or use “Commit to GitHub” above for direct save to the repo.</span>
-    </div>
-  </section>
-</main>
-
-<script>
-(function(){
-  /*** State ***/
-  let data = null;           // Parsed JSON object
-  let githubSha = null;      // Current file SHA for GitHub updates
-  let origin = 'no file';    // human label
-  const statusEl = document.getElementById('status');
-  const originEl = document.getElementById('origin');
-  const shaEl = document.getElementById('sha');
-  const backupEl = document.getElementById('backupState');
-
-  /*** DOM refs ***/
-  const jsonInput = document.getElementById('jsonInput');
-  const fileInput = document.getElementById('fileInput');
-  const btnLoadExample = document.getElementById('btnLoadExample');
-  const btnParse = document.getElementById('btnParse');
-  const btnPretty = document.getElementById('btnPretty');
-  const btnReset = document.getElementById('btnReset');
-
-  const sectionSelect = document.getElementById('sectionSelect');
-  const itemCount = document.getElementById('itemCount');
-  const itemText = document.getElementById('itemText');
-  const itemCode = document.getElementById('itemCode');
-  const btnAdd = document.getElementById('btnAdd');
-  const btnSort = document.getElementById('btnSort');
-  const list = document.getElementById('list');
-
-  const btnDownload = document.getElementById('btnDownload');
-  const btnCopy = document.getElementById('btnCopy');
-
-  const ghOwner = document.getElementById('ghOwner');
-  const ghRepo = document.getElementById('ghRepo');
-  const ghPath = document.getElementById('ghPath');
-  const ghBranch = document.getElementById('ghBranch');
-  const ghToken = document.getElementById('ghToken');
-  const btnGitLoad = document.getElementById('btnGitLoad');
-  const btnGitSave = document.getElementById('btnGitSave');
-  const ghMsg = document.getElementById('ghMsg');
-
-  /*** Utilities ***/
-  function setStatus(text, ok=false, err=false){
-    statusEl.textContent = text;
-    statusEl.className = 'pill ' + (ok ? 'ok' : err ? 'err' : '');
-  }
-  function setOrigin(text){
-    origin = text; originEl.textContent = text;
-  }
-  function setSha(text){
-    githubSha = text || null;
-    shaEl.textContent = 'sha: ' + (githubSha ? githubSha.slice(0,7) : '–');
-  }
-  function saveBackup(){
-    try {
-      localStorage.setItem('json_section_editor_backup', JSON.stringify(data));
-      backupEl.textContent = 'saved';
-    } catch(e){
-      backupEl.textContent = 'failed';
-    }
-  }
-  function loadBackup(){
-    try {
-      const raw = localStorage.getItem('json_section_editor_backup');
-      if(!raw) return null;
-      return JSON.parse(raw);
-    } catch(e){ return null; }
-  }
-  function persistGhFields(){
-    const payload = {
-      owner: ghOwner.value.trim(),
-      repo: ghRepo.value.trim(),
-      path: ghPath.value.trim(),
-      branch: ghBranch.value.trim(),
-      token: ghToken.value // keep as-is
-    };
-    try { localStorage.setItem('json_section_editor_gh', JSON.stringify(payload)); } catch(e){}
-  }
-  function restoreGhFields(){
-    try {
-      const raw = localStorage.getItem('json_section_editor_gh');
-      if(!raw) return;
-      const v = JSON.parse(raw);
-      ghOwner.value = v.owner || '';
-      ghRepo.value = v.repo || '';
-      ghPath.value = v.path || '';
-      ghBranch.value = v.branch || '';
-      ghToken.value = v.token || '';
-    } catch(e){}
-  }
-
-  /*** Section helpers ***/
-  function discoverSections(obj){
-    // returns array of keys where value is an array
-    return Object.keys(obj)
-      .filter(k => Array.isArray(obj[k]));
-  }
-  function normaliseArray(arr){
-    // Convert string items to {code,text}
-    return arr.map(item => {
-      if (typeof item === 'string') {
-        return { code: slug(item), text: item };
-      }
-      if (item && typeof item === 'object') {
-        // ensure both fields
-        return { code: item.code ?? slug(item.text ?? ''), text: item.text ?? String(item.code ?? '') };
-      }
-      return { code: '', text: String(item) };
-    });
-  }
-  function slug(s){
-    return String(s || '')
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g,'-')
-      .replace(/[^A-Z0-9\-]/g,'')
-      .slice(0,24);
-  }
-  function refreshSectionUI(){
-    sectionSelect.innerHTML = '';
-    if(!data){ itemCount.textContent='0'; list.innerHTML=''; return; }
-    const keys = discoverSections(data);
-    if(keys.length === 0){
-      sectionSelect.innerHTML = '<option value="">(No array sections found)</option>';
-      itemCount.textContent='0'; list.innerHTML='';
-      return;
-    }
-    for(const k of keys){
-      const opt = document.createElement('option');
-      opt.value = k; opt.textContent = k;
-      sectionSelect.appendChild(opt);
-    }
-    renderList();
-  }
-  function renderList(){
-    const key = sectionSelect.value;
-    list.innerHTML = '';
-    if (!key || !data || !Array.isArray(data[key])) { itemCount.textContent='0'; return; }
-    const arr = data[key];
-    // Ensure normalized display
-    const norm = normaliseArray(arr);
-    // Write back normalization (one-time)
-    data[key] = norm;
-
-    itemCount.textContent = String(norm.length);
-    norm.forEach((it, idx) => {
-      const li = document.createElement('li');
-      li.className = 'item';
-      li.innerHTML = `
-        <div>
-          <span class="code" title="short code">${escapeHtml(it.code || '')}</span>
-          &nbsp;—&nbsp;${escapeHtml(it.text || '')}
-        </div>
-        <div class="flex">
-          <button class="btn ghost" data-act="up" data-i="${idx}" title="Move up">↑</button>
-          <button class="btn ghost" data-act="down" data-i="${idx}" title="Move down">↓</button>
-          <button class="btn warn" data-act="del" data-i="${idx}" title="Delete">Delete</button>
-        </div>
-      `;
-      list.appendChild(li);
-    });
-  }
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  /*** Events: Load / Parse ***/
-  fileInput.addEventListener('change', async (e)=>{
-    const f = e.target.files?.[0];
-    if(!f) return;
-    const text = await f.text();
-    jsonInput.value = text;
-    setOrigin(`file: ${f.name}`);
-    setSha(null);
-    setStatus('file loaded');
-  });
-
-  btnLoadExample.addEventListener('click', ()=>{
-    const example = {
-      "system_type": [
-        {"code":"ST-COMBI","text":"Combi boiler"},
-        {"code":"ST-SYSTEM","text":"System (with cylinder)"},
-        {"code":"ST-REG","text":"Heat-only (regular)"}
-      ],
-      "pressurisation": [
-        "Sealed (expansion vessel)",
-        "Open-vented (F&E tank)"
-      ],
-      "primary_circuit": [
-        {"code":"PC-PUMP","text":"Fully pumped"},
-        {"code":"PC-GRAV","text":"Gravity primaries (legacy)"}
-      ],
-      "hot_water_strategy": [
-        {"code":"DHW-INST","text":"Instantaneous DHW"},
-        {"code":"DHW-STORED-UV","text":"Stored DHW (unvented)"},
-        {"code":"DHW-STORED-V","text":"Stored DHW (vented)"}
-      ]
-    };
-    jsonInput.value = JSON.stringify(example, null, 2);
-    setOrigin('example');
-    setSha(null);
-    setStatus('example loaded', true);
-  });
-
-  btnParse.addEventListener('click', ()=>{
-    try {
-      const obj = JSON.parse(jsonInput.value || '{}');
-      data = obj;
-      setStatus('parsed ✓', true);
-      refreshSectionUI();
-      saveBackup();
-    } catch(e){
-      setStatus('invalid JSON', false, true);
-      alert('JSON parse error: ' + e.message);
-    }
-  });
-
-  btnPretty.addEventListener('click', ()=>{
-    try {
-      const obj = JSON.parse(jsonInput.value || '{}');
-      jsonInput.value = JSON.stringify(obj, null, 2);
-      setStatus('pretty-printed', true);
-    } catch(e){
-      setStatus('invalid JSON', false, true);
-      alert('Cannot pretty-print: ' + e.message);
-    }
-  });
-
-  btnReset.addEventListener('click', ()=>{
-    if(!confirm('Clear editor and state?')) return;
-    jsonInput.value = '';
-    data = null;
-    setOrigin('no file');
-    setSha(null);
-    refreshSectionUI();
-    setStatus('reset');
-  });
-
-  /*** Section + items ***/
-  sectionSelect.addEventListener('change', renderList);
-
-  btnAdd.addEventListener('click', ()=>{
-    if(!data){ return alert('Load/parse JSON first.'); }
-    const key = sectionSelect.value;
-    if(!key){ return alert('Select a section.'); }
-    if(!Array.isArray(data[key])) data[key] = [];
-    const text = itemText.value.trim();
-    if(!text) return alert('Enter item text.');
-    const code = (itemCode.value.trim() || slug(text));
-    data[key].push({ code, text });
-    itemText.value = '';
-    itemCode.value = '';
-    renderList();
-    saveBackup();
-    setStatus(`added to "${key}"`, true);
-  });
-
-  btnSort.addEventListener('click', ()=>{
-    if(!data) return;
-    const key = sectionSelect.value;
-    if(!key) return;
-    if(!Array.isArray(data[key])) return;
-    data[key] = normaliseArray(data[key]).sort((a,b)=>a.text.localeCompare(b.text, undefined, {sensitivity:'base'}));
-    renderList();
-    saveBackup();
-    setStatus('sorted by text', true);
-  });
-
-  list.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button');
-    if(!btn) return;
-    const action = btn.getAttribute('data-act');
-    const i = Number(btn.getAttribute('data-i'));
-    const key = sectionSelect.value;
-    if(!key || !Array.isArray(data[key])) return;
-
-    const arr = data[key];
-    if(action === 'del'){
-      if(!confirm('Delete this item?')) return;
-      arr.splice(i,1);
-    } else if (action === 'up'){
-      if(i>0){ [arr[i-1], arr[i]] = [arr[i], arr[i-1]]; }
-    } else if (action === 'down'){
-      if(i < arr.length-1){ [arr[i], arr[i+1]] = [arr[i+1], arr[i]]; }
-    }
-    renderList();
-    saveBackup();
-    setStatus(action==='del'?'deleted':'reordered', true);
-  });
-
-  /*** Save / Export ***/
-  btnDownload.addEventListener('click', ()=>{
-    if(!data) return alert('Nothing to save: load/parse JSON first.');
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    const path = (ghPath.value.trim() || 'updated.json').split('/').pop();
-    a.download = path || 'updated.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setStatus('downloaded', true);
-  });
-
-  btnCopy.addEventListener('click', async ()=>{
-    if(!data) return alert('Nothing to copy.');
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-      setStatus('copied to clipboard', true);
-    } catch(e){
-      setStatus('copy failed', false, true);
-      alert('Clipboard failed: ' + e.message);
-    }
-  });
-
-  /*** GitHub integration ***/
-  [ghOwner,ghRepo,ghPath,ghBranch,ghToken].forEach(el => el.addEventListener('input', persistGhFields));
-  restoreGhFields();
-
-  async function ghFetchFile(owner, repo, path, branch, token){
-    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch||'main')}`;
-    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    if(!res.ok) throw new Error(`GitHub GET ${res.status}: ${await res.text()}`);
-    return res.json(); // includes content (base64) and sha
-  }
-
-  async function ghPutFile(owner, repo, path, branch, token, contentStr, sha, message){
-    const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodeURIComponent(path)}`;
-    const body = {
-      message: message || `chore: update ${path}`,
-      content: btoa(unescape(encodeURIComponent(contentStr))), // base64
-      branch: branch || 'main'
-    };
-    if(sha) body.sha = sha;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type':'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify(body)
-    });
-    if(!res.ok) throw new Error(`GitHub PUT ${res.status}: ${await res.text()}`);
-    return res.json(); // returns content + commit info
-  }
-
-  btnGitLoad.addEventListener('click', async ()=>{
-    try {
-      ghMsg.textContent = '';
-      const owner = ghOwner.value.trim();
-      const repo = ghRepo.value.trim();
-      const path = ghPath.value.trim();
-      const branch = ghBranch.value.trim() || 'main';
-      const token = ghToken.value;
-
-      if(!owner || !repo || !path){
-        return alert('Fill owner, repo, and path.');
-      }
-      setStatus('fetching from GitHub…');
-      const json = await ghFetchFile(owner, repo, path, branch, token);
-      const decoded = decodeURIComponent(escape(atob(json.content)));
-      jsonInput.value = decoded;
-      setOrigin(`github: ${owner}/${repo}/${path}@${branch}`);
-      setSha(json.sha);
-      setStatus('GitHub file loaded ✓', true);
-    } catch(e){
-      setStatus('GitHub load failed', false, true);
-      ghMsg.textContent = e.message;
-    }
-  });
-
-  btnGitSave.addEventListener('click', async ()=>{
-    if(!jsonInput.value.trim()){
-      return alert('Nothing to save. Parse JSON or paste it first.');
-    }
-    try {
-      ghMsg.textContent = '';
-      const owner = ghOwner.value.trim();
-      const repo = ghRepo.value.trim();
-      const path = ghPath.value.trim();
-      const branch = ghBranch.value.trim() || 'main';
-      const token = ghToken.value;
-
-      if(!owner || !repo || !path){
-        return alert('Fill owner, repo, and path.');
-      }
-      // ensure JSON is valid and sync textarea with in-memory data
-      const obj = data ?? JSON.parse(jsonInput.value);
-      const contentStr = JSON.stringify(obj, null, 2);
-
-      setStatus('committing to GitHub…');
-      const out = await ghPutFile(owner, repo, path, branch, token, contentStr, githubSha, `chore: update ${path} via section editor`);
-      setSha(out.content?.sha || null);
-      setOrigin(`github: ${owner}/${repo}/${path}@${branch}`);
-      setStatus('GitHub commit ✓', true);
-      ghMsg.textContent = `Saved to ${owner}/${repo}/${path} on ${branch}.`;
-    } catch(e){
-      setStatus('GitHub save failed', false, true);
-      ghMsg.textContent = e.message;
-    }
-  });
-
-  /*** Auto-restore backup on load ***/
-  window.addEventListener('load', ()=>{
-    const backup = loadBackup();
-    if(backup){
-      data = backup;
-      jsonInput.value = JSON.stringify(backup, null, 2);
-      refreshSectionUI();
-      setStatus('backup restored', true);
-      setOrigin('backup');
-    }
-  });
-})();
-</script>
-<script>
-// --- Plain-text → JSON parser ---
-function parseOptionsText(txt){
-  const out = {};
-  let current = null;
-  const lines = (txt || '').split(/\r?\n/);
-  for (let raw of lines){
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    if (line.startsWith('[') && line.endsWith(']')){
-      current = line.slice(1, -1).trim();
-      if (!current) { current = null; continue; }
-      if (!out[current]) out[current] = [];
-      continue;
-    }
-    if (!current) continue; // ignore items before first [section]
-    const m = line.split('|');
-    if (m.length === 1){
-      const text = m[0].trim();
-      if (text) out[current].push({ code: textToCode(text), text });
-    } else {
-      const code = (m[0] || '').trim();
-      const text = (m.slice(1).join('|') || '').trim();
-      if (text) out[current].push({ code: code || textToCode(text), text });
-    }
-  }
-  return out;
-}
-function textToCode(s){
-  return String(s||'')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g,'-')
-    .replace(/[^A-Z0-9\-]/g,'')
-    .slice(0,24);
-}
-
-// --- Wire up the new UI ---
-const txtInput = document.getElementById('txtInput');
-const btnParseTxt = document.getElementById('btnParseTxt');
-const btnLoadTxtFile = document.getElementById('btnLoadTxtFile');
-const txtFile = document.getElementById('txtFile');
-
-if (btnParseTxt){
-  btnParseTxt.addEventListener('click', ()=>{
-    try{
-      const obj = parseOptionsText(txtInput.value || '');
-      if (Object.keys(obj).length === 0) { alert('No sections/items found.'); return; }
-      jsonInput.value = JSON.stringify(obj, null, 2); // reuse existing textarea
-      btnParse.click(); // reuse your existing “Parse JSON” button to load state/UI
-      setStatus('text parsed → JSON ✓', true);
-    }catch(e){
-      setStatus('text parse failed', false, true);
-      alert('Parse error: ' + e.message);
-    }
-  });
-}
-if (btnLoadTxtFile && txtFile){
-  btnLoadTxtFile.addEventListener('click', ()=> txtFile.click());
-  txtFile.addEventListener('change', async (e)=>{
-    const f = e.target.files?.[0];
-    if(!f) return;
-    const text = await f.text();
-    txtInput.value = text;
-    setStatus('txt loaded', true);
-  });
-}
-</script>
-</body>
-</html>
-<script>
-const OPTIONS_URL = './Options.txt?v=20251006';
-
-/* Parse INI-like Options.txt → { sectionKey: [{code,label},...] } */
-function parseOptionsTxt(txt) {
-  const db = {};
-  let section = null;
-  for (const raw of txt.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#')) continue;
-    const m = line.match(/^\[([^\]]+)\]$/);
-    if (m) { section = m[1].trim(); db[section] = []; continue; }
-    if (!section) continue;
-
-    const parts = line.split('|');
-    if (parts.length >= 2) {
-      const code  = parts[0].trim();
-      const label = parts.slice(1).join('|').trim();
-      if (code) db[section].push({ code, label });
-    }
-  }
-  return db;
-}
-
-/* Flexible selectors (fall back to creating what we need) */
-function getSectionSelect() {
-  let sel = document.querySelector('#section-select, select#section, select[name="section"], [data-role="section"]');
-  if (!sel) {
-    // try to find the first select under the "Depot Notes Picker" area
-    const picker = Array.from(document.querySelectorAll('h2,h3'))
-      .find(h => /Depot Notes Picker/i.test(h.textContent))?.parentElement;
-    sel = picker?.querySelector('select');
-  }
-  return sel;
-}
-function getItemsList() {
-  let list = document.querySelector('#items-list, #picker-list, .picker-list, [data-role="items-list"]');
-  if (!list) {
-    const sel = getSectionSelect();
-    if (sel) {
-      list = document.createElement('div');
-      list.id = 'items-list';
-      list.style.marginTop = '0.75rem';
-      sel.insertAdjacentElement('afterend', list);
-    }
-  }
-  return list;
-}
-function getOptionsTextarea() {
-  return document.querySelector('#options-src, textarea#options, textarea[name="options-src"]');
-}
-
-/* Render items safely (no innerHTML) */
-function renderItemsForSection(sec) {
-  const list = getItemsList();
-  list.innerHTML = '';
-  const items = (window.optionsDB && window.optionsDB[sec]) || [];
-
-  items.forEach(({ code, label }) => {
-    const wrap = document.createElement('label');
-    wrap.style.display = 'block';
-    wrap.style.cursor = 'pointer';
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    // don't put raw "<" etc into HTML; store separately
-    cb.dataset.code = encodeURIComponent(code);
-    cb.dataset.label = label;
-
-    const txt = document.createTextNode(' ' + label);
-
-    wrap.appendChild(cb);
-    wrap.appendChild(txt);
-    list.appendChild(wrap);
-  });
-
-  console.log(`Rendered ${items.length} items for [${sec}]`);
-}
-
-/* Wire up change handler once */
-function hookSectionChange() {
-  const sel = getSectionSelect();
-  if (!sel || sel._hooked) return;
-  sel.addEventListener('change', () => renderItemsForSection(sel.value));
-  sel._hooked = true;
-}
-
-/* Fill the Section dropdown */
-function fillSectionDropdown(db) {
-  const sel = getSectionSelect();
-  if (!sel) return;
-  // only replace options if it's empty or holding stale values
-  sel.innerHTML = '';
-  Object.keys(db).forEach(sec => {
-    const opt = document.createElement('option');
-    opt.value = sec;
-    opt.textContent = sec;
-    sel.appendChild(opt);
-  });
-  sel.dispatchEvent(new Event('change')); // initial render
-}
-
-/* Load Options.txt and hydrate */
-async function loadOptionsTxt() {
-  try {
-    const res = await fetch(OPTIONS_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const txt = await res.text();
-
-    const ta = getOptionsTextarea();
-    if (ta) ta.value = txt;
-
-    window.optionsDB = parseOptionsTxt(txt);
-
-    hookSectionChange();
-    fillSectionDropdown(window.optionsDB);
-
-    // If your app has its own hydrator, call it too
-    if (typeof window.applyParsedOptions === 'function') {
-      window.applyParsedOptions(window.optionsDB);
-    }
-  } catch (e) {
-    console.error('Options load failed:', e);
-    alert('Could not load Options.txt — check path and hard refresh.');
-  }
-}
-
-document.addEventListener('DOMContentLoaded', loadOptionsTxt);
-</script>
-<script>
-/* 0) CONFIG: if you pasted JSON already, point to it; or keep using Options.txt */
-const OPTIONS_TXT_URL = './Options.txt?v=3';
-
-/* 1) Normalize: Options → {section: [{code,label}], ...} */
-function parseOptionsTxt(txt){
-  const db={}, lines=txt.split(/\r?\n/); let s=null;
-  for (const raw of lines){
-    const line=raw.trim(); if(!line||line.startsWith('#')) continue;
-    const m=line.match(/^\[([^\]]+)\]$/);
-    if (m){ s=m[1].trim(); db[s]=[]; continue; }
-    if(!s) continue;
-    const parts=line.split('|'); if(parts.length<2) continue;
-    const code=parts[0].trim(); const label=parts.slice(1).join('|').trim();
-    if(code) db[s].push({code,label});
-  }
-  return db;
-}
-
-/* 2) Safe element finders from your UI */
-function $sectionSelect(){
-  return document.querySelector('#section-select, select#section, select[name="section"]');
-}
-function $itemsBox(){
-  // your list container (the big checklist). If none, we inject one after the select.
-  let el = document.querySelector('#items-list, .picker-list');
-  if(!el){
-    const sel = $sectionSelect();
-    el = document.createElement('div'); el.id='items-list';
-    sel?.insertAdjacentElement('afterend', el);
-  }
-  return el;
-}
-function $nextBtn(){
-  // the “Next section ➜” button
-  return Array.from(document.querySelectorAll('button, a'))
-    .find(b => /next section/i.test(b.textContent || ''));
-}
-
-/* 3) Single source of truth */
-const Picker = {
-  db: {},
-  order: [],
-  idx: 0,
-  current(){ return this.order[this.idx] },
-  render(){
-    const sec = this.current(); const box = $itemsBox();
-    box.innerHTML = '';
-    const head = document.querySelector('.section-title') || document.createElement('div');
-    head.className = 'section-title'; head.style.margin='6px 0 8px'; head.textContent = niceTitle(sec);
-    box.parentElement?.insertBefore(head, box);
-
-    const items = (this.db[sec]||[]);
-    items.forEach(({code,label})=>{
-      const lab = document.createElement('label');
-      lab.style.display='block'; lab.style.padding='8px 10px'; lab.style.borderRadius='10px'; lab.style.margin='6px 0';
-      lab.style.background='rgba(255,255,255,0.04)';
-      const cb = document.createElement('input'); cb.type='checkbox';
-      cb.dataset.code = code; cb.dataset.label = label;
-      const span = document.createElement('span'); span.textContent = ' ' + label;
-      lab.appendChild(cb); lab.appendChild(span); box.appendChild(lab);
-    });
-    // update the counter chip if you have one
-    const chip = Array.from(document.querySelectorAll('div,span')).find(n=>/selected$/i.test(n.textContent||''));
-    if(chip) chip.textContent = `0 selected`;
-    console.log(`Rendered ${items.length} items for [${sec}]`);
-  }
-};
-
-function niceTitle(key){ return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
-
-/* 4) Wire UI so both dropdown & Next Section use our data */
-function hookUI(){
-  const sel = $sectionSelect();
-  if (sel){
-    sel.innerHTML = '';
-    Picker.order.forEach(k=>{
-      const o = document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o);
-    });
-    sel.addEventListener('change', ()=>{
-      Picker.idx = Math.max(0, Picker.order.indexOf(sel.value));
-      Picker.render();
-    });
-  }
-  const next = $nextBtn();
-  if (next && !next._bound){
-    next.addEventListener('click', (e)=>{
-      // allow the button to be an <a> without navigating
-      e.preventDefault?.();
-      Picker.idx = (Picker.idx + 1) % Picker.order.length;
-      if (sel) sel.value = Picker.current();
-      Picker.render();
-    });
-    next._bound = true;
-  }
-}
-
-/* 5) Bootstrap: use the textarea if you pasted Options there; else fetch Options.txt */
-async function boot(){
-  let txt;
-  const ta = document.querySelector('#options-src, textarea#options');
-  if (ta && ta.value && /\[.*\]/.test(ta.value)){
-    txt = ta.value;
-  } else {
-    const res = await fetch(OPTIONS_TXT_URL, {cache:'no-store'});
-    txt = await res.text();
-  }
-  Picker.db = parseOptionsTxt(txt);
-  Picker.order = Object.keys(Picker.db);
-  Picker.idx = 0;
-  hookUI();
-  Picker.render();
-}
-
-document.addEventListener('DOMContentLoaded', boot);
-</script>
