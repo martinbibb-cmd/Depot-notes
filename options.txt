@@ -5,7 +5,7 @@
 [system_type]
 ST-COMBI | Combi boiler
 ST-SYSTEM | System (integrated pump and expansion)
-ST-REG | Heat-only (regular)
+ST-REG | Heat-only (regular)|with open vented cylinder | with unvented cylinder 
 ST-BBU | Back boiler
 ST-WA | warm air
 ST-E | electric heating
