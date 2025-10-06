@@ -1,0 +1,226 @@
+# ===========================
+# SYSTEM CHARACTERISTICS
+# ===========================
+
+[system_type]
+ST-COMBI | Combi boiler
+ST-SYSTEM | System (integrated pump and expansion)
+ST-REG | Heat-only (regular)
+ST-BBU | Back boiler
+ST-WA | warm air
+ST-E | electric heating
+
+[pressurisation]
+PR-SEAL | Sealed (expansion vessel)
+PR-OV | Open-vented (F&E tank)
+
+[primary_circuit]
+PC-PUMP | Fully pumped
+PC-GRAV | Gravity primaries
+
+[hot_water_strategy]
+DHW-OD | on demand DHW (combi)
+DHW-STORED-UV | Stored DHW (unvented)
+DHW-STORED-V | Stored DHW (vented)
+DHW-THERM | thermal store
+DHW-COMBIC | combination cylinder 
+DHW-SC | storage combi
+DHW-MP | multi point water heater
+
+[cylinder_capacity]
+CYL-120 | Cylinder ~120 L
+CYL-150 | Cylinder ~150 L
+CYL-200 | Cylinder ~200 L
+CYL-250 | Cylinder ~250 L
+CYL-300 | Cylinder ~300 L
+
+[system_condition]
+SC-AGE-NEW | Recent install / modern
+SC-AGE-MID | Mid-life, serviceable
+SC-AGE-OLD | Old, poor efficiency
+SC-LEAK-SUS | Suspected leak / air ingress
+SC-HEP | hep plastic pipe work
+SC-MM | mixed metals eg steel and copper
+SC-TW | true weld - this pipe work is highly prone to leak and so should always be replaced
+
+# ===========================
+# FLUE & CONDENSATE (FLUE IS NEVER OPTIONAL)
+# ===========================
+
+[flue_type]
+FL-HOR | Horizontal through wall
+FL-VER | Vertical through roof
+FL-REAR | Rear outlet (where applicable)
+
+[flue_route]
+FR-SAME | Same route as existing
+FR-REAR-PLUME | Rear flue with plume kit to clear opening
+FR-RELOC | Relocated to gain clearances
+FR-ROOF | Through roof with terminal kit
+
+[plume_kit]
+PK-REQ | Plume kit required
+PK-NO | Plume kit not required
+
+[flue_access]
+FA-STEPS | Access via steps only
+FA-LADDER | Ladder access required
+FA-TOWER | Tower/scaffold required
+FA-EASY | Ground-level access
+
+[condensate_route]
+CD | condensate route
+CD-IN-SOIL | Internal to soil stack
+CD-IN-PTRAP | Internal to waste with trap
+CD-EXT-FALL | External with continuous fall
+CD-PUMP | Pumped condensate
+CD-NEUT | With neutraliser (where required)
+CD-SOAK | to installer installed soak away. Soft ground.
+CD-SOAKB | to specialist builder installed soak away.
+
+# ===========================
+# GAS / METER / ROUTE
+# ===========================
+
+[gas_meter]
+GM-U6-IN | U6, inside
+GM-U6-OUT | U6, outside
+GM-LPG1 | LPG cylinders next to 
+GM-LPG2 | LPG cylinder remote
+
+[gas_route]
+GR-SIMPLE | Simple route / local
+GR-REUSE | Reuse existing route
+GR-UPSIZE | Upsize section(s) for capacity
+GR-COMPLEX | Complex route (clipping/drilling/routing)
+
+[gas_notes]
+GN-LEAD | Meter tail is lead → needs replacement
+GN-22MM | 22 mm run to appliance
+GN-BORE | Pressure drop risk over length
+
+# ===========================
+# CONTROLS / FILTRATION / WATER TREATMENT
+# ===========================
+
+[controls]
+CT-HIVE | Hive controls
+CT-PROGSTAT | Programmer + room stat
+CT-PROG | programmer 
+CT-STAT | hard wired room stat
+CT-MECH | mechanical timer
+CT-LOADCOMP | Weather/load compensation
+
+[filter]
+F-TF1 | Fernox TF1 (brass)
+F-MAG | Magnetic filter (other)
+F-EXIST | Existing filter retained
+F-NONE | No filter (not suitable)
+
+[water_treatment]
+WT-FLUSH | Powerflush
+WT-CLEANSE | Chemical cleanse & inhibit
+
+# ===========================
+# RADIATORS / PIPEWORK
+# ===========================
+
+[radiators]
+RAD-OLD | Radiators old / mixed condition
+RAD-REPLACE | Replace selected radiators
+RAD-VALVES | Replace TRVs/lockshields
+RAD-NOFLUSH | Rads/valves prevent flushing
+
+[pipework_notes]
+PW-OK | Pipework sound / adequate
+PW-UNDER | Primary undersized sections present
+PW-RE-PROUT | Re-route/alterations required
+
+# ===========================
+# ACCESS / DELIVERY / PARKING / PERMISSIONS
+# ===========================
+
+[site_access]
+SA-GROUND | All works at ground level
+SA-LOFT | Loft access required
+SA-TIGHT | Tight access/working area
+SA-STAIRS | Stairs involved for delivery
+
+[delivery_requirements]
+DL-STANDARD | Standard delivery
+DL-DOUBLE | Double-handed lift required
+DL-TO-LOFT | Delivery to loft area
+
+[parking]
+PK-ONROAD | On-road parking available
+PK-RESTRICT | Restricted / permit required
+PK-NO | No parking near property
+
+[permissions]
+PM-NONE | No special permissions
+PM-BUILDING | Building management permission required
+PM-PLANNING | Planning/landlord permission required
+PM-CUSTOMER | Customer to arrange access/clearance
+
+# ===========================
+# ROOF / WORK AT HEIGHTS
+# ===========================
+
+[roof_work]
+RW-NONE | No roof work
+RW-LOW | Low-level roof work
+RW-WAH | Work at heights equipment required
+
+# ===========================
+# HAZARDS / ASBESTOS
+# ===========================
+
+[hazards_general]
+HZ-DOGS | Dogs on site
+HZ-TRIP | Trip hazards / low objects
+HZ-NOHAND | Missing handrails
+HZ-EARTH | Electrical earthing concerns
+HZ-OTHER | Other hazard (specify)
+
+[asbestos_status]
+ASB-NONE | None / Artex only
+ASB-SUS | Suspected (survey required)
+ASB-KNOWN | Known ACMs present (area isolated)
+
+# ===========================
+# WATER / PRESSURE / FLOW / SUITABILITY
+# ===========================
+
+[water_pressure_band]
+WP-LOW | Low pressure area
+WP-MED | Typical/adequate pressure
+WP-HIGH | High pressure — PRV may be needed
+
+[flow_rate_band]
+FR-<10 | Flow rate <10 L/min
+FR-10-12 | Flow rate 10–12 L/min
+FR-12-15 | Flow rate 12–15 L/min
+FR-15+ | Flow rate ≥15 L/min
+
+[shower_compatibility]
+SH-YES | Shower compatible
+SH-PUMP | Shower pump present/required
+SH-NO | Shower not recommended with new system.
+
+[combi_suitability]
+CS-NO | Combi not recommended (pressure/flow/usage)
+CS-BORDER | Borderline for combi
+CS-YES | Combi suitable
+
+# ===========================
+# CUSTOMER TASKS / NOTES
+# ===========================
+
+[customer_tasks]
+CT-CLEAR | Clear working areas before install
+CT-ACCESS | Provide meter/cupboard access
+CT-PERMITS | Arrange permits/parking (if required)
+
+[office_notes]
+ON-NONE | None
+ON-FOLLOW | Follow-up required (specify)
