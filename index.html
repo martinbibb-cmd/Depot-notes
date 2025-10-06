@@ -105,12 +105,20 @@ ST-SYSTEM | System (with cylinder)"></textarea>
         const sec = line.match(/^\[([^\]]+)\]$/);
         if (sec){ section = sec[1].trim(); db[section] = []; continue; }
         if (!section) continue;
-        const parts = line.split('|');
-        if (parts.length >= 2){
-          const code = parts[0].trim();
-          const label = parts.slice(1).join('|').trim();
-          if (code) db[section].push({ code, label });
-        }
+        const parts = line.split('|').map(s => s.trim());
+if (parts.length >= 2) {
+  const code = parts[0];
+  const label = parts[1] || '';
+  const subcategories = parts.slice(2).filter(Boolean); // NEW
+
+  if (code) {
+    db[section].push({
+      code,
+      label,
+      subcategories: subcategories.length ? subcategories : null // NEW
+    });
+  }
+}
       }
       return db;
     }
@@ -143,7 +151,32 @@ ST-SYSTEM | System (with cylinder)"></textarea>
       const set = State.selected.get(key) || new Set();
       $('#sel-count').textContent = `${set.size} selected`;
     }
+// Render an <option> list with optional sub-items (backward compatible)
+function addOptionsWithSubcategories(selectEl, items) {
+  // clear existing
+  while (selectEl.firstChild) selectEl.removeChild(selectEl.firstChild);
 
+  // placeholder
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.disabled = true;
+  ph.selected = true;
+  ph.textContent = 'Select…';
+  selectEl.appendChild(ph);
+
+addOptionsWithSubcategories(sel, items);
+
+    // subcategories (NEW)
+    if (Array.isArray(it.subcategories) && it.subcategories.length) {
+      it.subcategories.forEach(sub => {
+        const subOpt = document.createElement('option');
+        subOpt.value = it.code; // or `${it.code}:${sub}` for unique IDs
+        subOpt.textContent = `↳ ${it.label} — ${sub}`;
+        selectEl.appendChild(subOpt);
+      });
+    }
+  });
+}
     function renderCurrentSection(){
       const key = State.order[State.idx];
       const container = $('#items-list');
