@@ -1034,3 +1034,132 @@ if (btnLoadTxtFile && txtFile){
 </script>
 </body>
 </html>
+<script>
+const OPTIONS_URL = './Options.txt?v=20251006';
+
+/* Parse INI-like Options.txt → { sectionKey: [{code,label},...] } */
+function parseOptionsTxt(txt) {
+  const db = {};
+  let section = null;
+  for (const raw of txt.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const m = line.match(/^\[([^\]]+)\]$/);
+    if (m) { section = m[1].trim(); db[section] = []; continue; }
+    if (!section) continue;
+
+    const parts = line.split('|');
+    if (parts.length >= 2) {
+      const code  = parts[0].trim();
+      const label = parts.slice(1).join('|').trim();
+      if (code) db[section].push({ code, label });
+    }
+  }
+  return db;
+}
+
+/* Flexible selectors (fall back to creating what we need) */
+function getSectionSelect() {
+  let sel = document.querySelector('#section-select, select#section, select[name="section"], [data-role="section"]');
+  if (!sel) {
+    // try to find the first select under the "Depot Notes Picker" area
+    const picker = Array.from(document.querySelectorAll('h2,h3'))
+      .find(h => /Depot Notes Picker/i.test(h.textContent))?.parentElement;
+    sel = picker?.querySelector('select');
+  }
+  return sel;
+}
+function getItemsList() {
+  let list = document.querySelector('#items-list, #picker-list, .picker-list, [data-role="items-list"]');
+  if (!list) {
+    const sel = getSectionSelect();
+    if (sel) {
+      list = document.createElement('div');
+      list.id = 'items-list';
+      list.style.marginTop = '0.75rem';
+      sel.insertAdjacentElement('afterend', list);
+    }
+  }
+  return list;
+}
+function getOptionsTextarea() {
+  return document.querySelector('#options-src, textarea#options, textarea[name="options-src"]');
+}
+
+/* Render items safely (no innerHTML) */
+function renderItemsForSection(sec) {
+  const list = getItemsList();
+  list.innerHTML = '';
+  const items = (window.optionsDB && window.optionsDB[sec]) || [];
+
+  items.forEach(({ code, label }) => {
+    const wrap = document.createElement('label');
+    wrap.style.display = 'block';
+    wrap.style.cursor = 'pointer';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    // don't put raw "<" etc into HTML; store separately
+    cb.dataset.code = encodeURIComponent(code);
+    cb.dataset.label = label;
+
+    const txt = document.createTextNode(' ' + label);
+
+    wrap.appendChild(cb);
+    wrap.appendChild(txt);
+    list.appendChild(wrap);
+  });
+
+  console.log(`Rendered ${items.length} items for [${sec}]`);
+}
+
+/* Wire up change handler once */
+function hookSectionChange() {
+  const sel = getSectionSelect();
+  if (!sel || sel._hooked) return;
+  sel.addEventListener('change', () => renderItemsForSection(sel.value));
+  sel._hooked = true;
+}
+
+/* Fill the Section dropdown */
+function fillSectionDropdown(db) {
+  const sel = getSectionSelect();
+  if (!sel) return;
+  // only replace options if it's empty or holding stale values
+  sel.innerHTML = '';
+  Object.keys(db).forEach(sec => {
+    const opt = document.createElement('option');
+    opt.value = sec;
+    opt.textContent = sec;
+    sel.appendChild(opt);
+  });
+  sel.dispatchEvent(new Event('change')); // initial render
+}
+
+/* Load Options.txt and hydrate */
+async function loadOptionsTxt() {
+  try {
+    const res = await fetch(OPTIONS_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const txt = await res.text();
+
+    const ta = getOptionsTextarea();
+    if (ta) ta.value = txt;
+
+    window.optionsDB = parseOptionsTxt(txt);
+
+    hookSectionChange();
+    fillSectionDropdown(window.optionsDB);
+
+    // If your app has its own hydrator, call it too
+    if (typeof window.applyParsedOptions === 'function') {
+      window.applyParsedOptions(window.optionsDB);
+    }
+  } catch (e) {
+    console.error('Options load failed:', e);
+    alert('Could not load Options.txt — check path and hard refresh.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', loadOptionsTxt);
+</script>
