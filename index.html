@@ -964,5 +964,73 @@ ST-SYSTEM | System (with cylinder)"></textarea>
   });
 })();
 </script>
+<script>
+// --- Plain-text → JSON parser ---
+function parseOptionsText(txt){
+  const out = {};
+  let current = null;
+  const lines = (txt || '').split(/\r?\n/);
+  for (let raw of lines){
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    if (line.startsWith('[') && line.endsWith(']')){
+      current = line.slice(1, -1).trim();
+      if (!current) { current = null; continue; }
+      if (!out[current]) out[current] = [];
+      continue;
+    }
+    if (!current) continue; // ignore items before first [section]
+    const m = line.split('|');
+    if (m.length === 1){
+      const text = m[0].trim();
+      if (text) out[current].push({ code: textToCode(text), text });
+    } else {
+      const code = (m[0] || '').trim();
+      const text = (m.slice(1).join('|') || '').trim();
+      if (text) out[current].push({ code: code || textToCode(text), text });
+    }
+  }
+  return out;
+}
+function textToCode(s){
+  return String(s||'')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g,'-')
+    .replace(/[^A-Z0-9\-]/g,'')
+    .slice(0,24);
+}
+
+// --- Wire up the new UI ---
+const txtInput = document.getElementById('txtInput');
+const btnParseTxt = document.getElementById('btnParseTxt');
+const btnLoadTxtFile = document.getElementById('btnLoadTxtFile');
+const txtFile = document.getElementById('txtFile');
+
+if (btnParseTxt){
+  btnParseTxt.addEventListener('click', ()=>{
+    try{
+      const obj = parseOptionsText(txtInput.value || '');
+      if (Object.keys(obj).length === 0) { alert('No sections/items found.'); return; }
+      jsonInput.value = JSON.stringify(obj, null, 2); // reuse existing textarea
+      btnParse.click(); // reuse your existing “Parse JSON” button to load state/UI
+      setStatus('text parsed → JSON ✓', true);
+    }catch(e){
+      setStatus('text parse failed', false, true);
+      alert('Parse error: ' + e.message);
+    }
+  });
+}
+if (btnLoadTxtFile && txtFile){
+  btnLoadTxtFile.addEventListener('click', ()=> txtFile.click());
+  txtFile.addEventListener('change', async (e)=>{
+    const f = e.target.files?.[0];
+    if(!f) return;
+    const text = await f.text();
+    txtInput.value = text;
+    setStatus('txt loaded', true);
+  });
+}
+</script>
 </body>
 </html>
