@@ -6,98 +6,43 @@
 <title>Depot Notes – Picker</title>
 <style>
   :root{
-    --blue:#0a5cff;
-    --blue-600:#0a4fd9;
-    --fg:#111;
-    --muted:#666;
-    --bg:#fff;
-    --ui:#f7f9ff;
-    --line:#e3e7f2;
+    --blue:#0a5cff; --blue-600:#084ad1;
+    --fg:#111; --muted:#666; --bg:#fff; --ui:#f7f9ff; --line:#e3e7f2;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    color:var(--fg);
-    background:var(--bg);
-    font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-  }
-
+  body{margin:0;color:var(--fg);background:var(--bg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
   /* BANNERS */
-  .banner{
-    background:var(--blue);
-    color:#fff;
-    padding:14px 16px;
-    border-bottom:1px solid var(--blue-600);
-  }
-  .banner h1{
-    margin:0;
-    font-size:18px;
-    letter-spacing:.2px;
-  }
-  .subbanner{
-    background:var(--blue);
-    color:#fff;
-    padding:10px 16px;
-    margin:16px 0 8px;
-    border-radius:8px;
-  }
-  .subbanner h2{
-    margin:0;
-    font-size:16px;
-  }
-
+  .banner{background:var(--blue);color:#fff;padding:14px 16px;border-bottom:1px solid var(--blue-600);position:sticky;top:0;z-index:5}
+  .banner h1{margin:0;font-size:18px;letter-spacing:.2px}
+  .subbanner{background:var(--blue);color:#fff;padding:10px 16px;margin:16px 0 8px;border-radius:8px}
+  .subbanner h2{margin:0;font-size:16px}
   /* LAYOUT */
   .container{max-width:1100px;margin:0 auto;padding:16px}
   .row{display:flex;gap:16px;flex-wrap:wrap}
   .col{flex:1 1 360px;min-width:320px}
-  .sticky{position:sticky;top:12px}
-
+  .sticky{position:sticky;top:76px}
   /* FORMS */
   label{display:block;font-weight:600;margin:8px 0 6px}
-  select, input[type="text"], textarea{
-    width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff
-  }
+  select, input[type="text"], textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
   select[multiple]{height:460px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-  button{
-    padding:8px 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer
-  }
+  button{padding:8px 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer}
   button:hover{background:#f5f7ff}
   .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#eef2ff;border:1px solid var(--line)}
   .muted{color:var(--muted);font-size:13px}
   .out{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .divider{color:#999}
   .sep{height:1px;background:var(--line);margin:12px 0}
-
   /* HEADER RIGHT ACTIONS */
   .header-actions{position:absolute;right:12px;top:10px;display:flex;gap:8px;align-items:center}
-  .gear{
-    background:#fff;color:var(--blue);border:1px solid var(--line);
-    border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px
-  }
+  .gear{background:#fff;color:var(--blue);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px}
   .gear:hover{background:#f5f7ff}
-
-  /* EDITOR PANEL */
-  .editor{
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:12px;
-    background:#fff;
-  }
-  .editor h3{margin:0 0 8px}
+  /* EDITOR */
+  details.editor-wrap{margin-top:16px}
+  summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:.5rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  summary::marker{display:none}
+  .editor{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
   .editor .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media (max-width:900px){ .editor .grid{grid-template-columns:1fr} }
-
-  details.editor-wrap{margin-top:16px}
-  summary{
-    list-style:none;
-    cursor:pointer;
-    display:flex;align-items:center;gap:.5rem;
-    padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff
-  }
-  summary::marker{display:none}
-  summary .slabel{font-weight:700}
   .badge{background:var(--blue);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 </style>
@@ -114,20 +59,17 @@
 
 <div class="container">
 
-  <!-- Instructions banner -->
-  <div class="subbanner" aria-live="polite">
-    <h2>Instructions</h2>
-  </div>
+  <!-- Instructions -->
+  <div class="subbanner" aria-live="polite"><h2>Instructions</h2></div>
   <ol class="muted" style="margin-top:8px">
-    <li>Select a <strong>Section</strong>, filter if needed, then multi-select items (Cmd/Ctrl + click).</li>
-    <li>Click <strong>Rebuild</strong> to refresh the copy box with <code>;</code> line breaks (optional: include headers).</li>
-    <li>Use <strong>Copy</strong> to paste into your Depot Notes.</li>
-    <li>Switch to the <strong>⚙️ Editor</strong> to view/edit <span class="mono">Options.txt</span>. Apply your changes to preview. Copy or download to update GitHub.</li>
+    <li>Select a <strong>Section</strong>, filter if needed, and multi-select items (Cmd/Ctrl + click).</li>
+    <li>Click <strong>Rebuild</strong> to refresh the copy box with <code>;</code> line breaks (optionally include headers).</li>
+    <li>Use <strong>Copy</strong> to paste into Depot Notes.</li>
+    <li>Use <strong>⚙️ Editor</strong> to load <span class="mono">Options.txt</span>, edit locally, and preview. <strong>Edits here do not save to GitHub automatically</strong> — use <em>Copy</em> or <em>Download</em> then paste/commit in GitHub.</li>
   </ol>
 
-  <!-- Picker banner -->
+  <!-- Picker -->
   <div class="subbanner"><h2>Picker</h2></div>
-
   <div class="row">
     <div class="col sticky">
       <label for="section-select">Section</label>
@@ -141,7 +83,7 @@
 
       <label for="options-list">Options</label>
       <select id="options-list" multiple></select>
-      <div class="muted">Tip: Hold Cmd/Ctrl to select multiple. Dividers are non-selectable.</div>
+      <div class="muted">Tip: Dividers are non-selectable. Sub-items are shown indented.</div>
     </div>
 
     <div class="col">
@@ -164,21 +106,20 @@
     </div>
   </div>
 
-  <!-- Editor banner -->
+  <!-- Editor -->
   <div class="subbanner"><h2>Advanced – Editor</h2></div>
-
-  <!-- Collapsible Editor -->
   <details id="editor-panel" class="editor-wrap">
     <summary><span class="slabel">Show / Hide Editor</span> <span class="badge">⚙️</span></summary>
     <div class="editor" role="region" aria-label="Options Editor">
-      <p class="muted">This editor lets you load, edit, and preview <span class="mono">Options.txt</span> without touching the live file automatically.</p>
+      <p class="muted">
+        Load the live <span class="mono">Options.txt</span>, edit locally, and preview parsing. Use <em>Copy</em> or <em>Download</em> to update your repo manually.
+      </p>
       <div class="grid">
         <div>
           <label for="txt-editor">Options.txt (local edit)</label>
-          <textarea id="txt-editor" style="height:340px" placeholder="Customer Needs:
-[Water & Hot Water]
-CN01|Better water pressure
-CN02|Faster hot water delivery"></textarea>
+          <textarea id="txt-editor" style="height:340px" placeholder="[system_type]
+ST-COMBI | Combi boiler
+ST-SYSTEM | System (integrated pump and expansion)"></textarea>
           <div class="controls">
             <button id="btn-load-remote">Load from Options.txt</button>
             <button id="btn-apply-local">Apply (Preview)</button>
@@ -195,7 +136,7 @@ CN02|Faster hot water delivery"></textarea>
           </div>
         </div>
       </div>
-      <p class="muted">To update GitHub: open <em>Options.txt</em> in your repo, paste the copied/edited content, and save/commit.</p>
+      <p class="muted"><strong>Note:</strong> This app does not push changes to GitHub automatically.</p>
     </div>
   </details>
 
@@ -206,50 +147,35 @@ CN02|Faster hot water delivery"></textarea>
    State
 ------------------------------ */
 const State = {
-  sections: {},   // { SectionName: [entries...] }
-  order: [],
-  current: null,
-  rawTxt: '',
-  sourceUrl: ''
+  sections: {}, order: [], current: null, rawTxt: '', sourceUrl: ''
 };
-
-/* ------------------------------
-   Helpers
------------------------------- */
-function $(sel){ return document.querySelector(sel); }
+function $(s){ return document.querySelector(s); }
 function setSourceLabel(url){ $('#active-source').textContent = 'Source: ' + (url || '(fallback)'); }
 
 /* ------------------------------
-   Loading Options.txt
+   Load Options.txt (tries common paths)
 ------------------------------ */
 async function fetchFirstAvailable(urls) {
   for (const url of urls) {
     try {
       const res = await fetch(url, { cache:'no-store' });
-      if (res.ok) {
-        State.sourceUrl = url;
-        return await res.text();
-      }
-    } catch(_) { /* try next */ }
+      if (res.ok) { State.sourceUrl = url; return await res.text(); }
+    } catch(_) {}
   }
-  throw new Error('Unable to load Options file from known URLs.');
+  throw new Error('Unable to load Options.txt from known URLs.');
 }
-
 function getQueryParam(name){
   const v = new URLSearchParams(location.search).get(name);
   return v && v.trim() ? v.trim() : null;
 }
-
 async function loadOptionsTxt() {
-  const forced = getQueryParam('src'); // ?src=http(s)://.../Options.txt
+  const forced = getQueryParam('src'); // e.g. ?src=https://raw.githubusercontent.com/.../Options.txt
   const base = location.pathname.replace(/\/[^/]*$/, '/') || '/';
   const candidates = forced ? [forced] : [
-    // most common local/GitHub Pages paths
-    'Options.txt',
-    base + 'Options.txt',
-    './Options.txt',
-    // raw GitHub fallback (adjust if you change owner/repo/branch)
-    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/Options.txt'
+    'Options.txt', base + 'Options.txt', './Options.txt',
+    'options.txt', base + 'options.txt', './options.txt',
+    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/Options.txt',
+    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/options.txt'
   ];
   const txt = await fetchFirstAvailable(candidates);
   setSourceLabel(State.sourceUrl);
@@ -257,21 +183,18 @@ async function loadOptionsTxt() {
 }
 
 /* ------------------------------
-   Parser
-   Supports:
-   - Section: "Customer Needs:"
-   - Divider: "[Water & Hot Water]"
-   - Item:    "CODE|Label|Sub1|Sub2..."
+   INI-style parser
+   - [section_name]
+   - CODE | Label | Sub1 | Sub2...
+   - Ignores lines starting # ; //
 ------------------------------ */
 function parseOptionsText(txt) {
-  const db = {};
-  let section = null;
-
+  const db = {}; let section = null;
   for (const raw of txt.split(/\r?\n/)) {
     const line = raw.trim();
-    if (!line || line.startsWith('//') || line.startsWith(';')) continue;
+    if (!line || line.startsWith('#') || line.startsWith('//') || line.startsWith(';')) continue;
 
-    const sec = line.match(/^(.+?):$/);
+    const sec = line.match(/^\[([^\]]+)\]$/);
     if (sec) {
       section = sec[1].trim();
       if (!db[section]) db[section] = [];
@@ -279,25 +202,17 @@ function parseOptionsText(txt) {
     }
     if (!section) continue;
 
-    const cat = line.match(/^\[([^\]]+)\]$/);
-    if (cat) {
-      db[section].push({ type:'divider', label:cat[1].trim() });
-      continue;
-    }
-
     const parts = line.split('|').map(s => s.trim());
     if (parts.length >= 2) {
       const code = parts[0];
       const label = parts[1] || '';
       const extras = parts.slice(2).filter(Boolean);
-      if (code) {
-        db[section].push({
-          type: 'item',
-          code,
-          label,
-          subcategories: extras.length ? extras : null
-        });
-      }
+      db[section].push({
+        type: 'item',
+        code,
+        label,
+        subcategories: extras.length ? extras : null
+      });
     }
   }
   return db;
@@ -312,13 +227,11 @@ function populateSectionDropdown() {
   State.order = Object.keys(State.sections);
   State.order.forEach(name => {
     const o = document.createElement('option');
-    o.value = name; o.textContent = name;
-    sel.appendChild(o);
+    o.value = name; o.textContent = name; sel.appendChild(o);
   });
   if (!State.current) State.current = State.order[0] || null;
   sel.value = State.current || '';
 }
-
 function buildOptionsForCurrent(filterText='') {
   const list = $('#options-list');
   const items = (State.sections[State.current] || []);
@@ -327,9 +240,7 @@ function buildOptionsForCurrent(filterText='') {
 
   const add = (value, text, disabled=false) => {
     const o = document.createElement('option');
-    o.value = value;
-    o.textContent = text;
-    if (disabled) o.disabled = true;
+    o.value = value; o.textContent = text; if (disabled) o.disabled = true;
     list.appendChild(o);
   };
 
@@ -353,26 +264,17 @@ function buildOptionsForCurrent(filterText='') {
     }
   });
 }
-
 function selectedValuesToCopy() {
   const list = $('#options-list');
   const selected = [...list.selectedOptions].map(o => o.textContent).filter(Boolean);
   const head = $('#include-headers').checked ? (State.current + ':') : null;
-  const lines = [];
-  if (head) lines.push(head);
-  lines.push(...selected);
+  const lines = []; if (head) lines.push(head); lines.push(...selected);
   return lines.join(';\n');
 }
-
 function exportSectionToJson(sectionName) {
   const items = (State.sections[sectionName] || []);
-  const arr = items
-    .filter(it => it && it.type === 'item' && it.code)
-    .map(it => ({
-      code: it.code,
-      label: it.label,
-      subcategories: it.subcategories || []
-    }));
+  const arr = items.filter(it => it && it.type === 'item' && it.code)
+    .map(it => ({ code: it.code, label: it.label, subcategories: it.subcategories || [] }));
   return JSON.stringify(arr, null, 2);
 }
 
@@ -384,35 +286,23 @@ $('#section-select').addEventListener('change', e => {
   buildOptionsForCurrent($('#filter').value);
   $('#json-output').value = exportSectionToJson(State.current);
 });
-
-$('#filter').addEventListener('input', e => {
-  buildOptionsForCurrent(e.target.value);
-});
-
+$('#filter').addEventListener('input', e => buildOptionsForCurrent(e.target.value));
 $('#btn-select-all').addEventListener('click', () => {
   const list = $('#options-list');
   [...list.options].forEach(o => { if (!o.disabled) o.selected = true; });
   $('#output').value = selectedValuesToCopy();
 });
-
 $('#btn-clear').addEventListener('click', () => {
-  const list = $('#options-list');
-  [...list.options].forEach(o => o.selected = false);
+  const list = $('#options-list'); [...list.options].forEach(o => o.selected = false);
   $('#output').value = '';
 });
-
-$('#btn-rebuild').addEventListener('click', () => {
-  $('#output').value = selectedValuesToCopy();
-});
-
+$('#btn-rebuild').addEventListener('click', () => $('#output').value = selectedValuesToCopy());
 $('#btn-copy').addEventListener('click', async () => {
   const text = $('#output').value || selectedValuesToCopy();
   try { await navigator.clipboard.writeText(text); } catch {}
 });
-
 $('#btn-json-copy').addEventListener('click', async () => {
-  const text = $('#json-output').value;
-  try { await navigator.clipboard.writeText(text); } catch {}
+  const text = $('#json-output').value; try { await navigator.clipboard.writeText(text); } catch {}
 });
 
 /* ------------------------------
@@ -423,18 +313,12 @@ $('#btn-editor-toggle').addEventListener('click', () => {
   editorPanel.open = !editorPanel.open;
   if (editorPanel.open) editorPanel.scrollIntoView({behavior:'smooth',block:'start'});
 });
-
 $('#btn-load-remote').addEventListener('click', async () => {
   try {
-    const txt = await loadOptionsTxt();
-    State.rawTxt = txt;
-    $('#txt-editor').value = txt;
-    setSourceLabel(State.sourceUrl);
-  } catch (e) {
-    $('#txt-editor').value = `Error: ${e.message}`;
-  }
+    const txt = await loadOptionsTxt(); State.rawTxt = txt;
+    $('#txt-editor').value = txt; setSourceLabel(State.sourceUrl);
+  } catch (e) { $('#txt-editor').value = `Error: ${e.message}`; }
 });
-
 $('#btn-apply-local').addEventListener('click', () => {
   const local = $('#txt-editor').value || '';
   try {
@@ -445,30 +329,19 @@ $('#btn-apply-local').addEventListener('click', () => {
     buildOptionsForCurrent($('#filter').value);
     $('#json-output').value = exportSectionToJson(State.current);
     $('#parsed-preview').value = JSON.stringify(parsed, null, 2);
-  } catch (e) {
-    $('#parsed-preview').value = `Parse error: ${e.message}`;
-  }
+  } catch (e) { $('#parsed-preview').value = `Parse error: ${e.message}`; }
 });
-
 $('#btn-reset').addEventListener('click', async () => {
-  await init(); // reload remote Options.txt (or fallback)
-  $('#txt-editor').value = State.rawTxt;
-  $('#parsed-preview').value = '';
+  await init(); $('#txt-editor').value = State.rawTxt; $('#parsed-preview').value = '';
 });
-
 $('#btn-copy-txt').addEventListener('click', async () => {
   const text = $('#txt-editor').value || '';
   try { await navigator.clipboard.writeText(text); } catch {}
 });
-
 $('#btn-download').addEventListener('click', () => {
   const blob = new Blob([$('#txt-editor').value || ''], {type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Options.txt';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'Options.txt'; document.body.appendChild(a); a.click(); a.remove();
 });
 
 /* ------------------------------
@@ -480,12 +353,10 @@ async function init(){
     txt = await loadOptionsTxt();
   }catch(e){
     console.warn(e);
-    txt = `Customer Needs:
-[Water & Hot Water]
-CN01|Better water pressure
-CN02|Faster hot water delivery`;
+    txt = `[system_type]
+ST-COMBI | Combi boiler
+ST-SYSTEM | System (integrated pump and expansion)`;
     State.sourceUrl = '(fallback)';
-    setSourceLabel(State.sourceUrl);
   }
   State.rawTxt = txt;
   State.sections = parseOptionsText(txt);
@@ -493,6 +364,7 @@ CN02|Faster hot water delivery`;
   populateSectionDropdown();
   buildOptionsForCurrent('');
   $('#json-output').value = exportSectionToJson(State.current);
+  setSourceLabel(State.sourceUrl);
 }
 init();
 </script>
