@@ -9,7 +9,62 @@
   :root{
     color-scheme: light; /* FORCE LIGHT MODE */
     --blue:#0a5cff; --blue-600:#084ad1;
-    --fg:#111; --muted:#666; --bg:#fff; --ui:#f7f9ff; --line:#e3e7f2;
+    --fg:#111; --muted:#666; --bg:#fff; --ui:#f7f9ff; --line:#/* —— iOS ghost text hotfix —— */
+
+/* 1) Force light colors on all controls */
+select, textarea, input[type="text"] {
+  color: #111 !important;
+  background: #fff !important;
+  border: 1px solid var(--line) !important;
+  caret-color: #111 !important;
+  opacity: 1 !important;          /* stop iOS dimming */
+  color-scheme: light;             /* tell UA: light only */
+  appearance: none;
+}
+
+/* 2) Options inside <select> (iOS ignores normal rules unless hard-pinned) */
+option {
+  color: #111 !important;
+  background: #fff !important;
+  opacity: 1 !important;
+}
+option:disabled {
+  color: #888 !important;
+  background: #f5f7ff !important;
+}
+
+/* 3) Readonly output boxes must NOT be dimmed */
+textarea[readonly], .out[readonly] {
+  color: #111 !important;
+  background: #fff !important;
+  opacity: 1 !important;
+}
+
+/* 4) Placeholder text (filter box, etc.) */
+::placeholder {
+  color: #777 !important;
+  opacity: 1 !important;
+}
+
+/* 5) iOS-specific: defeat auto-invert/tinting */
+@supports (-webkit-touch-callout: none) {
+  select, textarea, input[type="text"] {
+    -webkit-text-fill-color: #111 !important;  /* actual glyph color */
+    background-color: #fff !important;
+  }
+  option {
+    -webkit-text-fill-color: #111 !important;
+    background-color: #fff !important;
+  }
+}
+
+/* 6) If the OS is in dark mode, still keep our controls light */
+@media (prefers-color-scheme: dark) {
+  select, textarea, input[type="text"], option {
+    color: #111 !important;
+    background: #fff !important;
+  }
+}
   }
   *{box-sizing:border-box}
   body{margin:0;color:var(--fg);background:var(--bg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
