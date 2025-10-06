@@ -3,125 +3,152 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light">
+<meta name="color-scheme" content="dark light">
 <title>Depot Notes – Picker</title>
 <style>
-  :root{
-    color-scheme: light; /* FORCE LIGHT MODE */
-    --blue:#0a5cff; --blue-600:#084ad1;
-    --fg:#111; --muted:#666; --bg:#fff; --ui:#f7f9ff; --line:#/* —— iOS ghost text hotfix —— */
-
-/* 1) Force light colors on all controls */
-select, textarea, input[type="text"] {
-  color: #111 !important;
-  background: #fff !important;
-  border: 1px solid var(--line) !important;
-  caret-color: #111 !important;
-  opacity: 1 !important;          /* stop iOS dimming */
-  color-scheme: light;             /* tell UA: light only */
-  appearance: none;
-}
-
-/* 2) Options inside <select> (iOS ignores normal rules unless hard-pinned) */
-option {
-  color: #111 !important;
-  background: #fff !important;
-  opacity: 1 !important;
-}
-option:disabled {
-  color: #888 !important;
-  background: #f5f7ff !important;
-}
-
-/* 3) Readonly output boxes must NOT be dimmed */
-textarea[readonly], .out[readonly] {
-  color: #111 !important;
-  background: #fff !important;
-  opacity: 1 !important;
-}
-
-/* 4) Placeholder text (filter box, etc.) */
-::placeholder {
-  color: #777 !important;
-  opacity: 1 !important;
-}
-
-/* 5) iOS-specific: defeat auto-invert/tinting */
-@supports (-webkit-touch-callout: none) {
-  select, textarea, input[type="text"] {
-    -webkit-text-fill-color: #111 !important;  /* actual glyph color */
-    background-color: #fff !important;
+  :root {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --fg: #f5f5f5;
+    --muted: #bbb;
+    --line: #333;
+    --blue: #3088ff;
+    --blue-600: #1e6ad9;
+    --ui: #141414;
   }
-  option {
-    -webkit-text-fill-color: #111 !important;
-    background-color: #fff !important;
-  }
-}
 
-/* 6) If the OS is in dark mode, still keep our controls light */
-@media (prefers-color-scheme: dark) {
-  select, textarea, input[type="text"], option {
-    color: #111 !important;
-    background: #fff !important;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   }
-}
-  }
-  *{box-sizing:border-box}
-  body{margin:0;color:var(--fg);background:var(--bg);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 
   /* BANNERS */
-  .banner{background:var(--blue);color:#fff;padding:14px 16px;border-bottom:1px solid var(--blue-600);position:sticky;top:0;z-index:5}
-  .banner h1{margin:0;font-size:18px;letter-spacing:.2px}
-  .subbanner{background:var(--blue);color:#fff;padding:10px 16px;margin:16px 0 8px;border-radius:8px}
-  .subbanner h2{margin:0;font-size:16px}
+  .banner {
+    background: var(--blue);
+    color: #fff;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--blue-600);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .banner h1 { margin: 0; font-size: 18px; letter-spacing: .2px; }
+  .subbanner {
+    background: var(--blue);
+    color: #fff;
+    padding: 10px 16px;
+    margin: 16px 0 8px;
+    border-radius: 8px;
+  }
+  .subbanner h2 { margin: 0; font-size: 16px; }
 
   /* LAYOUT */
-  .container{max-width:1100px;margin:0 auto;padding:16px}
-  .row{display:flex;gap:16px;flex-wrap:wrap}
-  .col{flex:1 1 360px;min-width:320px}
-  .sticky{position:sticky;top:76px}
+  .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .col { flex: 1 1 360px; min-width: 320px; }
+  .sticky { position: sticky; top: 76px; }
 
-  /* FORMS: explicit colors to avoid iOS auto-invert */
-  label{display:block;font-weight:600;margin:8px 0 6px}
-  select, input[type="text"], textarea{
-    width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;
-    background:#fff;color:#111;
+  /* FORMS */
+  label { display: block; font-weight: 600; margin: 8px 0 6px; }
+  select, input[type="text"], textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #111;
+    color: #eee;
   }
-  select[multiple]{height:460px}
-  option{background:#fff;color:#111}
-  option:disabled{background:#f5f7ff;color:#888}
-  @supports (-webkit-touch-callout: none) {
-    select, input[type="text"], textarea { -webkit-text-fill-color:#111; background-color:#fff; }
-  }
+  select[multiple] { height: 460px; }
+  option { background: #111; color: #eee; }
+  option:disabled { color: #666; background: #1a1a1a; }
 
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-  button{padding:8px 10px;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer;color:#111}
-  button:hover{background:#f5f7ff}
-  .pill{font-size:12px;padding:4px 10px;border-radius:999px;background:#eef2ff;border:1px solid var(--line);color:#111}
-  .muted{color:var(--muted);font-size:13px}
-  .out{width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#111;background:#fff}
-  .sep{height:1px;background:var(--line);margin:12px 0}
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 12px; }
+  button {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    background: #222;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #fff;
+  }
+  button:hover { background: #333; }
+  .pill {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #1e6ad9;
+    color: #fff;
+    border: 1px solid var(--line);
+  }
+  .muted { color: var(--muted); font-size: 13px; }
+  .out {
+    width: 100%;
+    min-height: 150px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: #111;
+    color: #eee;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .sep { height: 1px; background: var(--line); margin: 12px 0; }
 
   /* HEADER RIGHT ACTIONS */
-  .header-actions{position:absolute;right:12px;top:10px;display:flex;gap:8px;align-items:center}
-  .gear{background:#fff;color:#0a5cff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px}
-  .gear:hover{background:#f5f7ff}
+  .header-actions {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .gear {
+    background: #fff;
+    color: var(--blue);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .gear:hover { background: #eee; }
 
   /* EDITOR */
-  details.editor-wrap{margin-top:16px}
-  summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:.5rem;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#111}
-  summary::marker{display:none}
-  .editor{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
-  .editor .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media (max-width:900px){ .editor .grid{grid-template-columns:1fr} }
-  .badge{background:var(--blue);color:#fff;border-radius:999px;padding:2px 8px;font-size:12px}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  details.editor-wrap { margin-top: 16px; }
+  summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #111;
+    color: #fff;
+  }
+  summary::marker { display: none; }
+  .editor {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+    background: #111;
+  }
+  .editor .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width:900px) { .editor .grid { grid-template-columns: 1fr; } }
+  .badge { background: var(--blue); color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 </style>
 </head>
 <body>
 
-<!-- Top banner -->
-<div class="banner" role="banner">
+<div class="banner">
   <h1>Depot Notes – Picker</h1>
   <div class="header-actions">
     <button id="btn-editor-toggle" class="gear" title="Open Editor">⚙️</button>
@@ -129,17 +156,14 @@ textarea[readonly], .out[readonly] {
 </div>
 
 <div class="container">
-
-  <!-- Instructions -->
-  <div class="subbanner" aria-live="polite"><h2>Instructions</h2></div>
-  <ol class="muted" style="margin-top:8px">
+  <div class="subbanner"><h2>Instructions</h2></div>
+  <ol class="muted">
     <li>Select a <strong>Section</strong>, filter if needed, and multi-select items (Cmd/Ctrl + click).</li>
-    <li>Click <strong>Rebuild</strong> to refresh the copy box with <code>;</code> line breaks (optionally include headers).</li>
+    <li>Click <strong>Rebuild</strong> to refresh the copy box with <code>;</code> line breaks.</li>
     <li>Use <strong>Copy</strong> to paste into Depot Notes.</li>
-    <li>Use <strong>⚙️ Editor</strong> to load <span class="mono">Options.txt</span>, edit locally, and preview. <strong>Edits here do not save to GitHub automatically</strong> — copy or download, then paste/commit in GitHub.</li>
+    <li>⚙️ <strong>Editor</strong> lets you load and preview <span class="mono">Options.txt</span>. Edits here do not save to GitHub automatically.</li>
   </ol>
 
-  <!-- Picker -->
   <div class="subbanner"><h2>Picker</h2></div>
   <div class="row">
     <div class="col sticky">
@@ -148,8 +172,8 @@ textarea[readonly], .out[readonly] {
 
       <div class="controls">
         <input id="filter" type="text" placeholder="Filter visible options…" />
-        <button id="btn-select-all" class="pill" title="Select all visible">Select all (visible)</button>
-        <button id="btn-clear" class="pill" title="Clear selection">Clear</button>
+        <button id="btn-select-all" class="pill">Select all</button>
+        <button id="btn-clear" class="pill">Clear</button>
       </div>
 
       <label for="options-list">Options</label>
@@ -165,24 +189,20 @@ textarea[readonly], .out[readonly] {
         <button id="btn-rebuild">Rebuild</button>
         <button id="btn-copy">Copy</button>
       </div>
-
       <div class="sep"></div>
-
       <label for="json-output">JSON (current section)</label>
       <textarea id="json-output" class="out" readonly></textarea>
       <div class="controls">
         <button id="btn-json-copy">Copy JSON</button>
       </div>
-      <div class="muted">Dividers are ignored in JSON. Sub-items appear under <code>subcategories</code>.</div>
     </div>
   </div>
 
-  <!-- Editor -->
   <div class="subbanner"><h2>Advanced – Editor</h2></div>
   <details id="editor-panel" class="editor-wrap">
     <summary><span class="slabel">Show / Hide Editor</span> <span class="badge">⚙️</span></summary>
-    <div class="editor" role="region" aria-label="Options Editor">
-      <p class="muted">Load the live <span class="mono">Options.txt</span>, edit locally, and preview parsing. Use <em>Copy</em> or <em>Download</em> to update your repo manually.</p>
+    <div class="editor">
+      <p class="muted">Load, edit, and preview <span class="mono">Options.txt</span>. Use Copy or Download to update GitHub manually.</p>
       <div class="grid">
         <div>
           <label for="txt-editor">Options.txt (local edit)</label>
@@ -190,9 +210,9 @@ textarea[readonly], .out[readonly] {
 ST-COMBI | Combi boiler
 ST-SYSTEM | System (integrated pump and expansion)"></textarea>
           <div class="controls">
-            <button id="btn-load-remote">Load from Options.txt</button>
-            <button id="btn-apply-local">Apply (Preview)</button>
-            <button id="btn-download">Download Options.txt</button>
+            <button id="btn-load-remote">Load</button>
+            <button id="btn-apply-local">Apply</button>
+            <button id="btn-download">Download</button>
             <button id="btn-copy-txt">Copy Text</button>
           </div>
           <div class="muted" id="active-source">Source: (not loaded yet)</div>
@@ -201,236 +221,131 @@ ST-SYSTEM | System (integrated pump and expansion)"></textarea>
           <label for="parsed-preview">Parsed (debug)</label>
           <textarea id="parsed-preview" class="out" style="height:340px" readonly></textarea>
           <div class="controls">
-            <button id="btn-reset">Reset to remote</button>
+            <button id="btn-reset">Reset</button>
           </div>
         </div>
       </div>
-      <p class="muted"><strong>Note:</strong> This app does not push changes to GitHub automatically.</p>
     </div>
   </details>
-
 </div>
 
 <script>
-/* ------------------------------
-   State
------------------------------- */
 const State = { sections:{}, order:[], current:null, rawTxt:'', sourceUrl:'' };
-function $(s){ return document.querySelector(s); }
-function setSourceLabel(url){ $('#active-source').textContent = 'Source: ' + (url || '(fallback)'); }
+function $(s){return document.querySelector(s);}
+function setSourceLabel(url){$('#active-source').textContent='Source: '+(url||'(fallback)');}
 
-/* ------------------------------
-   Load Options.txt (tries common paths)
------------------------------- */
-async function fetchFirstAvailable(urls) {
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, { cache:'no-store' });
-      if (res.ok) { State.sourceUrl = url; return await res.text(); }
-    } catch(_) {}
+async function fetchFirstAvailable(urls){
+  for(const url of urls){
+    try{const res=await fetch(url,{cache:'no-store'});if(res.ok){State.sourceUrl=url;return await res.text();}}catch(_){}
   }
-  throw new Error('Unable to load Options.txt from known URLs.');
+  throw new Error('Unable to load Options.txt');
 }
-function getQueryParam(name){
-  const v = new URLSearchParams(location.search).get(name);
-  return v && v.trim() ? v.trim() : null;
-}
-async function loadOptionsTxt() {
-  const forced = getQueryParam('src'); // e.g. ?src=https://raw.githubusercontent.com/.../Options.txt
-  const base = location.pathname.replace(/\/[^/]*$/, '/') || '/';
-  const candidates = forced ? [forced] : [
-    'Options.txt', base + 'Options.txt', './Options.txt',
-    'options.txt', base + 'options.txt', './options.txt',
-    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/Options.txt',
-    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/options.txt'
+async function loadOptionsTxt(){
+  const base=location.pathname.replace(/\/[^/]*$/,'/')||'/';
+  const candidates=[
+    'Options.txt',base+'Options.txt','./Options.txt',
+    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/Options.txt'
   ];
-  const txt = await fetchFirstAvailable(candidates);
+  const txt=await fetchFirstAvailable(candidates);
   setSourceLabel(State.sourceUrl);
   return txt;
 }
-
-/* ------------------------------
-   INI-style parser
-   - [section_name]
-   - CODE | Label | Sub1 | Sub2...
-   - Ignores lines starting # ; //
------------------------------- */
-function parseOptionsText(txt) {
-  const db = {}; let section = null;
-  for (const raw of txt.split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#') || line.startsWith('//') || line.startsWith(';')) continue;
-
-    const sec = line.match(/^\[([^\]]+)\]$/);
-    if (sec) {
-      section = sec[1].trim();
-      if (!db[section]) db[section] = [];
-      continue;
-    }
-    if (!section) continue;
-
-    const parts = line.split('|').map(s => s.trim());
-    if (parts.length >= 2) {
-      const code = parts[0];
-      const label = parts[1] || '';
-      const extras = parts.slice(2).filter(Boolean);
-      db[section].push({
-        type: 'item',
-        code,
-        label,
-        subcategories: extras.length ? extras : null
-      });
+function parseOptionsText(txt){
+  const db={};let section=null;
+  for(const raw of txt.split(/\r?\n/)){
+    const line=raw.trim();
+    if(!line||line.startsWith('#')||line.startsWith(';')||line.startsWith('//'))continue;
+    const sec=line.match(/^\[([^\]]+)\]$/);
+    if(sec){section=sec[1].trim();if(!db[section])db[section]=[];continue;}
+    if(!section)continue;
+    const parts=line.split('|').map(s=>s.trim());
+    if(parts.length>=2){
+      const code=parts[0],label=parts[1],extras=parts.slice(2).filter(Boolean);
+      db[section].push({type:'item',code,label,subcategories:extras.length?extras:null});
     }
   }
   return db;
 }
-
-/* ------------------------------
-   Rendering (Picker)
------------------------------- */
-function populateSectionDropdown() {
-  const sel = $('#section-select');
-  sel.innerHTML = '';
-  State.order = Object.keys(State.sections);
-  State.order.forEach(name => {
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name; sel.appendChild(o);
-  });
-  if (!State.current) State.current = State.order[0] || null;
-  sel.value = State.current || '';
+function populateSectionDropdown(){
+  const sel=$('#section-select');sel.innerHTML='';
+  State.order=Object.keys(State.sections);
+  State.order.forEach(name=>{const o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);});
+  if(!State.current)State.current=State.order[0]||null;
+  sel.value=State.current||'';
 }
-function buildOptionsForCurrent(filterText='') {
-  const list = $('#options-list');
-  const items = (State.sections[State.current] || []);
-  const q = (filterText || '').toLowerCase();
-  list.innerHTML = '';
-
-  const add = (value, text, disabled=false) => {
-    const o = document.createElement('option');
-    o.value = value; o.textContent = text; if (disabled) o.disabled = true;
-    list.appendChild(o);
-  };
-
-  items.forEach(entry => {
-    if (entry.type === 'divider') {
-      const txt = `— ${entry.label} —`;
-      if (!q || txt.toLowerCase().includes(q)) add('', txt, true);
-      return;
-    }
-    if (entry.type === 'item') {
-      const label = entry.label || entry.code;
-      const parentMatch = !q || label.toLowerCase().includes(q);
-      if (parentMatch) add(entry.code, label, false);
-
-      if (entry.subcategories && entry.subcategories.length) {
-        entry.subcategories.forEach(sub => {
-          const subTxt = `↳ ${label} — ${sub}`;
-          if (!q || subTxt.toLowerCase().includes(q)) add(entry.code, subTxt, false);
+function buildOptionsForCurrent(filterText=''){
+  const list=$('#options-list');
+  const items=State.sections[State.current]||[];
+  const q=(filterText||'').toLowerCase();
+  list.innerHTML='';
+  items.forEach(entry=>{
+    if(entry.type==='item'){
+      const label=entry.label||entry.code;
+      const match=!q||label.toLowerCase().includes(q);
+      if(match){
+        const opt=document.createElement('option');
+        opt.value=entry.code;opt.textContent=label;list.appendChild(opt);
+      }
+      if(entry.subcategories&&entry.subcategories.length){
+        entry.subcategories.forEach(sub=>{
+          const subTxt=`↳ ${label} — ${sub}`;
+          if(!q||subTxt.toLowerCase().includes(q)){
+            const opt=document.createElement('option');
+            opt.value=entry.code;opt.textContent=subTxt;list.appendChild(opt);
+          }
         });
       }
     }
   });
 }
-function selectedValuesToCopy() {
-  const list = $('#options-list');
-  const selected = [...list.selectedOptions].map(o => o.textContent).filter(Boolean);
-  const head = $('#include-headers').checked ? (State.current + ':') : null;
-  const lines = []; if (head) lines.push(head); lines.push(...selected);
+function selectedValuesToCopy(){
+  const list=$('#options-list');
+  const selected=[...list.selectedOptions].map(o=>o.textContent).filter(Boolean);
+  const head=$('#include-headers').checked?(State.current+':'):null;
+  const lines=[];if(head)lines.push(head);lines.push(...selected);
   return lines.join(';\n');
 }
-function exportSectionToJson(sectionName) {
-  const items = (State.sections[sectionName] || []);
-  const arr = items.filter(it => it && it.type === 'item' && it.code)
-    .map(it => ({ code: it.code, label: it.label, subcategories: it.subcategories || [] }));
-  return JSON.stringify(arr, null, 2);
+function exportSectionToJson(section){
+  const items=State.sections[section]||[];
+  return JSON.stringify(items.map(it=>({code:it.code,label:it.label,subcategories:it.subcategories||[]})),null,2);
 }
 
-/* ------------------------------
-   Events (Picker)
------------------------------- */
-$('#section-select').addEventListener('change', e => {
-  State.current = e.target.value;
-  buildOptionsForCurrent($('#filter').value);
-  $('#json-output').value = exportSectionToJson(State.current);
+/* Events */
+$('#section-select').addEventListener('change',e=>{
+  State.current=e.target.value;buildOptionsForCurrent($('#filter').value);
+  $('#json-output').value=exportSectionToJson(State.current);
 });
-$('#filter').addEventListener('input', e => buildOptionsForCurrent(e.target.value));
-$('#btn-select-all').addEventListener('click', () => {
-  const list = $('#options-list');
-  [...list.options].forEach(o => { if (!o.disabled) o.selected = true; });
-  $('#output').value = selectedValuesToCopy();
+$('#filter').addEventListener('input',e=>buildOptionsForCurrent(e.target.value));
+$('#btn-select-all').addEventListener('click',()=>{
+  [...$('#options-list').options].forEach(o=>o.selected=true);
+  $('#output').value=selectedValuesToCopy();
 });
-$('#btn-clear').addEventListener('click', () => {
-  const list = $('#options-list'); [...list.options].forEach(o => o.selected = false);
-  $('#output').value = '';
+$('#btn-clear').addEventListener('click',()=>{
+  [...$('#options-list').options].forEach(o=>o.selected=false);
+  $('#output').value='';
 });
-$('#btn-rebuild').addEventListener('click', () => $('#output').value = selectedValuesToCopy());
-$('#btn-copy').addEventListener('click', async () => {
-  const text = $('#output').value || selectedValuesToCopy();
-  try { await navigator.clipboard.writeText(text); } catch {}
-});
-$('#btn-json-copy').addEventListener('click', async () => {
-  const text = $('#json-output').value; try { await navigator.clipboard.writeText(text); } catch {}
-});
+$('#btn-rebuild').addEventListener('click',()=>$('#output').value=selectedValuesToCopy());
+$('#btn-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#output').value||selectedValuesToCopy());}catch{}});
+$('#btn-json-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#json-output').value);}catch{}});
 
-/* ------------------------------
-   Editor controls
------------------------------- */
-const editorPanel = $('#editor-panel');
-$('#btn-editor-toggle').addEventListener('click', () => {
-  editorPanel.open = !editorPanel.open;
-  if (editorPanel.open) editorPanel.scrollIntoView({behavior:'smooth',block:'start'});
-});
-$('#btn-load-remote').addEventListener('click', async () => {
-  try {
-    const txt = await loadOptionsTxt(); State.rawTxt = txt;
-    $('#txt-editor').value = txt; setSourceLabel(State.sourceUrl);
-  } catch (e) { $('#txt-editor').value = `Error: ${e.message}`; }
-});
-$('#btn-apply-local').addEventListener('click', () => {
-  const local = $('#txt-editor').value || '';
-  try {
-    const parsed = parseOptionsText(local);
-    State.sections = parsed;
-    State.current = Object.keys(parsed)[0] || null;
-    populateSectionDropdown();
-    buildOptionsForCurrent($('#filter').value);
-    $('#json-output').value = exportSectionToJson(State.current);
-    $('#parsed-preview').value = JSON.stringify(parsed, null, 2);
-  } catch (e) { $('#parsed-preview').value = `Parse error: ${e.message}`; }
-});
-$('#btn-reset').addEventListener('click', async () => {
-  await init(); $('#txt-editor').value = State.rawTxt; $('#parsed-preview').value = '';
-});
-$('#btn-copy-txt').addEventListener('click', async () => {
-  const text = $('#txt-editor').value || '';
-  try { await navigator.clipboard.writeText(text); } catch {}
-});
-$('#btn-download').addEventListener('click', () => {
-  const blob = new Blob([$('#txt-editor').value || ''], {type:'text/plain'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'Options.txt'; document.body.appendChild(a); a.click(); a.remove();
-});
+/* Editor */
+const editorPanel=$('#editor-panel');
+$('#btn-editor-toggle').addEventListener('click',()=>{editorPanel.open=!editorPanel.open;if(editorPanel.open)editorPanel.scrollIntoView({behavior:'smooth'});});
+$('#btn-load-remote').addEventListener('click',async()=>{try{const txt=await loadOptionsTxt();State.rawTxt=txt;$('#txt-editor').value=txt;setSourceLabel(State.sourceUrl);}catch(e){$('#txt-editor').value=`Error: ${e.message}`;}});
+$('#btn-apply-local').addEventListener('click',()=>{try{const local=$('#txt-editor').value||'';const parsed=parseOptionsText(local);State.sections=parsed;State.current=Object.keys(parsed)[0]||null;populateSectionDropdown();buildOptionsForCurrent($('#filter').value);$('#json-output').value=exportSectionToJson(State.current);$('#parsed-preview').value=JSON.stringify(parsed,null,2);}catch(e){$('#parsed-preview').value=`Parse error: ${e.message}`;}});
+$('#btn-reset').addEventListener('click',async()=>{await init();$('#txt-editor').value=State.rawTxt;$('#parsed-preview').value='';});
+$('#btn-copy-txt').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#txt-editor').value||'');}catch{}});
+$('#btn-download').addEventListener('click',()=>{const blob=new Blob([$('#txt-editor').value||''],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Options.txt';document.body.appendChild(a);a.click();a.remove();});
 
-/* ------------------------------
-   Boot
------------------------------- */
 async function init(){
-  let txt = '';
-  try{
-    txt = await loadOptionsTxt();
-  }catch(e){
-    console.warn(e);
-    txt = `[system_type]
-ST-COMBI | Combi boiler
-ST-SYSTEM | System (integrated pump and expansion)`;
-    State.sourceUrl = '(fallback)';
-  }
-  State.rawTxt = txt;
-  State.sections = parseOptionsText(txt);
-  State.current = Object.keys(State.sections)[0] || null;
+  let txt='';
+  try{txt=await loadOptionsTxt();}catch(e){txt='[system_type]\nST-COMBI | Combi boiler';State.sourceUrl='(fallback)';}
+  State.rawTxt=txt;
+  State.sections=parseOptionsText(txt);
+  State.current=Object.keys(State.sections)[0]||null;
   populateSectionDropdown();
   buildOptionsForCurrent('');
-  $('#json-output').value = exportSectionToJson(State.current);
+  $('#json-output').value=exportSectionToJson(State.current);
   setSourceLabel(State.sourceUrl);
 }
 init();
