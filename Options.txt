@@ -10,21 +10,21 @@ NE03 | More usable space
 NE04 | Lower running costs
 NE05 | Easier controls
 NE06 | Quieter operation
-NE07 | Future-ready system | Heat pump / hybrid
+NE07 | Future-ready system
 
 [working_at_heights]
 WAH01 | Ladder access required
-WAH02 | Scaffold required
+WAH02 | Scaffold required | tower | canter | bridging tower
 WAH03 | Roof access | Permit required
 WAH04 | Loft access | Boarded | Unboarded
 WAH05 | MEWP required
-WAH06 | Roof work | Two-person rule
+WAH06 | Flat roof work | specialist builder to make good
 
 [system_characteristics_old]
-SCOLD01 | System type | Open-vented (F&E tank)
-SCOLD02 | System type | Gravity hot water
-SCOLD03 | Configuration | Y-plan (3-port valve)
-SCOLD04 | Configuration | S-plan (2-port valves)
+SCOLD01 | System type - regular | Open-vented (F&E tank)| sealed system kit
+SCOLD02 | System type - system boiler | open vented hot water|unvented hot water
+SCOLD04 | combi
+SCOLD03 | Configuration | Y-plan (3-port valve) | S-plan (2 port valves)| gravity 
 SCOLD05 | Pipework | Microbore
 SCOLD06 | Pressure | Low system pressure
 SCOLD07 | Controls | Mechanical timer / room stat
@@ -32,19 +32,19 @@ SCOLD08 | Controls | Hard-wired only
 
 [system_characteristics_new]
 SCNEW01 | System type | Combi boiler
-SCNEW02 | System type | System boiler | With unvented cylinder
-SCNEW03 | System type | System boiler | With Mixergy cylinder
-SCNEW04 | Heating circuit | Pressurised / sealed
-SCNEW05 | Heating circuit | Open-vented
+SCNEW02 | System type | System boiler | With unvented cylinder | With Mixergy cylinder
+SCNEW03 | System type | regular boiler | opened vented hot water | unvented hot water
+SCNEW04 | Heating circuit | open vented / sealed
 SCNEW06 | Heating zones | TRVs | All rads
-SCNEW07 | Heating zones | Zoned via 2-port valves
+SCNEW07 | Heating zones | Zoned via 2-port valves | Y-plan
 SCNEW08 | Controls compatibility | Hive
 SCNEW09 | Controls compatibility | Hive Mini
+SCNEW10 | controls - simple 
 
 [components_that_need_assistance]
-CTA01 | Cylinder | Removal required | Relocation required
+CTA01 | Cylinder | Removal required | Replacement 
 CTA02 | Cold water storage tank | Removal required
-CTA03 | Boiler | Relocation required
+CTA03 | Boiler | Removal requires double handed lift
 CTA04 | Gas pipe | Upgrade | Reroute
 CTA05 | Flue | Core drill required | Wall thick >450 mm
 CTA06 | Electrical | New spur | Wiring centre | Fused spur
@@ -57,6 +57,8 @@ RTW04 | Working hours | Restricted
 RTW05 | Pets on site
 RTW06 | Vulnerable occupant present
 RTW07 | Noise restrictions in place
+RTW08 | Listed building | consent required | permission required 
+RTW09 | flat - management permission required
 
 [external_hazards]
 HAZEXT01 | Asbestos suspected
@@ -64,21 +66,21 @@ HAZEXT02 | Roof | Fragile tiles / material
 HAZEXT03 | Flood risk / standing water
 HAZEXT04 | Nesting insects | Wasps / bees
 HAZEXT05 | Poor lighting or no power
+HAZEXT06 | pets | pet mess
 
 [delivery_notes]
 DEL01 | Preferred slot | AM
 DEL02 | Preferred slot | PM
 DEL03 | Access | Large vehicle suitable
 DEL04 | Access | Large vehicle restricted
-DEL05 | If customer out | Leave with neighbour
+DEL05 | deliver to garage | deliver to a room within the house
 DEL06 | Contact | Call ahead on arrival
+DEL07 | double handed | stairs no lift
 
 [office_notes]
-OFF01 | Warranty registration required
-OFF02 | Grant / finance paperwork
-OFF03 | Photos required | Before | After
-OFF04 | Customer training arranged
-OFF05 | Follow-up call within 48 hrs
+OFF04 | direct labour required 
+OFF05 | asbestos removal | specialist builder | scaffolding 
+OFF06 | double handed
 
 [new_boiler_and_controls_location]
 NBCLOC01 | Location | Kitchen
@@ -87,7 +89,7 @@ NBCLOC03 | Location | Loft
 NBCLOC04 | Location | Garage
 NBCLOC05 | Location | Cupboard / airing
 NBCLOC06 | Location | Other internal
-NBCLOC07 | Location | External wall mount (if permitted)
+NBCLOC07 | Location | External wall mount
 
 [new_boiler_and_controls_user_controls]
 NBCUC01 | User control | Hive
@@ -105,20 +107,23 @@ NBCSC04 | Control method | Load compensation
 NBCSC05 | Wiring | New wiring centre required
 NBCSC06 | Stat | Relocation required
 
+[Cupboard]
+CUP01 | not within a cupboard 
+CUP02 | fits within cupboard | cupboard will need to be modified
+CUP03 | Customer to remove cupboard | customer to modify cupboard 
+CUP04 | engineer to remove cupboard | engineer to modify cupboard 
+
 [flue_old_making_good]
-FLOLD01 | Make good | Internal wall
-FLOLD02 | Make good | External wall
+FLOLD01 | Make good | Internal wall and external leaf
 FLOLD03 | Make good | Roof terminal
 FLOLD04 | Brick up | Old opening
-FLOLD05 | Finish | Basic decorate / paint
 
 [flue_new]
-FLNEW01 | Orientation | Horizontal
-FLNEW02 | Orientation | Vertical
+FLNEW01 | Orientation | Horizontal | vertical 
+FLNEW02 | sealing | Seal brick work to flue | Vertical flashing kit | flat roof flashing by specialist builder
 FLNEW03 | Add-on | Plume kit required
 FLNEW04 | Add-on | Flue extension
 FLNEW05 | Safety | Terminal guard required
-FLNEW06 | Note | Condensate near flue terminal
 
 [gas_water_gas_supply]
 GAS01 | Gas supply | Upgrade to 22 mm
@@ -139,8 +144,7 @@ CON07 | Condensate | Discharge | Into external soil stack | Termination check
 [gas_water_discharge]
 DIS01 | Discharge | PRV pipework to outside
 DIS02 | Discharge | Visible tundish | Compliant
-DIS03 | Discharge | Gutter / stack route available
-DIS04 | Discharge | Upgrade required
+DIS03 | Discharge | under floor to outside | direct to outside | behind or through cupboards 
 
 [gas_water_dcw_dhw]
 DCW01 | Cold / Hot water | Increase mains pressure / flow
@@ -148,6 +152,7 @@ DCW02 | Cold / Hot water | Pressure reducing valve needed
 DCW03 | Cold / Hot water | Secondary return present
 DCW04 | Cold / Hot water | Scale filter required
 DCW05 | Cold / Hot water | Stop tap / service valve access
+DCW06 | Cold / Hot water | to under counter | to airing cupboard 
 
 [gas_water_primaries]
 PRIM01 | Power flush required
@@ -168,7 +173,7 @@ RAD06 | Cap redundant radiator pipework
 DISR01 | Minimal disruption
 DISR02 | Moderate disruption | Carpets lifted
 DISR03 | High disruption | Floors lifted
-DISR04 | Customer to clear area
+DISR04 | Customer to clear areas and routes 
 DISR05 | Dust protection required
 
 [anything_else]
@@ -176,4 +181,4 @@ AE01 | Underfloor heating | Not covered
 AE02 | Mixed metals present
 AE03 | True-weld fittings present
 AE04 | Customer-specific requirement
-AE05 | Unusual system | Specify in notes
+AE05 | Unusual system | Specify in not
