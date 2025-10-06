@@ -1,4 +1,17 @@
-<!DOCTYPE html>
+<section class="card">
+  <h2 style="margin:0;font-size:16px;">Import from plain text (options.txt)</h2>
+  <p class="muted">Format: one section per [section_key], items as <code>CODE | Text</code>. Lines starting with <code>#</code> are comments.</p>
+  <textarea id="txtInput" placeholder="[system_type]
+ST-COMBI | Combi boiler
+ST-SYSTEM | System (with cylinder)"></textarea>
+  <div class="flex" style="margin-top:8px;">
+    <button class="btn" id="btnParseTxt">Parse text → JSON</button>
+    <button class="btn ghost" id="btnLoadTxtFile">Open .txt file…</button>
+    <input type="file" id="txtFile" accept=".txt,text/plain" style="display:none;">
+  </div>
+  <p class="muted">Tip: keep your master list in a plain <code>options.txt</code>, paste it here to sync JSON.</p>
+</section>
+<! DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
