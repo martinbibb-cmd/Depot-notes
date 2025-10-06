@@ -1163,3 +1163,119 @@ async function loadOptionsTxt() {
 
 document.addEventListener('DOMContentLoaded', loadOptionsTxt);
 </script>
+<script>
+/* 0) CONFIG: if you pasted JSON already, point to it; or keep using Options.txt */
+const OPTIONS_TXT_URL = './Options.txt?v=3';
+
+/* 1) Normalize: Options → {section: [{code,label}], ...} */
+function parseOptionsTxt(txt){
+  const db={}, lines=txt.split(/\r?\n/); let s=null;
+  for (const raw of lines){
+    const line=raw.trim(); if(!line||line.startsWith('#')) continue;
+    const m=line.match(/^\[([^\]]+)\]$/);
+    if (m){ s=m[1].trim(); db[s]=[]; continue; }
+    if(!s) continue;
+    const parts=line.split('|'); if(parts.length<2) continue;
+    const code=parts[0].trim(); const label=parts.slice(1).join('|').trim();
+    if(code) db[s].push({code,label});
+  }
+  return db;
+}
+
+/* 2) Safe element finders from your UI */
+function $sectionSelect(){
+  return document.querySelector('#section-select, select#section, select[name="section"]');
+}
+function $itemsBox(){
+  // your list container (the big checklist). If none, we inject one after the select.
+  let el = document.querySelector('#items-list, .picker-list');
+  if(!el){
+    const sel = $sectionSelect();
+    el = document.createElement('div'); el.id='items-list';
+    sel?.insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
+function $nextBtn(){
+  // the “Next section ➜” button
+  return Array.from(document.querySelectorAll('button, a'))
+    .find(b => /next section/i.test(b.textContent || ''));
+}
+
+/* 3) Single source of truth */
+const Picker = {
+  db: {},
+  order: [],
+  idx: 0,
+  current(){ return this.order[this.idx] },
+  render(){
+    const sec = this.current(); const box = $itemsBox();
+    box.innerHTML = '';
+    const head = document.querySelector('.section-title') || document.createElement('div');
+    head.className = 'section-title'; head.style.margin='6px 0 8px'; head.textContent = niceTitle(sec);
+    box.parentElement?.insertBefore(head, box);
+
+    const items = (this.db[sec]||[]);
+    items.forEach(({code,label})=>{
+      const lab = document.createElement('label');
+      lab.style.display='block'; lab.style.padding='8px 10px'; lab.style.borderRadius='10px'; lab.style.margin='6px 0';
+      lab.style.background='rgba(255,255,255,0.04)';
+      const cb = document.createElement('input'); cb.type='checkbox';
+      cb.dataset.code = code; cb.dataset.label = label;
+      const span = document.createElement('span'); span.textContent = ' ' + label;
+      lab.appendChild(cb); lab.appendChild(span); box.appendChild(lab);
+    });
+    // update the counter chip if you have one
+    const chip = Array.from(document.querySelectorAll('div,span')).find(n=>/selected$/i.test(n.textContent||''));
+    if(chip) chip.textContent = `0 selected`;
+    console.log(`Rendered ${items.length} items for [${sec}]`);
+  }
+};
+
+function niceTitle(key){ return key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
+
+/* 4) Wire UI so both dropdown & Next Section use our data */
+function hookUI(){
+  const sel = $sectionSelect();
+  if (sel){
+    sel.innerHTML = '';
+    Picker.order.forEach(k=>{
+      const o = document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o);
+    });
+    sel.addEventListener('change', ()=>{
+      Picker.idx = Math.max(0, Picker.order.indexOf(sel.value));
+      Picker.render();
+    });
+  }
+  const next = $nextBtn();
+  if (next && !next._bound){
+    next.addEventListener('click', (e)=>{
+      // allow the button to be an <a> without navigating
+      e.preventDefault?.();
+      Picker.idx = (Picker.idx + 1) % Picker.order.length;
+      if (sel) sel.value = Picker.current();
+      Picker.render();
+    });
+    next._bound = true;
+  }
+}
+
+/* 5) Bootstrap: use the textarea if you pasted Options there; else fetch Options.txt */
+async function boot(){
+  let txt;
+  const ta = document.querySelector('#options-src, textarea#options');
+  if (ta && ta.value && /\[.*\]/.test(ta.value)){
+    txt = ta.value;
+  } else {
+    const res = await fetch(OPTIONS_TXT_URL, {cache:'no-store'});
+    txt = await res.text();
+  }
+  Picker.db = parseOptionsTxt(txt);
+  Picker.order = Object.keys(Picker.db);
+  Picker.idx = 0;
+  hookUI();
+  Picker.render();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
