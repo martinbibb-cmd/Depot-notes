@@ -234,3 +234,30 @@ AE02 | Materials | Mixed metals present
 AE03 | Materials | True-weld fittings present
 AE04 | Customer requirement | Specific request noted
 AE05 | Unusual system | Specify in notes
+
+[hot_water_strategy]
+DHW-OD | on demand DHW (combi)
+DHW-STORED-UV | Stored DHW (unvented)
+DHW-STORED-V | Stored DHW (vented)
+DHW-THERM | thermal store
+DHW-COMBIC | combination cylinder 
+DHW-SC | storage combi
+DHW-MP | multi point water heater
+
+[cylinder_capacity]
+CYL-98 | Cylinder ~ 98l
+CYL-120 | Cylinder ~120 L
+CYL-150 | Cylinder ~150 L
+CYL-200 | Cylinder ~200 L
+CYL-250 | Cylinder ~250 L
+CYL-300 | Cylinder ~300 L
+
+[filter]
+F-TF1 | Fernox TF1 (brass)
+F-MAG | Magnetic filter (other)
+F-EXIST | Existing filter retained
+F-NONE | No filter (not suitable)
+
+[water_treatment]
+WT-FLUSH | Powerflush
+WT-CLEANSE | Chemical cleanse & inhibit
