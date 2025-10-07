@@ -47,7 +47,7 @@ SCNEW03B | Regular boiler | Unvented hot water
 SCNEW04A | Heating circuit | Open-vented
 SCNEW04B | Heating circuit | Sealed / pressurised
 SCNEW05 | Heating zones | TRVs on all radiators
-SCNEW06A | Heating zones | Zoned via 2-port valves
+SCNEW06A | Heating zones | Zoned via 2-port valves | additional zones
 SCNEW06B | Heating zones | Y-plan existing
 SCNEW07 | Controls compatibility | Hive
 SCNEW08 | Controls compatibility | Hive Mini
@@ -74,6 +74,7 @@ RTW04 | Working hours | Restricted
 RTW05 | Site | Pets on site
 RTW06 | Site | Vulnerable occupant present
 RTW07 | Site | Noise restrictions in place
+RTW08 | Site | Sectpic tank - not suitable for condensate
 RTW08A | Listed building | Consent required
 RTW08B | Listed building | Permission required
 RTW09 | Flats | Management permission required
