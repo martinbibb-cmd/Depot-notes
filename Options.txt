@@ -113,14 +113,17 @@ OFF05C | Specialist works | Scaffolding
 OFF06 | Labour | Double-handed assistance required
 
 [new_boiler_and_controls]
-NBCLOC0 | controls
-NBCLOC01 | Location | Kitchen
+NBCLOC0 | location
+NBCLOC01 | Location | Kitchen | not in cupboard
+NBCLOC01A | location | kitchen | within cupboard
+NBCLOC01B | location | kitchen | cupboard to be removed
 NBCLOC02 | Location | Utility room
 NBCLOC03 | Location | Loft
 NBCLOC04 | Location | Garage
 NBCLOC05 | Location | Cupboard / Airing
 NBCLOC06 | Location | Other internal
-NBCLOC07 | Location | External wall mount
+NBCLOC07 | Location | adjacent wall
+NBCLOC08 | Location | minor move to gain clearances
 
 NBCUC0 |new_boiler
 NBCUC01 | User control | Hive
