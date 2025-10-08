@@ -24,7 +24,8 @@ WAH04B | Loft access | Unboarded
 WAH05 | Access | MEWP required
 WAH06 | Flat roof work | Specialist builder to make good
 
-[system_characteristics_old]
+[system_characteristics]
+SCOLD0 | present system type
 SCOLD01A | System type (regular) | Open-vented (F&E tank)
 SCOLD01B | System type (regular) | Sealed system kit present
 SCOLD02A | System boiler HW | Open-vented hot water
@@ -38,7 +39,7 @@ SCOLD06 | Pressure | Low system pressure
 SCOLD07 | Controls | Mechanical timer / room stat
 SCOLD08 | Controls | Hard-wired only
 
-[system_characteristics_new]
+SCNEW0 | proposed new system
 SCNEW01 | System type | Combi boiler
 SCNEW02A | System boiler | With unvented cylinder
 SCNEW02B | System boiler | With Mixergy cylinder
@@ -87,6 +88,7 @@ HAZEXT04A | Nesting insects | Wasps
 HAZEXT04B | Nesting insects | Bees
 HAZEXT05 | Site | Poor lighting / No power
 HAZEXT06 | Site | Pet mess present
+HAZEXT07 | see working at heights
 
 [delivery_notes]
 DEL01 | Preferred slot | AM
@@ -110,7 +112,8 @@ OFF05B | Specialist works | Specialist builder
 OFF05C | Specialist works | Scaffolding
 OFF06 | Labour | Double-handed assistance required
 
-[new_boiler_and_controls_location]
+[new_boiler_and_controls]
+NBCLOC0 | controls
 NBCLOC01 | Location | Kitchen
 NBCLOC02 | Location | Utility room
 NBCLOC03 | Location | Loft
@@ -119,7 +122,7 @@ NBCLOC05 | Location | Cupboard / Airing
 NBCLOC06 | Location | Other internal
 NBCLOC07 | Location | External wall mount
 
-[new_boiler_and_controls_user_controls]
+NBCUC0 |new_boiler
 NBCUC01 | User control | Hive
 NBCUC02 | User control | Hive Mini
 NBCUC03 | User control | Programmable thermostat
@@ -127,7 +130,7 @@ NBCUC04 | User control | Manual mechanical stat
 NBCUC05 | User control | On/off only
 NBCUC06 | Hive | App access enabled
 
-[new_boiler_and_controls_system_controls]
+NBCSC0 | system_controls
 NBCSC01 | Wiring configuration | S-plan
 NBCSC02 | Wiring configuration | Y-plan
 NBCSC03 | Control method | OpenTherm
@@ -135,7 +138,7 @@ NBCSC04 | Control method | Load compensation
 NBCSC05 | Wiring | New wiring centre required
 NBCSC06 | Room stat | Relocation required
 
-[cupboard]
+CUP | cupboard
 CUP01 | Cupboard | Not within a cupboard
 CUP02 | Cupboard | Fits – modification required
 CUP03A | Cupboard | Customer to remove cupboard
@@ -143,12 +146,13 @@ CUP03B | Cupboard | Customer to modify cupboard
 CUP04A | Cupboard | Engineer to remove cupboard
 CUP04B | Cupboard | Engineer to modify cupboard
 
-[flue_old_making_good]
+[flue]
+FLOLD | old flue making good
 FLOLD01 | Make good | Internal wall and external leaf
 FLOLD03 | Make good | Roof terminal
 FLOLD04 | Brick up | Old flue opening
 
-[flue_new]
+FLNEW | new flue
 FLNEW01A | Orientation | Horizontal
 FLNEW01B | Orientation | Vertical
 FLNEW02A | Sealing | Seal brickwork to flue
