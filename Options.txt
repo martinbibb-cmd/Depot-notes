@@ -1,4 +1,54 @@
-[Arse_cover_notes]
+
+[Needs]
+NE01 | Need | Better water pressure
+NE02 | Need | Faster hot water delivery
+NE03 | Need | More usable space
+NE04 | Need | Lower running costs
+NE05 | Need | Easier controls
+NE06 | Need | Quieter operation
+NE07 | Need | Future-ready system
+
+[Working at heights]
+WAH01 | Access | Ladder access required
+WAH02A | Scaffold | Tower – standard
+WAH02B | Scaffold | Tower – bridging
+WAH02C | Scaffold | Cantilever
+WAH03 | Roof access | Permit required
+WAH04A | Loft access | Boarded
+WAH04B | Loft access | Unboarded
+WAH05 | Access | MEWP required
+WAH06 | Flat roof | Specialist builder to make good
+
+[System characteristics]
+SE00 | Existing system
+SE01 | System type | Regular (open-vented with F&E tank)
+SE02 | System type | Regular (sealed system kit present)
+SE03 | Hot water | System boiler – open-vented
+SE04 | Hot water | System boiler – unvented
+SE05 | Configuration | Y-plan (3-port valve)
+SE06 | Configuration | S-plan (2-port valves)
+SE07 | Configuration | Gravity primaries
+SE08 | Legacy install | Combi present
+SE09 | Pipework | Microbore
+SE10 | System pressure | Low
+SE11 | Controls | Mechanical timer / room stat
+SE12 | Controls | Hard-wired only
+SN00 | New boiler
+SN01 | System type | Combi boiler
+SN02 | System type | System boiler with unvented cylinder
+SN03 | System type | System boiler with Mixergy cylinder
+SN04 | System type | Regular boiler with open-vented hot water
+SN05 | System type | Regular boiler with unvented hot water
+SN06 | Heating circuit | Open-vented
+SN07 | Heating circuit | Sealed / pressurised
+SN08 | Heating zones | TRVs on all radiators
+SN09 | Heating zones | Additional zone(s) via 2-port valves
+SN10 | Heating zones | Existing Y-plan retained
+SN11 | Controls compatibility | Hive
+SN12 | Controls compatibility | Hive Mini
+SN13 | Controls preference | Simple / manual
+
+ARS00 | Arse_cover_notes
 ARS01 | System | Sealing an old system may expose hidden leaks
 ARS02 | System | Existing radiators and valves may leak once pressurised
 ARS03 | System | Old vented pipework and joints not designed for pressure
@@ -53,55 +103,6 @@ ARS43 | General | Manufacturer warranty subject to annual service
 ARS44 | General | No liability for pre-existing faults or unrelated plumbing issues
 ARS45 | General | Installation performance depends on system design and existing pipework
 ARS46 | General | Recommendations given in good faith based on visible inspection
-
-[Needs]
-NE01 | Need | Better water pressure
-NE02 | Need | Faster hot water delivery
-NE03 | Need | More usable space
-NE04 | Need | Lower running costs
-NE05 | Need | Easier controls
-NE06 | Need | Quieter operation
-NE07 | Need | Future-ready system
-
-[Working at heights]
-WAH01 | Access | Ladder access required
-WAH02A | Scaffold | Tower – standard
-WAH02B | Scaffold | Tower – bridging
-WAH02C | Scaffold | Cantilever
-WAH03 | Roof access | Permit required
-WAH04A | Loft access | Boarded
-WAH04B | Loft access | Unboarded
-WAH05 | Access | MEWP required
-WAH06 | Flat roof | Specialist builder to make good
-
-[System characteristics]
-SE00 | Existing system
-SE01 | System type | Regular (open-vented with F&E tank)
-SE02 | System type | Regular (sealed system kit present)
-SE03 | Hot water | System boiler – open-vented
-SE04 | Hot water | System boiler – unvented
-SE05 | Configuration | Y-plan (3-port valve)
-SE06 | Configuration | S-plan (2-port valves)
-SE07 | Configuration | Gravity primaries
-SE08 | Legacy install | Combi present
-SE09 | Pipework | Microbore
-SE10 | System pressure | Low
-SE11 | Controls | Mechanical timer / room stat
-SE12 | Controls | Hard-wired only
-SN00 | New boiler
-SN01 | System type | Combi boiler
-SN02 | System type | System boiler with unvented cylinder
-SN03 | System type | System boiler with Mixergy cylinder
-SN04 | System type | Regular boiler with open-vented hot water
-SN05 | System type | Regular boiler with unvented hot water
-SN06 | Heating circuit | Open-vented
-SN07 | Heating circuit | Sealed / pressurised
-SN08 | Heating zones | TRVs on all radiators
-SN09 | Heating zones | Additional zone(s) via 2-port valves
-SN10 | Heating zones | Existing Y-plan retained
-SN11 | Controls compatibility | Hive
-SN12 | Controls compatibility | Hive Mini
-SN13 | Controls preference | Simple / manual
 
 [Components that require assistance]
 CS01 | Cylinder | Removal required
