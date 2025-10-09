@@ -97,7 +97,7 @@ OA04 | Specialist works | Scaffolding
 OA05 | Assistance | Double-handed required
 
 [New boiler and controls]
-
+|location
 BLC01 | Location | Kitchen – not in cupboard
 BLC02 | Location | Kitchen – within cupboard
 BLC03 | Location | Kitchen – cupboard to be removed
@@ -165,7 +165,7 @@ FN13 | Orientation | Rear aspect
 
 [Pipe work]
 
-gas run
+|gas run
 GR01 | Gas supply | Upgrade to 22 mm
 GR02 | Gas supply | Tightness test pass required
 GR03 | Gas supply | Meter location restricts route
@@ -180,7 +180,7 @@ GR11 | Route complexity | Complex (clipping / drilling / routing)
 GR12 | Gas notes | Replace meter tail lead
 GR13 | Gas notes | Pressure drop risk over length
 
-condensate
+|condensate
 CD01 | Connection | Internal waste – P-trap present
 CD02 | Connection | Internal waste – new trap required
 CD03 | External run | Insulate (42 mm MI)
@@ -193,7 +193,7 @@ CD09 | Upgrade | 32 mm → 42 mm (MI compliant)
 CD10 | Discharge | External soil stack – termination check
 CD11 | Neutraliser | Fitted (where required)
 
-discharge
+|discharge
 DS01 | PRV discharge | Pipework to outside
 DS02 | Tundish | Visible and compliant
 DS03 | Route | Under floor to outside
@@ -201,7 +201,7 @@ DS04 | Route | Direct to outside
 DS05 | Route | Behind cupboards
 DS06 | Route | Through cupboards
 
-water_services
+|water_services
 WS01 | Mains | Increase pressure / flow
 WS02 | Valve | Pressure reducing valve required
 WS03 | Return | Secondary return present
@@ -220,7 +220,7 @@ PF04 | Filter | Magnetic – other
 PF05 | Primaries | Pipework alterations required
 PF06 | Primaries | Pipe size upgrade required
 
-radiators
+|radiators
 RD01 | Radiators | Replace radiator(s)
 RD02 | Radiators | Install additional radiator(s)
 RD03 | Radiators | Fit TRVs / lockshields
@@ -230,7 +230,7 @@ RD06 | Radiators | Cap redundant pipework
 RD07 | Radiators | Old / mixed condition
 RD08 | Constraint | Prevents flushing
 
-disruption
+|disruption
 DI01 | Disruption | Minimal
 DI02 | Disruption | Moderate – carpets lifted
 DI03 | Disruption | High – floors lifted
