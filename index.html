@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Depot Notes Picker — Rebuild v2.2</title>
+<title>Depot Notes Picker — Rebuild v2.3</title>
 <style>
   /* THEME TOKENS */
   :root {
@@ -36,12 +36,7 @@
   }
 
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-    background: var(--bg);
-    color: var(--text);
-  }
+  body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji"; background: var(--bg); color: var(--text); }
   header {
     position: sticky; top: 0; z-index: 5;
     padding: 16px clamp(12px, 2vw, 24px);
@@ -61,20 +56,12 @@
   .pill strong { color: var(--text); }
 
   .wrap {
-    display: grid;
-    grid-template-columns: 1.08fr .92fr; /* left wider for 13 copy boxes */
-    gap: 16px;
-    padding: 16px clamp(12px, 2vw, 24px) 28px;
+    display: grid; grid-template-columns: 1.08fr .92fr;
+    gap: 16px; padding: 16px clamp(12px, 2vw, 24px) 28px;
   }
   @media (max-width: 1100px){ .wrap { grid-template-columns: 1fr; } }
 
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px;
-    box-shadow: var(--shadow);
-  }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); }
   .panel h2 { margin: 2px 0 12px 0; font-size: 16px; letter-spacing: .2px; }
 
   .grid-left { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(260px, 1fr)); }
@@ -83,10 +70,8 @@
   .box {
     background: color-mix(in oklab, var(--panel), var(--bg));
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px;
-    display: grid;
-    grid-template-rows: auto auto 1fr auto;
+    border-radius: 12px; padding: 10px;
+    display: grid; grid-template-rows: auto auto 1fr auto;
     gap: 8px; min-height: 190px;
   }
   .box .title { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
@@ -106,9 +91,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
   }
 
-  .right .toolbar {
-    display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-bottom: 12px;
-  }
+  .right .toolbar { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-bottom: 12px; }
   .rowline { display: flex; gap: 10px; flex-wrap: wrap; }
   input[type="text"], select, input[type="url"] {
     width: 100%; padding: 10px 12px; border-radius: 10px;
@@ -152,10 +135,7 @@
     <span class="pill">Autosaves to your browser (localStorage)</span>
     <span class="pill">Output is <strong>semicolon + newline</strong></span>
     <span class="spacer"></span>
-    <span class="pill">
-      Theme:
-      <button id="btnTheme">Dark</button>
-    </span>
+    <span class="pill">Theme: <button id="btnTheme">Dark</button></span>
     <button id="btnResetAll" class="pill" style="cursor:pointer;">Reset (clear storage)</button>
   </div>
 </header>
@@ -205,11 +185,13 @@
       <div class="rowline" style="margin-bottom:8px;">
         <button class="btn" id="btnLoadBuiltin">Load built-in options</button>
         <button class="btn" id="btnPasteJSON">Paste JSON…</button>
+        <button class="btn" id="btnPasteText">Paste Text…</button>
       </div>
       <div class="rowline">
-        <input id="jsonUrl" type="url" placeholder="Load JSON from URL (GitHub raw, etc.)" />
-        <button class="btn" id="btnFetchURL">Fetch (cache-busted)</button>
+        <input id="jsonUrl" type="url" placeholder="Load options from URL (GitHub raw options.txt or JSON)" />
+        <button class="btn" id="btnFetchURL">Fetch (txt/JSON, cache-busted)</button>
       </div>
+      <p class="small">Text format: use headings like <code># Needs</code>, <code>== Flue ==</code>, <code>[Pipe work]</code>, or <code>Customer actions:</code> followed by one line per option (plain or <code>- bullets</code>).</p>
     </div>
   </aside>
 </div>
@@ -218,12 +200,12 @@
 /* =========================
    VERSION & STORAGE
    ========================= */
-const APP_VERSION = 'v2.2'; // bump to force fresh storage keys
-const LS_PREFIX = `depotPicker_${APP_VERSION}`;
-const keyBox = s => `${LS_PREFIX}:box:${s}`;
+const APP_VERSION = 'v2.3'; // bump to force fresh storage keys
+const LS_PREFIX  = `depotPicker_${APP_VERSION}`;
+const keyBox     = s => `${LS_PREFIX}:box:${s}`;
 const keyOptions = `${LS_PREFIX}:options`;
-const keyTarget = `${LS_PREFIX}:target`;
-const keyTheme  = `${LS_PREFIX}:theme`;
+const keyTarget  = `${LS_PREFIX}:target`;
+const keyTheme   = `${LS_PREFIX}:theme`;
 
 /* =========================
    SECTIONS
@@ -243,6 +225,15 @@ const SECTION_LIST = [
   'Disruption',
   'Customer actions'
 ];
+
+/* Helpers for canonical section matching */
+const CANON = SECTION_LIST.map(s => [s, s.toLowerCase()]);
+function canonicalSection(name){
+  if(!name) return null;
+  const n = name.trim().toLowerCase();
+  const hit = CANON.find(([canon, low]) => low === n);
+  return hit ? hit[0] : null;
+}
 
 /* =========================
    BUILT-IN OPTIONS (starter)
@@ -324,6 +315,7 @@ const btnSelectVisible = document.getElementById('btnSelectVisible');
 const btnClearSelection = document.getElementById('btnClearSelection');
 const btnLoadBuiltin = document.getElementById('btnLoadBuiltin');
 const btnPasteJSON = document.getElementById('btnPasteJSON');
+const btnPasteText = document.getElementById('btnPasteText');
 const jsonUrlEl = document.getElementById('jsonUrl');
 const btnFetchURL = document.getElementById('btnFetchURL');
 const btnBuildFinal = document.getElementById('btnBuildFinal');
@@ -513,17 +505,36 @@ btnPasteJSON.addEventListener('click', () => {
     OPTIONS = obj; persistOptions(); buildCategoryFilter(); renderPicker(); alert('Options loaded.');
   } catch(err){ alert('Invalid JSON: ' + err.message); }
 });
+btnPasteText.addEventListener('click', () => {
+  const v = prompt('Paste options TEXT (options.txt style). Use headings per section and one line per item.','');
+  if(!v) return;
+  try{
+    const parsed = parseOptionsText(v);
+    OPTIONS = parsed; persistOptions(); buildCategoryFilter(); renderPicker(); alert(`Loaded ${OPTIONS.items.length} items from text.`);
+  } catch(err){
+    alert('Text parse failed: ' + err.message);
+  }
+});
 btnFetchURL.addEventListener('click', async () => {
   const url = jsonUrlEl.value.trim();
-  if(!url) { alert('Enter a JSON URL first.'); return; }
+  if(!url) { alert('Enter a URL first.'); return; }
   try{
     const bust = (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
     const res = await fetch(url + bust, { cache: 'no-cache' });
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
-    const obj = await res.json();
-    if(!obj || !Array.isArray(obj.items)) throw new Error('JSON must include items[]');
-    OPTIONS = obj; persistOptions(); buildCategoryFilter(); renderPicker();
-    alert('Options fetched and loaded (cache-busted).');
+    // Try JSON first
+    let txt = await res.text();
+    let loaded = null;
+    try{
+      const obj = JSON.parse(txt);
+      if(!obj || !Array.isArray(obj.items)) throw new Error('JSON must include items[]');
+      loaded = obj;
+    } catch(_){
+      // Not JSON → treat as text
+      loaded = parseOptionsText(txt);
+    }
+    OPTIONS = loaded; persistOptions(); buildCategoryFilter(); renderPicker();
+    alert(`Options loaded (${OPTIONS.items.length} items).`);
   } catch(err){ alert('Fetch failed: ' + err.message); }
 });
 btnBuildFinal.addEventListener('click', () => { finalOut.value = compileAllSections(); finalOut.focus(); finalOut.select(); });
@@ -549,7 +560,7 @@ function addSelectedToTarget(){
   if(ids.length === 0){ alert('Select some picker items first.'); return; }
   const lines = ids.map(id => OPTIONS.items[id]?.text).filter(Boolean).map(ensureSemicolon);
   appendToBox(targetSel.value, lines.join('\n'));
-  btnClearSelection.click(); // reset selection
+  btnClearSelection.click();
 }
 function appendToBox(section, text){
   const ta = findBox(section); if(!ta) return;
@@ -612,6 +623,62 @@ function toggleTheme(){
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem(keyTheme, next);
   btnTheme.textContent = next === 'dark' ? 'Dark' : 'Light';
+}
+
+/* =========================
+   TEXT PARSER (options.txt)
+   ========================= */
+/*
+Accepted heading styles (match to 13 canonical sections case-insensitively):
+  # Needs
+  == Flue ==
+  [Pipe work]
+  Customer actions:
+Lines under a heading are items. Bullets (- * •) optional.
+Blank lines are ignored. Unknown sections are skipped.
+*/
+function parseOptionsText(text){
+  const lines = String(text).split(/\r?\n/);
+  let current = null;
+  const items = [];
+
+  const headingRegexes = [
+    /^\s*#+\s*(.+?)\s*$/,           // # Heading
+    /^\s*==+\s*(.+?)\s*==+\s*$/,    // == Heading ==
+    /^\s*\[(.+?)\]\s*$/,            // [Heading]
+    /^\s*([A-Za-z].*?)\s*:\s*$/     // Heading:
+  ];
+
+  const tryHeading = (line) => {
+    for(const re of headingRegexes){
+      const m = line.match(re);
+      if(m){ return (m[1] || '').trim(); }
+    }
+    return null;
+  };
+
+  for(let raw of lines){
+    const line = raw.replace(/\u2022/g,'*').trim(); // normalize •
+    if(!line) continue;
+
+    const h = tryHeading(line);
+    if(h){
+      const canon = canonicalSection(h);
+      current = canon; // may be null if not known
+      continue;
+    }
+
+    if(!current) continue; // ignore items before first known section
+
+    // strip bullet markers if present
+    const item = line.replace(/^\s*[-*]\s+/, '').trim();
+    if(item){
+      items.push({ text: item, category: current });
+    }
+  }
+
+  if(items.length === 0) throw new Error('No items found. Check headings match the 13 sections.');
+  return { items };
 }
 </script>
 </body>
