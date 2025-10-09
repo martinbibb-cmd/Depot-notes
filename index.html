@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Depot Notes Picker — Source-safe</title>
+<title>Depot Notes Picker — Sections + GPT</title>
 <style>
   :root{--gap:10px;--pad:12px;--radius:10px}
   *{box-sizing:border-box}
@@ -12,8 +12,8 @@
   .badge{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:12px}
   .hint{font-size:12px;color:#6b7280}
   .space{flex:1}
-  main{display:grid;grid-template-columns:1.05fr 1fr;gap:var(--gap);padding:var(--pad)}
-  @media (max-width:1050px){main{grid-template-columns:1fr}}
+  main{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--gap);padding:var(--pad)}
+  @media (max-width:1100px){main{grid-template-columns:1fr}}
   section{background:#fff;border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 2px rgba(0,0,0,.05)}
   h2{margin:0 0 6px 0;font-size:18px}
   h3{margin:8px 0 6px 0;font-size:16px}
@@ -22,6 +22,7 @@
   button{background:#e5e7eb;border-color:#c8ccd1;cursor:pointer}
   button.primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
   button.ghost{background:#fff}
+  button:disabled{opacity:.55;cursor:not-allowed}
   .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#374151}
   .toolbar{display:flex;gap:var(--gap);align-items:center;margin:var(--gap) 0;flex-wrap:wrap}
   .list{display:grid;gap:6px;max-height:50vh;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px}
@@ -32,22 +33,23 @@
   textarea{width:100%;min-height:160px}
   .error{background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;padding:8px;border-radius:8px}
   .success{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;padding:8px;border-radius:8px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
   <strong>Depot Notes Picker</strong>
-  <span class="badge">v2.4 · source-safe</span>
+  <span class="badge">v2.4 · sect-gpt</span>
   <span class="hint" id="metaInfo">Loading…</span>
   <span class="space"></span>
   <button class="ghost" id="resetBtn">Reset</button>
 </header>
 
 <main>
-  <!-- LEFT: Source & picker -->
+  <!-- LEFT: Source + Picker -->
   <section>
     <h2>Source</h2>
-    <div id="loadMsg" class="hint">Looks for <code>./Options.txt</code> first. If not found, use one of the loaders below.</div>
     <div class="row" style="margin-top:6px">
       <button id="reloadBtn">Reload ./Options.txt</button>
       <input id="urlInput" type="text" placeholder="https://raw.githubusercontent.com/.../Options.txt" style="flex:1">
@@ -65,24 +67,37 @@
       <label>Section</label>
       <select id="sectionSelect"></select>
       <input id="filterBox" type="text" placeholder="Filter (press / to focus)">
-      <button id="selectVisibleBtn">Select all (visible)</button>
-      <button id="clearSelectionBtn">Clear selection</button>
+      <button id="selectVisibleBtn">Check all (visible)</button>
+      <button id="clearSelectionBtn">Uncheck all</button>
     </div>
     <div id="itemsList" class="list" aria-label="items list"></div>
 
     <div class="divider"></div>
-    <div class="row">
-      <input id="quickAddText" type="text" placeholder="Quick-add custom line" style="flex:1">
-      <button id="quickAddBtn" class="ghost">Add</button>
-    </div>
-    <div class="row">
-      <label>Add selected →</label>
-      <select id="outputSectionSelect"></select>
-      <button id="addToOutputBtn" class="primary">Add</button>
+    <div class="cols">
+      <div>
+        <div class="row">
+          <input id="quickAddText" type="text" placeholder="Quick-add custom line" style="flex:1">
+          <button id="quickAddBtn" class="ghost">Add</button>
+        </div>
+      </div>
+      <div>
+        <div class="row">
+          <label>Output target (optional)</label>
+          <select id="outputSectionSelect"></select>
+        </div>
+        <div class="row">
+          <button id="addCheckedTargetBtn" class="ghost">Add checked → target</button>
+          <button id="addCheckedPreserveBtn" class="primary">Add checked (preserve sections)</button>
+        </div>
+        <div class="row">
+          <button id="addVisibleTargetBtn" class="ghost">Add visible → target</button>
+          <button id="addVisiblePreserveBtn" class="primary">Add visible (preserve sections)</button>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- RIGHT: Output -->
+  <!-- RIGHT: Staging + Copy + GPT -->
   <section>
     <h2>Output</h2>
     <div class="row">
@@ -94,17 +109,36 @@
       <button id="copyBtn" class="primary">Copy ;-lines</button>
     </div>
     <textarea id="copyBox" readonly placeholder="Your staged lines will appear here…"></textarea>
-    <h3>Staged</h3>
+
+    <h3>Staged (per section)</h3>
     <div id="stagingWrap" class="list"></div>
+
+    <div class="divider"></div>
+    <h3>Prompt Builder</h3>
+    <div class="row">
+      <select id="promptPreset">
+        <option value="customer">Customer summary (plain English)</option>
+        <option value="engineer">Depot Notes (engineer)</option>
+        <option value="both">Customer + Engineer</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <button id="buildPromptBtn">Build preview</button>
+      <button id="sendToGptBtn" class="primary">Send to GPT</button>
+    </div>
+    <textarea id="promptBox" placeholder="Built prompt will appear here; will be copied to clipboard before opening ChatGPT…"></textarea>
   </section>
 </main>
 
 <script>
-/* ===== Built-in demo (so UI never empty) ===== */
+/* ---------- Built-in demo to avoid empty UI ---------- */
 const DEMO_TEXT = `
 [Needs]
 NE01 | Need | Better water pressure
 NE02 | Need | Faster hot water delivery
+
+[Restrictions to work]
+WAH01 | Access | Ladder access required
+SR03  | Parking | Limited / permit required
 
 [Flue]
 FN01 | New flue | Use same hole - minor change
@@ -114,21 +148,19 @@ FN12 | Orientation | Front aspect
 CA01 | Customer | Clear working areas
 `;
 
-/* ===== State ===== */
+/* ---------- State ---------- */
 const OPTIONS_URL = './Options.txt';
-const STORAGE_KEY = 'dnp_source_safe_v1';
+const STORAGE_KEY = 'dnp_sections_gpt_v1';
 const state = { sections:{}, filter:'', currentSection:'All', output:{} };
 
-/* ===== Utils ===== */
+/* ---------- Utils ---------- */
 const norm = s => (s||'').replace(/[–—]/g,'-').trim();
 const byName = (a,b)=>a.localeCompare(b);
-const setAlert = (html, cls='')=>{
-  const a=document.getElementById('alert'); a.className=cls; a.innerHTML=html||'';
-};
+const setAlert = (html, cls='')=>{ const a=document.getElementById('alert'); a.className=cls; a.innerHTML=html||''; };
 function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({output:state.output})); }catch(e){} }
 function load(){ try{ const j=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); state.output=j.output||{}; }catch(e){} }
 
-/* ===== Parser (robust) ===== */
+/* ---------- Parser ---------- */
 function parseOptionsText(text){
   let t=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
   const lines=t.split('\n'); const out={}; let current=null; const hdr=/^\s*\[([^\]]+)\]\s*$/;
@@ -148,20 +180,7 @@ function parseOptionsText(text){
   return out;
 }
 
-/* ===== Loading options (4 ways) ===== */
-async function loadFromUrl(url){
-  setAlert('Loading…','hint');
-  try{
-    const res=await fetch(url+(url.includes('?')?'&':'?')+'nocache='+Date.now());
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const raw=await res.text();
-    const secs=parseOptionsText(raw);
-    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections (check headers like [Needs])');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from URL.`);
-  }catch(err){
-    setAlert(`Failed to load from URL: <code>${url}</code><br>${err.message}`,'error');
-  }
-}
+/* ---------- Loading ---------- */
 async function loadDefault(){
   setAlert('Looking for ./Options.txt …','hint');
   try{
@@ -169,40 +188,50 @@ async function loadDefault(){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const raw=await res.text();
     const secs=parseOptionsText(raw);
-    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from ./Options.txt`);
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections (check headers like [Needs])');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from ./Options.txt`, false);
   }catch(err){
-    // fall back to demo
+    // fallback to demo
     const secs=parseOptionsText(DEMO_TEXT);
-    setSections(secs, `Could not fetch ./Options.txt (${err.message}). Using built-in demo.`, true);
+    setSections(secs, `Could not fetch ./Options.txt (${err.message}). Using demo set.`, true);
+  }
+}
+async function loadFromUrl(url){
+  setAlert('Loading…','hint');
+  try{
+    const res=await fetch(url+(url.includes('?')?'&':'?')+'nocache='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const raw=await res.text();
+    const secs=parseOptionsText(raw);
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from URL.`, false);
+  }catch(err){
+    setAlert(`Failed to load from URL: <code>${url}</code><br>${err.message}`,'error');
   }
 }
 function loadFromFile(file){
   const r=new FileReader();
   r.onload=()=>{ try{
-      const secs=parseOptionsText(String(r.result||''));
-      if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-      setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from file.`);
+      const secs=parseOptionsText(String(r.result||'')); if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+      setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from file.`, false);
     }catch(e){ setAlert('File parse error: '+e.message,'error'); } };
   r.readAsText(file);
 }
 function loadFromPaste(){
-  const t=prompt('Paste your Options.txt content:');
-  if(!t) return;
+  const t=prompt('Paste your Options.txt content:'); if(!t) return;
   try{
-    const secs=parseOptionsText(t);
-    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from pasted text.`);
+    const secs=parseOptionsText(t); if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from pasted text.`, false);
   }catch(e){ setAlert('Paste parse error: '+e.message,'error'); }
 }
-function setSections(sections, msg, warn=false){
+function setSections(sections, msg, warn){
   state.sections=sections; state.currentSection='All';
-  populateDropdowns(); renderItems(); setAlert(msg, warn?'error':'success');
-  document.getElementById('metaInfo').textContent =
-    `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
+  populateDropdowns(); renderItems();
+  document.getElementById('metaInfo').textContent = `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
+  setAlert(msg, warn?'error':'success');
 }
 
-/* ===== UI: picker ===== */
+/* ---------- Picker UI ---------- */
 function populateDropdowns(){
   const sel=document.getElementById('sectionSelect'); sel.innerHTML='';
   const all=document.createElement('option'); all.value='All'; all.textContent='All'; sel.appendChild(all);
@@ -212,33 +241,42 @@ function populateDropdowns(){
   const outSel=document.getElementById('outputSectionSelect'); outSel.innerHTML='';
   Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; outSel.appendChild(o); });
 }
-function renderItems(){
-  const box=document.getElementById('itemsList'); box.innerHTML='';
+function visibleItems(){
   const filter=(state.filter||'').toLowerCase(); let items=[];
   if(state.currentSection==='All'){ for(const k of Object.keys(state.sections)) items=items.concat(state.sections[k]); }
   else items=state.sections[state.currentSection]||[];
-  const visible=items.filter(it=>{
+  return items.filter(it=>{
     if(!filter) return true;
     return (`${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase()).includes(filter);
   });
-  if(!visible.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='No items match your filter.'; box.appendChild(e); return; }
-  visible.forEach(it=>{
+}
+function renderItems(){
+  const box=document.getElementById('itemsList'); box.innerHTML='';
+  const vis=visibleItems();
+  if(!vis.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='No items match your filter.'; box.appendChild(e); return; }
+  vis.forEach(it=>{
     const row=document.createElement('div'); row.className='item';
     const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.payload=JSON.stringify(it);
     const label=document.createElement('div');
     label.innerHTML=`<div><strong>${it.text}</strong></div><div class="muted">${it.section}${it.category?' • '+it.category:''}${it.code?' • '+it.code:''}</div>`;
     const plus=document.createElement('button'); plus.className='ghost'; plus.textContent='＋';
-    plus.onclick=()=>{ pushToOutput((document.getElementById('outputSectionSelect').value||it.section), it); renderStaging(); renderCopy(); };
+    plus.onclick=()=>{ pushToOutput(it.section, it); renderStaging(); renderCopy(); };
     row.appendChild(cb); row.appendChild(label); row.appendChild(plus); box.appendChild(row);
   });
 }
 
-/* ===== Output staging ===== */
+/* ---------- Output staging (by section) ---------- */
 function pushToOutput(section, it){
   if(!state.output[section]) state.output[section]=[];
   if(!state.output[section].some(x=>x.text===it.text&&x.code===it.code&&x.category===it.category))
     state.output[section].push({text:it.text, code:it.code||'', category:it.category||''});
   save();
+}
+function pushManyPreserve(items){
+  items.forEach(it=> pushToOutput(it.section, it));
+}
+function pushManyTarget(items, target){
+  items.forEach(it=> pushToOutput(target, it));
 }
 function move(section, idx, dir){
   const a=state.output[section]; const j=idx+dir; if(!a||j<0||j>=a.length) return; [a[idx],a[j]]=[a[j],a[idx]]; save();
@@ -281,43 +319,126 @@ function renderCopy(){
   document.getElementById('countBadge').textContent=`${total} line${total===1?'':'s'}`;
 }
 
-/* ===== Boot & events ===== */
+/* ---------- Prompt Builder + Send to GPT ---------- */
+function buildPrompt(preset){
+  const grouped = Object.keys(state.output).sort(byName).map(sec=>{
+    const lines = (state.output[sec]||[]).map(it=>`- ${it.text}`).join('\n');
+    return `${sec}:\n${lines}`;
+  }).join('\n\n');
+
+  const notesBlock = grouped || '(no notes staged)';
+
+  const baseCustomer =
+`Turn these boiler survey notes into a concise, plain-English customer summary (bullets, no jargon). Keep safety items clear. Avoid internal codes. Notes:
+${notesBlock}`;
+
+  const baseEngineer =
+`Turn these selections into semicolon-separated Depot Notes grouped by section. Preserve technical specificity and include safety/access. Output only semicolon lines:
+${notesBlock}`;
+
+  const baseBoth =
+`Produce two parts from these notes.
+
+1) CUSTOMER SUMMARY (plain-English bullets; no jargon; clear safety where relevant)
+2) DEPOT NOTES (semicolon-separated lines grouped by section; technical detail preserved)
+
+Notes:
+${notesBlock}`;
+
+  switch(preset){
+    case 'customer': return baseCustomer;
+    case 'engineer': return baseEngineer;
+    case 'both':     return baseBoth;
+    default:         return document.getElementById('promptBox').value || baseBoth;
+  }
+}
+async function sendToGPT(){
+  const preset = document.getElementById('promptPreset').value;
+  const prompt = buildPrompt(preset);
+  const box = document.getElementById('promptBox');
+  box.value = prompt;
+
+  // Copy prompt
+  try { await navigator.clipboard.writeText(prompt); } catch(e){
+    // fallback
+    const ta=document.createElement('textarea'); ta.value=prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  // Open ChatGPT ready for paste
+  window.open('https://chat.openai.com/', '_blank', 'noopener');
+  setAlert('Prompt copied to clipboard. ChatGPT opened in a new tab — just paste (Cmd/Ctrl+V).','success');
+}
+
+/* ---------- Boot & Events ---------- */
 async function boot(){
   load();
-  await loadDefault();
+  await loadDefault();        // tries ./Options.txt; falls back to demo
   renderStaging(); renderCopy();
 
+  // Loading controls
   document.getElementById('reloadBtn').onclick=()=>loadDefault();
   document.getElementById('loadUrlBtn').onclick=()=>{ const u=document.getElementById('urlInput').value.trim(); if(u) loadFromUrl(u); };
   document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
-  document.getElementById('fileInput').onchange=(e)=>{ const f=e.target.files?.[0]; if(f) loadFromFile(f); e.target.value=''; };
+  document.getElementById('fileInput').onchange=e=>{ const f=e.target.files?.[0]; if(f) loadFromFile(f); e.target.value=''; };
   document.getElementById('loadPasteBtn').onclick=()=>loadFromPaste();
 
+  // Picker
   document.getElementById('sectionSelect').onchange=e=>{ state.currentSection=e.target.value; renderItems(); };
   document.getElementById('filterBox').oninput=e=>{ state.filter=e.target.value||''; renderItems(); };
   window.addEventListener('keydown',e=>{ if(e.key==='/'){ e.preventDefault(); document.getElementById('filterBox').focus(); } });
 
-  document.getElementById('selectVisibleBtn').onclick=()=>{
-    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=true);
-  };
-  document.getElementById('clearSelectionBtn').onclick=()=>{
-    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=false);
-  };
-  document.getElementById('addToOutputBtn').onclick=()=>{
+  document.getElementById('selectVisibleBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=true); };
+  document.getElementById('clearSelectionBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=false); };
+
+  // Add flows
+  document.getElementById('addCheckedTargetBtn').onclick=()=>{
     const target=document.getElementById('outputSectionSelect').value||'General';
-    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked')).forEach(cb=>{
-      const it=JSON.parse(cb.dataset.payload); pushToOutput(target,it); cb.checked=false;
-    });
+    const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
+    if(!cbs.length) return;
+    pushManyTarget(cbs.map(cb=>JSON.parse(cb.dataset.payload)), target);
+    cbs.forEach(cb=>cb.checked=false);
     renderStaging(); renderCopy();
   };
-  document.getElementById('quickAddBtn').onclick=()=>{
-    const v=norm(document.getElementById('quickAddText').value); if(!v) return;
-    if(!state.output.Custom) state.output.Custom=[]; state.output.Custom.push({text:v,code:'',category:'Custom'});
-    document.getElementById('quickAddText').value=''; save(); renderStaging(); renderCopy();
+  document.getElementById('addCheckedPreserveBtn').onclick=()=>{
+    const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
+    if(!cbs.length) return;
+    pushManyPreserve(cbs.map(cb=>JSON.parse(cb.dataset.payload)));
+    cbs.forEach(cb=>cb.checked=false);
+    renderStaging(); renderCopy();
   };
+  document.getElementById('addVisibleTargetBtn').onclick=()=>{
+    const items=visibleItems(); if(!items.length) return;
+    const target=document.getElementById('outputSectionSelect').value||'General';
+    pushManyTarget(items, target);
+    renderStaging(); renderCopy();
+  };
+  document.getElementById('addVisiblePreserveBtn').onclick=()=>{
+    const items=visibleItems(); if(!items.length) return;
+    pushManyPreserve(items);
+    renderStaging(); renderCopy();
+  };
+
+  // Output & GPT
   document.getElementById('includeHeaders').onchange=()=>renderCopy();
-  document.getElementById('copyBtn').onclick=()=>{ const ta=document.getElementById('copyBox'); ta.select(); ta.setSelectionRange(0,99999); try{ navigator.clipboard.writeText(ta.value);}catch(e){} };
-  document.getElementById('resetBtn').onclick=()=>{ localStorage.removeItem(STORAGE_KEY); location.href=location.pathname+'?reset='+Date.now(); };
+  document.getElementById('copyBtn').onclick=()=>{
+    const ta=document.getElementById('copyBox'); ta.select(); ta.setSelectionRange(0,999999);
+    try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
+  };
+  document.getElementById('promptPreset').onchange=()=>{
+    if(document.getElementById('promptPreset').value!=='custom'){
+      document.getElementById('promptBox').value=''; // rebuild fresh to avoid stale edits
+    }
+  };
+  document.getElementById('buildPromptBtn').onclick=()=>{
+    const preset=document.getElementById('promptPreset').value;
+    document.getElementById('promptBox').value = buildPrompt(preset);
+  };
+  document.getElementById('sendToGptBtn').onclick=()=>sendToGPT();
+
+  // Reset
+  document.getElementById('resetBtn').onclick=()=>{
+    localStorage.removeItem(STORAGE_KEY);
+    location.href = location.pathname + '?reset=' + Date.now();
+  };
 }
 boot();
 </script>
