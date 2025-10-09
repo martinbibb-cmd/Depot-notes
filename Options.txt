@@ -97,7 +97,7 @@ OA04 | Specialist works | Scaffolding
 OA05 | Assistance | Double-handed required
 
 [New boiler and controls]
-|location
+BLC00 | location
 BLC01 | Location | Kitchen – not in cupboard
 BLC02 | Location | Kitchen – within cupboard
 BLC03 | Location | Kitchen – cupboard to be removed
