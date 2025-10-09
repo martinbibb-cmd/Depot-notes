@@ -3,343 +3,386 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Depot Notes Picker (Dynamic)</title>
+<title>Depot Notes Picker — Restored</title>
 <style>
-  :root { --gap: 10px; --pad: 12px; --radius: 10px; }
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background:#f6f7fb; color:#1f2937;}
-  header { display:flex; gap:var(--gap); align-items:center; padding:16px var(--pad); background:#fff; position:sticky; top:0; z-index:5; border-bottom:1px solid #e5e7eb;}
-  .badge { background:#eef2ff; color:#4338ca; padding:2px 8px; border-radius:999px; font-size:12px; }
-  main { display:grid; grid-template-columns: 1.2fr 1fr; gap:var(--gap); padding:var(--pad); }
-  @media (max-width: 980px){ main { grid-template-columns: 1fr; } }
-  section { background:#fff; border-radius:var(--radius); padding:var(--pad); box-shadow:0 1px 2px rgba(0,0,0,.05); }
-  h2 { margin:0 0 6px 0; font-size:18px; }
-  .row { display:flex; gap:var(--gap); align-items:center; flex-wrap:wrap; }
-  select, input[type="text"], textarea, button {
-    font: inherit; padding:10px 12px; border-radius:8px; border:1px solid #d1d5db; background:#fff;
-  }
-  select, input[type="text"] { min-height:40px; }
-  button { background:#e5e7eb; cursor:pointer; border-color:#c8ccd1; }
-  button.primary { background:#2563eb; color:#fff; border-color:#1d4ed8; }
-  button.ghost { background:#fff; }
-  button:disabled{opacity:.5; cursor:not-allowed;}
-  .pill { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#f3f4f6; color:#374151; }
-  .toolbar { display:flex; gap:var(--gap); align-items:center; margin:var(--gap) 0; flex-wrap:wrap;}
-  .list { display:grid; gap:6px; max-height:55vh; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:8px;}
-  .item { display:grid; grid-template-columns:auto 1fr; gap:8px; align-items:start; padding:6px; border-radius:8px; }
-  .item:hover{ background:#f9fafb; }
-  .muted{ color:#6b7280; }
-  .flex { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .space { flex:1; }
-  textarea { width:100%; min-height:160px; }
-  .hint { font-size:12px; color:#6b7280; }
-  .divider { height:1px; background:#e5e7eb; margin:8px 0; }
+  :root{--gap:10px;--pad:12px;--radius:10px}
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f6f7fb;color:#1f2937}
+  header{display:flex;gap:var(--gap);align-items:center;padding:16px var(--pad);background:#fff;position:sticky;top:0;z-index:5;border-bottom:1px solid #e5e7eb}
+  .badge{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:12px}
+  .hint{font-size:12px;color:#6b7280}
+  .space{flex:1}
+  main{display:grid;grid-template-columns:1.2fr 1.1fr;gap:var(--gap);padding:var(--pad)}
+  @media (max-width:1100px){main{grid-template-columns:1fr}}
+  section{background:#fff;border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  h2{margin:0 0 6px 0;font-size:18px}
+  h3{margin:8px 0 6px 0;font-size:16px}
+  .row{display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap}
+  select,input[type=text],textarea,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff}
+  button{background:#e5e7eb;border-color:#c8ccd1;cursor:pointer}
+  button.primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
+  button.ghost{background:#fff}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#374151}
+  .toolbar{display:flex;gap:var(--gap);align-items:center;margin:var(--gap) 0;flex-wrap:wrap}
+  .list{display:grid;gap:6px;max-height:50vh;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px}
+  .item{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:6px;border-radius:8px}
+  .item:hover{background:#f9fafb}
+  .muted{color:#6b7280}
+  .divider{height:1px;background:#e5e7eb;margin:8px 0}
+  textarea{width:100%;min-height:160px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+  details>summary{cursor:pointer;padding:6px;border-radius:8px;background:#f9fafb}
+  .sec-head{display:flex;gap:8px;align-items:center}
+  .sec-actions button{padding:4px 8px}
 </style>
 </head>
 <body>
-  <header>
-    <strong>Depot Notes Picker</strong>
-    <span class="badge" id="buildTag">dynamic</span>
-    <span class="hint" id="metaInfo"></span>
-    <span class="space"></span>
-    <button class="ghost" id="resetBtn">Reset (clear storage)</button>
-  </header>
+<header>
+  <strong>Depot Notes Picker</strong>
+  <span class="badge">v2.4 · restored</span>
+  <span class="hint" id="metaInfo"></span>
+  <span class="space"></span>
+  <button class="ghost" id="importBtn">Import state</button>
+  <button class="ghost" id="exportBtn">Export state</button>
+  <button class="ghost" id="resetBtn">Reset</button>
+</header>
 
-  <main>
-    <!-- LEFT: Picker -->
-    <section>
-      <h2>Picker & Controls</h2>
+<main>
+  <!-- LEFT: Source picker -->
+  <section>
+    <h2>Picker (from Options.txt)</h2>
+    <div class="toolbar">
+      <label>Section</label>
+      <select id="sectionSelect"></select>
+      <input id="filterBox" type="text" placeholder="Filter (press / to focus)">
+      <button id="selectVisibleBtn">Select all (visible)</button>
+      <button id="clearSelectionBtn">Clear selection</button>
+    </div>
 
-      <div class="toolbar">
-        <label>Section</label>
-        <select id="sectionSelect"></select>
+    <div id="itemsList" class="list" aria-label="items list"></div>
 
-        <input type="text" id="filterBox" placeholder="Filter (press / to focus)" />
-        <button id="selectVisibleBtn">Select all (visible)</button>
-        <button id="clearSelectionBtn">Clear selection</button>
-      </div>
+    <div class="divider"></div>
 
-      <div id="itemsList" class="list" aria-label="items list"></div>
+    <div class="row">
+      <input id="quickAddText" type="text" placeholder="Quick-add custom line" style="flex:1">
+      <button id="quickAddBtn" class="ghost">Add</button>
+    </div>
 
-      <div class="divider"></div>
+    <div class="row">
+      <label>Add selected →</label>
+      <select id="outputSectionSelect"></select>
+      <button id="addToOutputBtn" class="primary">Add</button>
+      <span class="hint">Choose the output section to send the checked items to.</span>
+    </div>
+  </section>
 
-      <div class="row">
-        <input type="text" id="quickAddText" placeholder="Quick-add custom line" style="flex:1">
-        <button id="quickAddBtn" class="ghost">Add</button>
-      </div>
-    </section>
+  <!-- RIGHT: Output / staging & copy -->
+  <section>
+    <h2>Output (staged by section)</h2>
 
-    <!-- RIGHT: Output -->
-    <section>
-      <h2>Final Copy (All Sections → with LLM)</h2>
-      <div class="row">
-        <span class="pill" id="countBadge">0 selected</span>
-        <span class="space"></span>
-        <button id="copyBtn" class="primary">Copy ;-lines</button>
-      </div>
-      <textarea id="copyBox" readonly placeholder="Your selected lines will appear here…"></textarea>
+    <div class="row">
+      <span class="pill" id="countBadge">0 lines</span>
+      <label style="display:flex;align-items:center;gap:6px;margin-left:12px;">
+        <input type="checkbox" id="includeHeaders" checked> Include section headers
+      </label>
+      <span class="space"></span>
+      <button id="copyBtn" class="primary">Copy ;-lines</button>
+    </div>
 
-      <h3>Selected (live)</h3>
-      <div id="selectedList" class="list"></div>
-      <div class="hint">Output format: <code>semicolon + newline</code></div>
-    </section>
-  </main>
+    <textarea id="copyBox" readonly placeholder="Your staged lines will appear here…"></textarea>
+
+    <h3>Staged per section</h3>
+    <div id="stagingWrap" class="list"></div>
+  </section>
+</main>
 
 <script>
-/* ========= Options Loader (robust, dynamic sections) ========= */
-
-const STORAGE_KEY = 'dnp_state_v1';
+/* ====== Config / State ====== */
 const OPTIONS_URL = './Options.txt';
+const STORAGE_KEY = 'dnp_restored_state_v1';
 
 const state = {
-  sections: {},         // { SectionName: [ {code,category,text,section} ] }
-  selected: [],         // array of items
+  sections: {},           // parsed source sections: {Section: [{code,category,text,section}]}
   filter: '',
-  currentSection: 'All'
+  currentSourceSection: 'All',
+  // staged output: {Section: [ {text, code?, category?} ]}
+  output: {},
 };
 
+/* ====== Utils ====== */
+const norm = s => (s||'').replace(/[–—]/g,'-').trim();
+const byName = (a,b)=>a.localeCompare(b);
 function saveState(){
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    selected: state.selected
-  })); } catch(e){}
+  const payload = { output: state.output };
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
 }
 function loadState(){
-  try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    state.selected = Array.isArray(s.selected) ? s.selected : [];
-  } catch(e){}
+  try{
+    const p = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+    state.output = p.output && typeof p.output==='object' ? p.output : {};
+  }catch(e){}
+}
+function copyToClipboard(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  ta.remove();
 }
 
-function normaliseText(s){
-  return (s || '').replace(/[–—]/g,'-').trim();
-}
-
+/* ====== Parse Options.txt (robust) ====== */
 function parseOptionsText(text){
-  let t = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  let t = text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
   const lines = t.split('\n');
-
-  const sections = {};
+  const out = {};
   let current = null;
   const headerRe = /^\s*\[([^\]]+)\]\s*$/;
 
   for (const raw of lines){
-    const line = normaliseText(raw);
+    const line = norm(raw);
     if (!line) continue;
     if (line.startsWith('#') || line.startsWith('//')) continue;
 
-    const hm = line.match(headerRe);
-    if (hm){
-      // Canonicalize header label (keep user’s text)
-      current = hm[1].trim();
-      if (!sections[current]) sections[current] = [];
+    const m = line.match(headerRe);
+    if (m){
+      current = m[1].trim();
+      if (!out[current]) out[current] = [];
       continue;
     }
+    if (!current) continue;
 
-    if (!current) continue; // ignore until first [header]
-
-    // Expect: CODE | Category | Description   (tolerate 2 parts)
-    const parts = line.split('|').map(s => s.trim());
-    if (!parts.length) continue;
-
+    const parts = line.split('|').map(s=>s.trim());
     let code='', category='', textOut='';
-    if (parts.length === 1){
-      textOut = parts[0];
-    } else if (parts.length === 2){
-      code = parts[0]; textOut = parts[1];
-    } else {
-      code = parts[0]; category = parts[1]; textOut = parts.slice(2).join(' | ');
-    }
+    if (parts.length === 1){ textOut = parts[0]; }
+    else if (parts.length === 2){ code = parts[0]; textOut = parts[1]; }
+    else { code = parts[0]; category = parts[1]; textOut = parts.slice(2).join(' | '); }
 
     if (textOut){
-      sections[current].push({ code, category, text: textOut, section: current });
+      out[current].push({ code, category, text: textOut, section: current });
     }
   }
-  return sections;
+  return out;
 }
-
-async function loadOptions(url){
-  const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now());
+async function loadOptions(){
+  const res = await fetch(OPTIONS_URL + (OPTIONS_URL.includes('?')?'&':'?') + 'nocache=' + Date.now());
   const raw = await res.text();
   return parseOptionsText(raw);
 }
 
-/* ========= UI Renderers ========= */
-
-function populateSectionDropdown(){
+/* ====== Render: Source Picker ====== */
+function populateSourceSectionDropdown(){
   const sel = document.getElementById('sectionSelect');
   sel.innerHTML = '';
-
-  const optAll = document.createElement('option');
-  optAll.value = 'All'; optAll.textContent = 'All';
+  const optAll = document.createElement('option'); optAll.value='All'; optAll.textContent='All';
   sel.appendChild(optAll);
-
-  Object.keys(state.sections).sort((a,b)=>a.localeCompare(b)).forEach(name=>{
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name;
+  Object.keys(state.sections).sort(byName).forEach(name=>{
+    const o = document.createElement('option'); o.value=name; o.textContent=name;
     sel.appendChild(o);
   });
-
-  sel.value = state.currentSection;
+  sel.value = state.currentSourceSection;
+  // also feed output-section selector choices
+  const outSel = document.getElementById('outputSectionSelect');
+  outSel.innerHTML = '';
+  Object.keys(state.sections).sort(byName).forEach(name=>{
+    const o = document.createElement('option'); o.value=name; o.textContent=name;
+    outSel.appendChild(o);
+  });
 }
 
-function renderItems(){
-  const list = document.getElementById('itemsList');
-  list.innerHTML = '';
-
+function renderSourceItems(){
+  const box = document.getElementById('itemsList');
+  box.innerHTML = '';
   const filter = state.filter.toLowerCase();
   let items = [];
-
-  if (state.currentSection === 'All'){
+  if (state.currentSourceSection === 'All'){
     for (const k of Object.keys(state.sections)) items = items.concat(state.sections[k]);
-  } else {
-    items = state.sections[state.currentSection] || [];
+  }else{
+    items = state.sections[state.currentSourceSection] || [];
   }
-
   const visible = items.filter(it=>{
     if (!filter) return true;
-    const s = `${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase();
-    return s.includes(filter);
+    return (`${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase()).includes(filter);
   });
 
   if (!visible.length){
     const empty = document.createElement('div');
-    empty.className = 'hint';
-    empty.style.padding = '8px';
+    empty.className = 'hint'; empty.style.padding='8px';
     empty.textContent = 'No items match your filter.';
-    list.appendChild(empty);
-    return;
+    box.appendChild(empty); return;
   }
 
-  for (const it of visible){
-    const row = document.createElement('div'); row.className = 'item';
-    const cb = document.createElement('input'); cb.type = 'checkbox';
-    cb.checked = state.selected.some(s => s.code===it.code && s.text===it.text && s.section===it.section);
-    cb.addEventListener('change', e=>{
-      if (e.target.checked){
-        state.selected.push(it);
-      } else {
-        const idx = state.selected.findIndex(s => s.code===it.code && s.text===it.text && s.section===it.section);
-        if (idx>-1) state.selected.splice(idx,1);
-      }
-      updateSelected();
-    });
-
+  visible.forEach(it=>{
+    const row = document.createElement('div'); row.className='item';
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.payload = JSON.stringify(it);
     const label = document.createElement('div');
     label.innerHTML = `<div><strong>${it.text}</strong></div>
-                       <div class="muted">${it.section}${it.category? ' • '+it.category:''}${it.code? ' • '+it.code:''}</div>`;
-
-    row.appendChild(cb); row.appendChild(label);
-    list.appendChild(row);
-  }
+      <div class="muted">${it.section}${it.category? ' • '+it.category:''}${it.code? ' • '+it.code:''}</div>`;
+    const plus = document.createElement('button'); plus.className='ghost'; plus.textContent='＋';
+    plus.title = 'Add to output (uses current output section selector)';
+    plus.onclick = ()=>{
+      const tgt = document.getElementById('outputSectionSelect').value || it.section;
+      pushToOutput(tgt, it);
+      renderStaging(); renderCopy();
+    };
+    row.appendChild(cb); row.appendChild(label); row.appendChild(plus);
+    box.appendChild(row);
+  });
 }
 
-function updateSelected(){
-  // update list
-  const wrap = document.getElementById('selectedList');
-  wrap.innerHTML = '';
-  state.selected.forEach((it,i)=>{
-    const row = document.createElement('div'); row.className='item';
-    const del = document.createElement('button'); del.className='ghost'; del.textContent='×';
-    del.addEventListener('click', ()=>{
-      state.selected.splice(i,1);
-      updateSelected();
-      renderItems();
-    });
-    const label = document.createElement('div');
-    label.innerHTML = `<div><strong>${it.text}</strong></div><div class="muted">${it.section}${it.category? ' • '+it.category:''}${it.code? ' • '+it.code:''}</div>`;
-    row.appendChild(del); row.appendChild(label); wrap.appendChild(row);
-  });
-
-  // update copy box (semicolon + newline)
-  const lines = state.selected.map(it => it.text.trim().replace(/\s+/g,' ')).filter(Boolean);
-  document.getElementById('copyBox').value = lines.map(s => s + ';').join('\n');
-
-  // badge
-  document.getElementById('countBadge').textContent = `${state.selected.length} selected`;
-
+/* ====== Output (staging) ====== */
+function pushToOutput(section, item){
+  if (!state.output[section]) state.output[section] = [];
+  const exists = state.output[section].some(x => x.text===item.text && x.code===item.code && x.category===item.category);
+  if (!exists) state.output[section].push({ text:item.text, code:item.code||'', category:item.category||'' });
+  saveState();
+}
+function removeFromOutput(section, idx){
+  if (!state.output[section]) return;
+  state.output[section].splice(idx,1);
+  if (!state.output[section].length) delete state.output[section];
+  saveState();
+}
+function moveInOutput(section, idx, dir){
+  const arr = state.output[section]; if (!arr) return;
+  const j = idx + dir; if (j<0 || j>=arr.length) return;
+  [arr[idx], arr[j]] = [arr[j], arr[idx]];
   saveState();
 }
 
-/* ========= Boot ========= */
+function renderStaging(){
+  const wrap = document.getElementById('stagingWrap');
+  wrap.innerHTML = '';
 
+  const sectionNames = Object.keys(state.output).sort(byName);
+  if (!sectionNames.length){
+    const empty = document.createElement('div'); empty.className='hint'; empty.style.padding='8px';
+    empty.textContent = 'Nothing staged yet. Select items on the left and use “Add selected → section”, or hit the + buttons.';
+    wrap.appendChild(empty); return;
+  }
+
+  sectionNames.forEach(name=>{
+    const det = document.createElement('details'); det.open = true;
+    const sum = document.createElement('summary'); sum.className='sec-head';
+    const count = (state.output[name]||[]).length;
+    sum.innerHTML = `<strong>${name}</strong> <span class="pill">${count}</span>`;
+    det.appendChild(sum);
+
+    (state.output[name]||[]).forEach((it,idx)=>{
+      const row = document.createElement('div'); row.className='item';
+      const label = document.createElement('div');
+      label.innerHTML = `<div><strong>${it.text}</strong></div>
+                         <div class="muted">${it.category?it.category+' • ':''}${it.code?it.code:''}</div>`;
+      const actions = document.createElement('div'); actions.className='sec-actions';
+      const up = document.createElement('button'); up.textContent='↑'; up.onclick=()=>{ moveInOutput(name, idx, -1); renderStaging(); renderCopy(); };
+      const down = document.createElement('button'); down.textContent='↓'; down.onclick=()=>{ moveInOutput(name, idx, +1); renderStaging(); renderCopy(); };
+      const del = document.createElement('button'); del.textContent='×'; del.onclick=()=>{ removeFromOutput(name, idx); renderStaging(); renderCopy(); };
+      actions.appendChild(up); actions.appendChild(down); actions.appendChild(del);
+      row.appendChild(document.createElement('div')); // spacer to align grid like source list
+      row.appendChild(label); row.appendChild(actions);
+      det.appendChild(row);
+    });
+
+    wrap.appendChild(det);
+  });
+}
+
+function renderCopy(){
+  const includeHeaders = document.getElementById('includeHeaders').checked;
+  let lines = [];
+  const names = Object.keys(state.output).sort(byName);
+  names.forEach(name=>{
+    const items = state.output[name] || [];
+    if (!items.length) return;
+    if (includeHeaders) lines.push(`${name}:`);
+    items.forEach(it=> lines.push(`${it.text};`));
+    if (includeHeaders) lines.push(''); // spacer
+  });
+  document.getElementById('copyBox')..value = lines.join('\n');
+  // count badge
+  const total = names.reduce((n,k)=> n + (state.output[k]?.length||0), 0);
+  document.getElementById('countBadge').textContent = `${total} line${total===1?'':'s'}`;
+}
+
+/* ====== Boot & Wiring ====== */
 async function boot(){
   loadState();
-  const sections = await loadOptions(OPTIONS_URL);
-  state.sections = sections;
+  state.sections = await loadOptions();
+  const total = Object.values(state.sections).reduce((n,a)=>n+a.length,0);
+  document.getElementById('metaInfo').textContent = `Loaded ${total} items · ${Object.keys(state.sections).length} sections`;
 
-  const total = Object.values(sections).reduce((n,arr)=>n+arr.length,0);
-  const cats = Object.keys(sections).join(', ');
-  document.getElementById('metaInfo').textContent = `Loaded ${total} items · ${Object.keys(sections).length} sections`;
-
-  // default section
-  state.currentSection = 'All';
-
-  populateSectionDropdown();
-  renderItems();
-  updateSelected();
+  state.currentSourceSection = 'All';
+  populateSourceSectionDropdown();
+  renderSourceItems();
+  renderStaging();
+  renderCopy();
 
   // events
   document.getElementById('sectionSelect').addEventListener('change', e=>{
-    state.currentSection = e.target.value;
-    renderItems();
+    state.currentSourceSection = e.target.value; renderSourceItems();
   });
+  document.getElementById('outputSectionSelect').addEventListener('change',()=>{ /* no-op */ });
   document.getElementById('filterBox').addEventListener('input', e=>{
-    state.filter = e.target.value || '';
-    renderItems();
+    state.filter = e.target.value||''; renderSourceItems();
   });
-  // focus filter with /
   window.addEventListener('keydown', e=>{
-    if (e.key === '/'){
-      e.preventDefault(); document.getElementById('filterBox').focus();
-    }
+    if (e.key === '/'){ e.preventDefault(); document.getElementById('filterBox').focus(); }
   });
-
   document.getElementById('selectVisibleBtn').addEventListener('click', ()=>{
-    // add all currently visible
-    const filter = state.filter.toLowerCase();
-    let items = [];
-    if (state.currentSection === 'All'){
-      for (const k of Object.keys(state.sections)) items = items.concat(state.sections[k]);
-    } else {
-      items = state.sections[state.currentSection] || [];
-    }
-    const visible = items.filter(it=>{
-      if (!filter) return true;
-      const s = `${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase();
-      return s.includes(filter);
-    });
-    // push unique
-    visible.forEach(it=>{
-      if (!state.selected.some(s => s.code===it.code && s.text===it.text && s.section===it.section)){
-        state.selected.push(it);
-      }
-    });
-    updateSelected(); renderItems();
+    const checkboxes = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]'));
+    checkboxes.forEach(cb=> cb.checked = true);
   });
-
   document.getElementById('clearSelectionBtn').addEventListener('click', ()=>{
-    state.selected = []; updateSelected(); renderItems();
+    const checkboxes = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]'));
+    checkboxes.forEach(cb=> cb.checked = false);
   });
-
+  document.getElementById('addToOutputBtn').addEventListener('click', ()=>{
+    const target = document.getElementById('outputSectionSelect').value || 'General';
+    const cbs = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
+    if (!cbs.length) return;
+    cbs.forEach(cb=>{
+      const it = JSON.parse(cb.dataset.payload);
+      pushToOutput(target, it);
+      cb.checked = false;
+    });
+    renderStaging(); renderCopy();
+  });
   document.getElementById('quickAddBtn').addEventListener('click', ()=>{
-    const v = normaliseText(document.getElementById('quickAddText').value);
+    const v = norm(document.getElementById('quickAddText').value);
     if (!v) return;
-    const it = { code:'', category:'Custom', text:v, section:'Custom' };
-    state.selected.push(it); document.getElementById('quickAddText').value='';
-    updateSelected();
+    if (!state.output.Custom) state.output.Custom = [];
+    state.output.Custom.push({ text:v, code:'', category:'Custom' });
+    document.getElementById('quickAddText').value = '';
+    saveState(); renderStaging(); renderCopy();
   });
-
-  document.getElementById('copyBtn').addEventListener('click', async ()=>{
-    const ta = document.getElementById('copyBox');
-    ta.select(); ta.setSelectionRange(0, 99999);
-    try { await navigator.clipboard.writeText(ta.value); } catch(e){}
+  document.getElementById('includeHeaders').addEventListener('change', renderCopy);
+  document.getElementById('copyBtn').addEventListener('click', ()=>{
+    copyToClipboard(document.getElementById('copyBox').value);
   });
-
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     localStorage.removeItem(STORAGE_KEY);
     location.href = location.pathname + '?reset=' + Date.now();
   });
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify({output:state.output}, null, 2)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'depot-notes-state.json'; a.click();
+    URL.revokeObjectURL(a.href);
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
+    inp.onchange = async () => {
+      const file = inp.files?.[0]; if (!file) return;
+      const txt = await file.text();
+      try{
+        const data = JSON.parse(txt);
+        if (data && typeof data==='object' && data.output){
+          state.output = data.output; saveState(); renderStaging(); renderCopy();
+        }
+      }catch(e){}
+    };
+    inp.click();
+  });
 }
-
 boot();
 </script>
 </body>
