@@ -1,4 +1,4 @@
-[Needs]
+[needs]
 Better water pressure
 Faster hot water delivery
 More usable space
@@ -7,18 +7,18 @@ Easier controls
 Quieter operation
 Future-ready system
 
-[Safety & Access (Working at Heights)]
+[working_at_heights]
 Ladder access required
-Scaffold tower – standard
-Scaffold tower – bridging
-Scaffold – cantilever
-Roof access — permit required
-Loft access — boarded
-Loft access — unboarded
+Scaffold tower - standard
+Scaffold tower - bridging
+Scaffold - cantilever
+Roof access - permit required
+Loft access - boarded
+Loft access - unboarded
 MEWP required
-Flat roof work — specialist builder to make good
+Flat roof work - specialist builder to make good
 
-[System — Existing Characteristics]
+[system_existing]
 System type: regular (open-vented with F&E tank)
 System type: regular (sealed system kit present)
 System boiler hot water: open-vented
@@ -32,7 +32,7 @@ System pressure: low
 Controls: mechanical timer / room stat
 Controls: hard-wired only
 
-[System — Proposed / New]
+[system_new]
 System type: combi boiler
 System type: system boiler with unvented cylinder
 System type: system boiler with Mixergy cylinder
@@ -47,20 +47,20 @@ Controls compatibility: Hive
 Controls compatibility: Hive Mini
 Controls preference: simple / manual
 
-[Components — Assistance / Heavy / Specialist]
-Cylinder — removal required
-Cylinder — replacement required
-Cold water storage tank — removal required
-Boiler — removal requires double-handed lift
-Boiler — relocation required
-Gas pipe — upgrade
-Gas pipe — reroute
-Flue — core drill required
-Flue — wall thickness > 450 mm
-Electrical — new fused spur
-Electrical — new wiring centre
+[components_specialist]
+Cylinder - removal required
+Cylinder - replacement required
+Cold water storage tank - removal required
+Boiler - removal requires double-handed lift
+Boiler - relocation required
+Gas pipe - upgrade
+Gas pipe - reroute
+Flue - core drill required
+Flue - wall thickness > 450 mm
+Electrical - new fused spur
+Electrical - new wiring centre
 
-[Site Restrictions]
+[site_restrictions]
 No loft access
 Restricted clearance
 Parking limited / permit required
@@ -68,23 +68,23 @@ Working hours restricted
 Pets on site
 Vulnerable occupant present
 Noise restrictions in place
-Septic tank — not suitable for condensate
-Listed building — consent required
-Listed building — permission required
-Flats — management permission required
+Septic tank - not suitable for condensate
+Listed building - consent required
+Listed building - permission required
+Flats - management permission required
 
-[External Hazards]
+[external_hazards]
 Asbestos suspected
 Fragile roof tiles / material
 Flood risk / standing water
-Nesting insects — wasps
-Nesting insects — bees
+Nesting insects - wasps
+Nesting insects - bees
 Poor lighting / no power
 Pet mess present
 Dog(s) present
 Other potentially dangerous animals
 
-[Delivery & Logistics]
+[delivery_logistics]
 Preferred slot: AM
 Preferred slot: PM
 Vehicle access: large vehicle suitable
@@ -95,17 +95,17 @@ Contact: call ahead on arrival
 Handling: double-handed lift
 Handling: stairs / no lift
 
-[Office & Admin]
+[office_admin]
 Direct labour required
-Specialist works — asbestos removal
-Specialist works — specialist builder
-Specialist works — scaffolding
+Specialist works - asbestos removal
+Specialist works - specialist builder
+Specialist works - scaffolding
 Double-handed assistance required
 
-[Boiler — Location & Controls]
-Location: kitchen — not in cupboard
-Location: kitchen — within cupboard
-Location: kitchen — cupboard to be removed
+[boiler_location_controls]
+Location: kitchen - not in cupboard
+Location: kitchen - within cupboard
+Location: kitchen - cupboard to be removed
 Location: utility room
 Location: loft
 Location: garage
@@ -116,21 +116,21 @@ Location: see photos / floor plan
 Location: adjacent wall
 Location: minor move to gain clearances
 
-[boiler type]
+[boiler_type]
 Boiler type: regular / heat-only / conventional
 Boiler type: system
 Boiler type: combi
 
-[user controls]
+[user_controls]
 User control: Hive
 User control: Hive Mini
 User control: programmable thermostat
-User control: programmer — mechanical
-User control: room stat — wireless
-User control: programmer — 2 channel
+User control: programmer - mechanical
+User control: room stat - wireless
+User control: programmer - 2 channel
 
-[system config]
-System controls: S-plan — additional zone
+[system_config]
+System controls: S-plan - additional zone
 System controls: Y-plan
 System controls: room stat and TRVs
 Control method: load compensation
@@ -139,20 +139,20 @@ Room stat: relocation required
 
 [cupboards]
 Cupboard: not within a cupboard
-Cupboard: fits — modification required
+Cupboard: fits - modification required
 Cupboard: customer to remove cupboard
 Cupboard: customer to modify cupboard
 Cupboard: engineer to remove cupboard
 Cupboard: engineer to modify cupboard
 
-[Flue (Make Good & New)]
+[flue_make_good]
 Make good: old balanced flue
 Make good: old fanned flue
 Make good: old roof terminal
 Brick up old flue opening
 
-[flue New]
-New flue: use same hole — minor change
+[flue_new]
+New flue: use same hole - minor change
 New flue: new hole same wall
 New flue: new hole through alternative surface/wall
 Orientation: horizontal
@@ -166,77 +166,77 @@ Safety: terminal guard required
 Orientation: front aspect
 Orientation: rear aspect
 
-[# Gas Run]
+[gas_run]
 Gas supply: upgrade to 22 mm
 Gas supply: tightness test pass required
 Gas supply: meter location restricts route
 Gas supply: internal reroute
 Gas supply: external reroute
-Meter type: U6 — inside
-Meter type: U6 — outside
+Meter type: U6 - inside
+Meter type: U6 - outside
 Route complexity: simple / local
 Route complexity: reuse existing
 Route complexity: upsize sections for capacity
 Route complexity: complex (clipping / drilling / routing)
-Gas notes: meter tail lead — replace
+Gas notes: meter tail lead - replace
 Gas notes: pressure drop risk over length
 
-[# Condensate]
-Connect to internal waste — P-trap present
-Connect to internal waste — new trap required
-External run — insulate (42 mm MI)
-External run — replace with 42 mm (MI compliant)
+[condensate]
+Connect to internal waste - P-trap present
+Connect to internal waste - new trap required
+External run - insulate (42 mm MI)
+External run - replace with 42 mm (MI compliant)
 Condensate pump required
-Soakaway — 42 mm pipe
-Soakaway — gravel trap
+Soakaway - 42 mm pipe
+Soakaway - gravel trap
 Fall / gradient correction
-Upgrade 32 mm → 42 mm (full MI compliance)
-Discharge to external soil stack — termination check
+Upgrade 32 mm -> 42 mm (full MI compliance)
+Discharge to external soil stack - termination check
 Neutraliser fitted (where required)
 
-[# Discharge (PRV / Tundish)]
-PRV discharge — pipework to outside
-Tundish — visible and compliant
-Discharge route — under floor to outside
-Discharge route — direct to outside
-Discharge route — behind cupboards
-Discharge route — through cupboards
+[discharge]
+PRV discharge - pipework to outside
+Tundish - visible and compliant
+Discharge route - under floor to outside
+Discharge route - direct to outside
+Discharge route - behind cupboards
+Discharge route - through cupboards
 
-[# Water (Cold / Hot / Services)]
+[water_services]
 Increase mains pressure / flow
 Pressure reducing valve required
 Secondary return present
 Scale filter required
 Stop tap / service valve access
-Route — to under-counter
-Route — to airing cupboard
+Route - to under-counter
+Route - to airing cupboard
 
-[# Primaries & Filtration]
+[primaries_filtration]
 Powerflush required
 Chemical clean and inhibit
-Magnetic filter — Fernox TF1 (brass)
-Magnetic filter — other
-Primaries — pipework alterations required
-Primaries — pipe size upgrade required
+Magnetic filter - Fernox TF1 (brass)
+Magnetic filter - other
+Primaries - pipework alterations required
+Primaries - pipe size upgrade required
 
-[# Radiators]
+[radiators]
 Replace radiator(s)
 Install additional radiator(s)
 Fit TRVs / lockshields
 Balance system on completion
 Replace towel rail
 Cap redundant radiator pipework
-Radiators — old / mixed condition
-Constraint — prevents flushing
+Radiators - old / mixed condition
+Constraint - prevents flushing
 
-[# Disruption]
+[disruption]
 Minimal disruption
-Moderate disruption — carpets lifted
-High disruption — floors lifted
-Preparation — customer to clear areas and routes
-Protection — dust protection required
+Moderate disruption - carpets lifted
+High disruption - floors lifted
+Preparation - customer to clear areas and routes
+Protection - dust protection required
 
-[# Customer Actions]
+[customer_actions]
 Customer to clear working areas
 Customer to gain permission where required
 Customer to ensure animals are kept safely
@@ -245,34 +245,34 @@ Customer to rebuild cupboard
 Customer to remove old flue and weather seal
 Customer to supply specified items
 
-[# Anything Else]
-Underfloor heating — not covered
-Materials — mixed metals present
-Materials — true-weld fittings present
-Customer requirement — specific request noted
-Unusual system — specify in notes
+[anything_else]
+Underfloor heating - not covered
+Materials - mixed metals present
+Materials - true-weld fittings present
+Customer requirement - specific request noted
+Unusual system - specify in notes
 
-[# Hot Water Strategy]
+[hot_water_strategy]
 On-demand DHW (combi)
-Stored DHW — unvented
-Stored DHW — vented
+Stored DHW - unvented
+Stored DHW - vented
 Thermal store
 Combination cylinder
 Storage combi
 Multi-point water heater
 
-[# Cylinder]
-Install new open-vented cylinder — same size
-Install new open-vented cylinder — different size (Mixergy option)
-Install new unvented cylinder — Mixergy
+[cylinder]
+Install new open-vented cylinder - same size
+Install new open-vented cylinder - different size (Mixergy option)
+Install new unvented cylinder - Mixergy
 Remove existing cylinder
 
-[# Filter (Choice / Status)]
+[filter_choice_status]
 Fernox TF1
-Magnetic filter — other
+Magnetic filter - other
 Existing filter retained
 No filter (not suitable)
 
-[# Water Treatment]
+[water_treatment]
 Powerflush
 Chemical cleanse & inhibit
