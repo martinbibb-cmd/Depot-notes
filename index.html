@@ -84,7 +84,7 @@
       </div>
       <div>
         <div class="row">
-          <label>Output target (optional)</label>
+          <label>Recipient box (optional)</label>
           <select id="outputSectionSelect"></select>
         </div>
         <div class="row">
@@ -215,24 +215,15 @@ function titleCase(s){ return s.replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim(
 
 /* ---------- Header aliasing to friendly buckets ---------- */
 const HEADER_ALIASES = {
-  // access / restrictions
   'working_at_heights':'Restrictions to work',
   'site_restrictions':'Restrictions to work',
   'restrictions_to_work':'Restrictions to work',
-
-  // system notes
   'system_existing':'System characteristics',
   'system_characteristics':'System characteristics',
-
-  // components assistance
   'components_specialist':'Components that require assistance',
   'components_spe-cialist':'Components that require assistance',
   'components_that_require_assistance':'Components that require assistance',
-
-  // office/admin
   'office_admin':'Office notes',
-
-  // installer – boiler/controls
   'boiler_location_controls':'Installer notes - boiler/controls',
   'boiler_location_-controls':'Installer notes - boiler/controls',
   'boiler_type':'Installer notes - boiler/controls',
@@ -241,13 +232,9 @@ const HEADER_ALIASES = {
   'cupboards':'Installer notes - boiler/controls',
   'system_new':'Installer notes - boiler/controls',
   'boiler_location_/_controls':'Installer notes - boiler/controls',
-
-  // flue
   'flue_make_good':'Flue',
   'flue_new':'Flue',
   'flue':'Flue',
-
-  // gas / water family
   'gas_run':'Gas / Water',
   'water_services':'Gas / Water',
   'condensate':'Gas / Water',
@@ -256,8 +243,6 @@ const HEADER_ALIASES = {
   'primaries & filtration':'Gas / Water',
   'primaries':'Gas / Water',
   'gas_/_water':'Gas / Water',
-
-  // tidy standard labels
   'delivery_logistics':'Delivery notes',
   'external_hazards':'External hazards',
   'customer_actions':'Customer actions',
@@ -276,11 +261,9 @@ function parseOptionsText(text){
   for(const raw of lines){
     const line=norm(raw);
     if(!line || line.startsWith('#') || line.startsWith('//')) continue;
-
     const m=line.match(hdr);
     if(m){ current=bucketizeHeader(m[1].trim()); if(!out[current]) out[current]=[]; continue; }
     if(!current) continue;
-
     const parts=line.split('|').map(s=>s.trim());
     let code='', category='', textOut='';
     if(parts.length===1){ textOut=parts[0]; }
@@ -349,8 +332,10 @@ function populateDropdowns(){
   const all=document.createElement('option'); all.value='All'; all.textContent='All'; sel.appendChild(all);
   Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
   sel.value='All';
+
+  // Recipient boxes
   const outSel=document.getElementById('outputSectionSelect'); outSel.innerHTML='';
-  Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; outSel.appendChild(o); });
+  RECIPIENTS.forEach(([id,label])=>{ const o=document.createElement('option'); o.value=id; o.textContent=label; outSel.appendChild(o); });
 }
 function visibleItems(){
   const filter=(state.filter||'').toLowerCase(); let items=[];
@@ -529,6 +514,26 @@ const FIELD_IDS=['f_needs','f_heights','f_system','f_assistance','f_restrictions
 function getFieldsSnapshot(){ const o={}; FIELD_IDS.forEach(id=> o[id]=document.getElementById(id).value); return o; }
 function setFieldsFromSnapshot(snap){ FIELD_IDS.forEach(id=>{ if(id in snap){ const el=document.getElementById(id); if(el) el.value=snap[id]; } }); }
 function appendText(id, text){ const el=document.getElementById(id); if(!el) return; el.value=(el.value?el.value.trim()+'\n':'')+text.trim(); }
+
+// Recipient dropdown contents
+const RECIPIENTS = [
+  ['f_needs','Needs'],
+  ['f_heights','Safe access at height'],
+  ['f_system','System characteristics notes'],
+  ['f_assistance','Components requiring assistance'],
+  ['f_restrictions','Restrictions / permissions'],
+  ['f_externalhaz','External hazards'],
+  ['f_delivery','Additional delivery notes'],
+  ['f_office','Office notes'],
+  ['f_inst_boiler','Installer notes - boiler/controls'],
+  ['f_inst_flue','Installer notes - flue'],
+  ['f_inst_gw','Installer notes - gas/water'],
+  ['f_inst_disrupt','Installer notes - disruption'],
+  ['f_inst_customer','Installer notes - customer agreed actions'],
+  ['f_inst_special','Installer notes - special requirements'],
+];
+
+// Map staged buckets → fields for the “Append from staged” buttons
 const PULL_MAP = new Map([
   ['Needs','f_needs'],
   ['Restrictions to work','f_heights'],
@@ -537,7 +542,7 @@ const PULL_MAP = new Map([
   ['Office notes','f_office'],
   ['Installer notes - boiler/controls','f_inst_boiler'],
   ['Flue','f_inst_flue'],
-  ['Gas / Water','f_inst_gw'], // virtual merge handled below
+  ['Gas / Water','f_inst_gw'], // special merge handled below
   ['Disruption','f_inst_disrupt'],
   ['Customer actions','f_inst_customer'],
   ['Special requirements','f_inst_special'],
@@ -568,24 +573,27 @@ function wireUI(){
 
   // add flows
   document.getElementById('addCheckedTargetBtn').onclick=()=>{
-    const target=document.getElementById('outputSectionSelect').value||'General';
+    const fieldId=document.getElementById('outputSectionSelect').value;
     const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
-    if(!cbs.length) return;
-    pushManyTarget(cbs.map(cb=>JSON.parse(cb.dataset.payload)), target);
+    if(!fieldId || !cbs.length) return;
+    const text=cbs.map(cb=>JSON.parse(cb.dataset.payload).text+';').join('\n');
+    appendText(fieldId, text);
     cbs.forEach(cb=>cb.checked=false);
-    renderStaging(); renderCopy(); save();
+    save();
+  };
+  document.getElementById('addVisibleTargetBtn').onclick=()=>{
+    const fieldId=document.getElementById('outputSectionSelect').value;
+    const items=visibleItems();
+    if(!fieldId || !items.length) return;
+    const text=items.map(it=>it.text+';').join('\n');
+    appendText(fieldId, text);
+    save();
   };
   document.getElementById('addCheckedPreserveBtn').onclick=()=>{
     const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
     if(!cbs.length) return;
     pushManyPreserve(cbs.map(cb=>JSON.parse(cb.dataset.payload)));
     cbs.forEach(cb=>cb.checked=false);
-    renderStaging(); renderCopy(); save();
-  };
-  document.getElementById('addVisibleTargetBtn').onclick=()=>{
-    const items=visibleItems(); if(!items.length) return;
-    const target=document.getElementById('outputSectionSelect').value||'General';
-    pushManyTarget(items, target);
     renderStaging(); renderCopy(); save();
   };
   document.getElementById('addVisiblePreserveBtn').onclick=()=>{
@@ -617,11 +625,10 @@ function wireUI(){
   // reset
   document.getElementById('resetBtn').onclick=()=>{ localStorage.removeItem(STORAGE_KEY); location.href = location.pathname+'?reset='+Date.now(); };
 
-  // append-from-staged
+  // append-from-staged buttons
   document.querySelectorAll('button[data-pull]').forEach(btn=>{
     btn.onclick=()=>{
       const src=btn.getAttribute('data-pull');
-      // special merge for Gas / Water
       if(src==='Gas / Water'){
         const mergeNames=['Gas / Water','Gas run','Water services','Condensate','Discharge','Primaries & Filtration','Primaries','Primaries & filtration'];
         const merged=[];
