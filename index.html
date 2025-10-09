@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Depot Notes Picker — Sections + GPT</title>
+<title>Depot Notes Picker — Sections + GPT + Forms</title>
 <style>
   :root{--gap:10px;--pad:12px;--radius:10px}
   *{box-sizing:border-box}
@@ -13,12 +13,13 @@
   .hint{font-size:12px;color:#6b7280}
   .space{flex:1}
   main{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--gap);padding:var(--pad)}
-  @media (max-width:1100px){main{grid-template-columns:1fr}}
+  @media (max-width:1200px){main{grid-template-columns:1fr}}
   section{background:#fff;border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 2px rgba(0,0,0,.05)}
   h2{margin:0 0 6px 0;font-size:18px}
-  h3{margin:8px 0 6px 0;font-size:16px}
+  h3{margin:10px 0 6px 0;font-size:16px}
   .row{display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap}
   select,input[type=text],textarea,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff}
+  textarea{width:100%;min-height:120px}
   button{background:#e5e7eb;border-color:#c8ccd1;cursor:pointer}
   button.primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
   button.ghost{background:#fff}
@@ -30,17 +31,18 @@
   .item:hover{background:#f9fafb}
   .muted{color:#6b7280}
   .divider{height:1px;background:#e5e7eb;margin:8px 0}
-  textarea{width:100%;min-height:160px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+  @media (max-width:920px){.cols{grid-template-columns:1fr}}
   .error{background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;padding:8px;border-radius:8px}
   .success{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;padding:8px;border-radius:8px}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+  details>summary{cursor:pointer;padding:6px;border-radius:8px;background:#f9fafb}
+  .fieldhead{display:flex;gap:8px;align-items:center;justify-content:space-between}
 </style>
 </head>
 <body>
 <header>
   <strong>Depot Notes Picker</strong>
-  <span class="badge">v2.4 · sect-gpt</span>
+  <span class="badge">v2.5 · forms</span>
   <span class="hint" id="metaInfo">Loading…</span>
   <span class="space"></span>
   <button class="ghost" id="resetBtn">Reset</button>
@@ -95,11 +97,13 @@
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- RIGHT: Staging + Copy + GPT -->
-  <section>
-    <h2>Output</h2>
+    <div class="divider"></div>
+    <h3>Staged (per section)</h3>
+    <div id="stagingWrap" class="list"></div>
+
+    <div class="divider"></div>
+    <h3>Copy / Prompt</h3>
     <div class="row">
       <span class="pill" id="countBadge">0 lines</span>
       <label style="display:flex;align-items:center;gap:6px;margin-left:12px;">
@@ -107,58 +111,114 @@
       </label>
       <span class="space"></span>
       <button id="copyBtn" class="primary">Copy ;-lines</button>
+      <button id="copyFullBtn">Copy Full Package</button>
     </div>
     <textarea id="copyBox" readonly placeholder="Your staged lines will appear here…"></textarea>
-
-    <h3>Staged (per section)</h3>
-    <div id="stagingWrap" class="list"></div>
-
-    <div class="divider"></div>
-    <h3>Prompt Builder</h3>
-    <div class="row">
+    <div class="row" style="margin-top:6px">
       <select id="promptPreset">
-        <option value="customer">Customer summary (plain English)</option>
+        <option value="customer">Customer summary (plain-English)</option>
         <option value="engineer">Depot Notes (engineer)</option>
-        <option value="both">Customer + Engineer</option>
+        <option value="both" selected>Both (customer + engineer)</option>
         <option value="custom">Custom…</option>
       </select>
       <button id="buildPromptBtn">Build preview</button>
       <button id="sendToGptBtn" class="primary">Send to GPT</button>
     </div>
-    <textarea id="promptBox" placeholder="Built prompt will appear here; will be copied to clipboard before opening ChatGPT…"></textarea>
+    <textarea id="promptBox" placeholder="Built prompt will appear here; copied before opening ChatGPT…"></textarea>
+  </section>
+
+  <!-- RIGHT: Your 14 free-text fields -->
+  <section>
+    <h2>Free-text Notes</h2>
+
+    <div class="fieldhead"><strong>Needs</strong><button class="ghost" data-pull="Needs">Append from staged</button></div>
+    <textarea id="f_needs" placeholder="e.g. Faster hot water delivery; Quieter operation"></textarea>
+
+    <div class="fieldhead"><strong>Describe any work involving safe access at height</strong><button class="ghost" data-pull="Restrictions to work">Append from staged</button></div>
+    <textarea id="f_heights" placeholder="e.g. Ladder access; Scaffold tower – standard"></textarea>
+
+    <div class="fieldhead"><strong>System characteristics notes</strong><button class="ghost" data-pull="System characteristics">Append from staged</button></div>
+    <textarea id="f_system" placeholder="e.g. Regular boiler, gravity primaries, microbore"></textarea>
+
+    <div class="fieldhead"><strong>Are there any components that may require assistance for removal?</strong><button class="ghost" data-pull="Components that require assistance">Append from staged</button></div>
+    <textarea id="f_assistance" placeholder="e.g. Cylinder removal; Boiler double-handed lift"></textarea>
+
+    <div class="fieldhead"><strong>List any restrictions to work areas or specific access permission required?</strong><button class="ghost" data-pull="Restrictions to work">Append from staged</button></div>
+    <textarea id="f_restrictions" placeholder="e.g. Permit parking; Listed building consent"></textarea>
+
+    <div class="fieldhead"><strong>Are there any external work areas that may prove potentially hazardous… Specific hazards?</strong><button class="ghost" data-pull="External hazards">Append from staged</button></div>
+    <textarea id="f_externalhaz" placeholder="e.g. Fragile roof; Wasps; Flood risk"></textarea>
+
+    <div class="fieldhead"><strong>Additional delivery notes</strong><button class="ghost" data-pull="Delivery notes">Append from staged</button></div>
+    <textarea id="f_delivery" placeholder="e.g. Call ahead; Stairs/no lift"></textarea>
+
+    <div class="fieldhead"><strong>Office notes</strong><button class="ghost" data-pull="Office notes">Append from staged</button></div>
+    <textarea id="f_office" placeholder="e.g. Asbestos survey booking; Direct labour"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - boiler/controls</strong><button class="ghost" data-pull="Installer notes - boiler/controls">Append from staged</button></div>
+    <textarea id="f_inst_boiler" placeholder="e.g. Hive Mini; new wiring centre; location change"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - flue</strong><button class="ghost" data-pull="Flue">Append from staged</button></div>
+    <textarea id="f_inst_flue" placeholder="e.g. New hole same wall; plume kit; terminal guard"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - gas/water</strong><button class="ghost" data-pull="Gas / Water">Append from staged</button></div>
+    <textarea id="f_inst_gw" placeholder="e.g. Upsize to 22 mm; PRV; neutraliser"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - disruption</strong><button class="ghost" data-pull="Disruption">Append from staged</button></div>
+    <textarea id="f_inst_disrupt" placeholder="e.g. Floors lifted; protection required"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - customer agreed actions</strong><button class="ghost" data-pull="Customer actions">Append from staged</button></div>
+    <textarea id="f_inst_customer" placeholder="e.g. Clear areas; keep pets secure"></textarea>
+
+    <div class="fieldhead"><strong>Installer notes - special customer requirements (incl. planned home improvements)</strong><button class="ghost" data-pull="Special requirements">Append from staged</button></div>
+    <textarea id="f_inst_special" placeholder="e.g. Kitchen refit planned; retain existing TRVs"></textarea>
   </section>
 </main>
 
 <script>
-/* ---------- Built-in demo to avoid empty UI ---------- */
+/* ---------- Demo so UI never empty ---------- */
 const DEMO_TEXT = `
 [Needs]
 NE01 | Need | Better water pressure
-NE02 | Need | Faster hot water delivery
+NE02 | Need | Quieter operation
 
 [Restrictions to work]
 WAH01 | Access | Ladder access required
-SR03  | Parking | Limited / permit required
+SR03  | Parking | Permit required
+
+[External hazards]
+EH02 | Roof | Fragile tiles
+
+[Delivery notes]
+DL07 | Contact | Call ahead on arrival
 
 [Flue]
-FN01 | New flue | Use same hole - minor change
-FN12 | Orientation | Front aspect
+FN02 | New flue | New hole - same wall
+FN09 | Add-on | Plume kit required
 
 [Customer actions]
 CA01 | Customer | Clear working areas
 `;
 
-/* ---------- State ---------- */
+/* ---------- Settings & State ---------- */
 const OPTIONS_URL = './Options.txt';
-const STORAGE_KEY = 'dnp_sections_gpt_v1';
-const state = { sections:{}, filter:'', currentSection:'All', output:{} };
+const STORAGE_KEY = 'dnp_forms_v1';
+const state = { sections:{}, filter:'', currentSection:'All', output:{}, fields:{} };
 
 /* ---------- Utils ---------- */
 const norm = s => (s||'').replace(/[–—]/g,'-').trim();
 const byName = (a,b)=>a.localeCompare(b);
 const setAlert = (html, cls='')=>{ const a=document.getElementById('alert'); a.className=cls; a.innerHTML=html||''; };
-function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({output:state.output})); }catch(e){} }
-function load(){ try{ const j=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); state.output=j.output||{}; }catch(e){} }
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({output:state.output, fields:getFieldsSnapshot()})); }catch(e){}
+}
+function load(){
+  try{
+    const j=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
+    state.output=j.output||{};
+    if(j.fields) setFieldsFromSnapshot(j.fields);
+  }catch(e){}
+}
 
 /* ---------- Parser ---------- */
 function parseOptionsText(text){
@@ -180,7 +240,7 @@ function parseOptionsText(text){
   return out;
 }
 
-/* ---------- Loading ---------- */
+/* ---------- Loaders ---------- */
 async function loadDefault(){
   setAlert('Looking for ./Options.txt …','hint');
   try{
@@ -188,10 +248,9 @@ async function loadDefault(){
     if(!res.ok) throw new Error('HTTP '+res.status);
     const raw=await res.text();
     const secs=parseOptionsText(raw);
-    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections (check headers like [Needs])');
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections (check [Needs] etc.)');
     setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from ./Options.txt`, false);
   }catch(err){
-    // fallback to demo
     const secs=parseOptionsText(DEMO_TEXT);
     setSections(secs, `Could not fetch ./Options.txt (${err.message}). Using demo set.`, true);
   }
@@ -226,8 +285,9 @@ function loadFromPaste(){
 }
 function setSections(sections, msg, warn){
   state.sections=sections; state.currentSection='All';
-  populateDropdowns(); renderItems();
-  document.getElementById('metaInfo').textContent = `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
+  populateDropdowns(); renderItems(); renderStaging(); renderCopy();
+  document.getElementById('metaInfo').textContent =
+    `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
   setAlert(msg, warn?'error':'success');
 }
 
@@ -237,7 +297,6 @@ function populateDropdowns(){
   const all=document.createElement('option'); all.value='All'; all.textContent='All'; sel.appendChild(all);
   Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
   sel.value='All';
-
   const outSel=document.getElementById('outputSectionSelect'); outSel.innerHTML='';
   Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; outSel.appendChild(o); });
 }
@@ -265,19 +324,15 @@ function renderItems(){
   });
 }
 
-/* ---------- Output staging (by section) ---------- */
+/* ---------- Output staging ---------- */
 function pushToOutput(section, it){
   if(!state.output[section]) state.output[section]=[];
   if(!state.output[section].some(x=>x.text===it.text&&x.code===it.code&&x.category===it.category))
     state.output[section].push({text:it.text, code:it.code||'', category:it.category||''});
   save();
 }
-function pushManyPreserve(items){
-  items.forEach(it=> pushToOutput(it.section, it));
-}
-function pushManyTarget(items, target){
-  items.forEach(it=> pushToOutput(target, it));
-}
+function pushManyPreserve(items){ items.forEach(it=> pushToOutput(it.section, it)); }
+function pushManyTarget(items,target){ items.forEach(it=> pushToOutput(target, it)); }
 function move(section, idx, dir){
   const a=state.output[section]; const j=idx+dir; if(!a||j<0||j>=a.length) return; [a[idx],a[j]]=[a[j],a[idx]]; save();
 }
@@ -305,6 +360,8 @@ function renderStaging(){
     });
   });
 }
+
+/* ---------- Copy builders ---------- */
 function renderCopy(){
   const includeHeaders=document.getElementById('includeHeaders').checked;
   let lines=[]; const names=Object.keys(state.output).sort(byName);
@@ -318,32 +375,90 @@ function renderCopy(){
   const total=names.reduce((n,k)=>n+(state.output[k]?.length||0),0);
   document.getElementById('countBadge').textContent=`${total} line${total===1?'':'s'}`;
 }
+function buildFullPackage(){
+  const base = document.getElementById('copyBox').value.trim();
+  const F = getFieldsSnapshot();
+  const blocks = [
+    base,
+    '',
+    '--- Free-text fields ---',
+    `Needs:\n${F.f_needs||''}`,
+    `Safe access at height:\n${F.f_heights||''}`,
+    `System characteristics notes:\n${F.f_system||''}`,
+    `Assistance for removal:\n${F.f_assistance||''}`,
+    `Restrictions / permissions:\n${F.f_restrictions||''}`,
+    `External hazards:\n${F.f_externalhaz||''}`,
+    `Additional delivery notes:\n${F.f_delivery||''}`,
+    `Office notes:\n${F.f_office||''}`,
+    `Installer notes - boiler/controls:\n${F.f_inst_boiler||''}`,
+    `Installer notes - flue:\n${F.f_inst_flue||''}`,
+    `Installer notes - gas/water:\n${F.f_inst_gw||''}`,
+    `Installer notes - disruption:\n${F.f_inst_disrupt||''}`,
+    `Installer notes - customer agreed actions:\n${F.f_inst_customer||''}`,
+    `Installer notes - special requirements:\n${F.f_inst_special||''}`,
+  ];
+  return blocks.join('\n');
+}
 
 /* ---------- Prompt Builder + Send to GPT ---------- */
-function buildPrompt(preset){
-  const grouped = Object.keys(state.output).sort(byName).map(sec=>{
-    const lines = (state.output[sec]||[]).map(it=>`- ${it.text}`).join('\n');
+function notesGrouped(){
+  return Object.keys(state.output).sort(byName).map(sec=>{
+    const lines=(state.output[sec]||[]).map(it=>`- ${it.text}`).join('\n');
     return `${sec}:\n${lines}`;
   }).join('\n\n');
-
-  const notesBlock = grouped || '(no notes staged)';
+}
+function fieldsBlock(){
+  const F=getFieldsSnapshot();
+  const map=[
+    ['Needs',F.f_needs],
+    ['Safe access at height',F.f_heights],
+    ['System characteristics notes',F.f_system],
+    ['Assistance for removal',F.f_assistance],
+    ['Restrictions / permissions',F.f_restrictions],
+    ['External hazards',F.f_externalhaz],
+    ['Additional delivery notes',F.f_delivery],
+    ['Office notes',F.f_office],
+    ['Installer notes - boiler/controls',F.f_inst_boiler],
+    ['Installer notes - flue',F.f_inst_flue],
+    ['Installer notes - gas/water',F.f_inst_gw],
+    ['Installer notes - disruption',F.f_inst_disrupt],
+    ['Installer notes - customer agreed actions',F.f_inst_customer],
+    ['Installer notes - special requirements',F.f_inst_special],
+  ];
+  return map.map(([k,v])=>`${k}:\n${v||''}`).join('\n\n');
+}
+function buildPrompt(preset){
+  const grouped = notesGrouped() || '(no staged selections)';
+  const freeForm = fieldsBlock();
 
   const baseCustomer =
-`Turn these boiler survey notes into a concise, plain-English customer summary (bullets, no jargon). Keep safety items clear. Avoid internal codes. Notes:
-${notesBlock}`;
+`Turn these boiler survey notes + free-text into a concise customer summary (plain English bullets; no jargon; call out safety and permissions clearly).
+Selections:
+${grouped}
+
+Free-text:
+${freeForm}`;
 
   const baseEngineer =
-`Turn these selections into semicolon-separated Depot Notes grouped by section. Preserve technical specificity and include safety/access. Output only semicolon lines:
-${notesBlock}`;
+`Turn these inputs into semicolon-separated Depot Notes grouped by section. Preserve technical specifics (flue clearances, gas upgrades, PRV/condensate) and include safety/access.
+Output only semicolon lines for the notes; ignore headings.
+Selections:
+${grouped}
+
+Free-text (fold into appropriate sections):
+${freeForm}`;
 
   const baseBoth =
-`Produce two parts from these notes.
+`Produce two parts from these inputs:
 
-1) CUSTOMER SUMMARY (plain-English bullets; no jargon; clear safety where relevant)
-2) DEPOT NOTES (semicolon-separated lines grouped by section; technical detail preserved)
+1) CUSTOMER SUMMARY — plain-English bullets; no jargon; highlight safety/permissions.
+2) DEPOT NOTES — semicolon-separated lines grouped by section; technical detail preserved.
 
-Notes:
-${notesBlock}`;
+Selections:
+${grouped}
+
+Free-text (fold into relevant sections):
+${freeForm}`;
 
   switch(preset){
     case 'customer': return baseCustomer;
@@ -353,93 +468,140 @@ ${notesBlock}`;
   }
 }
 async function sendToGPT(){
-  const preset = document.getElementById('promptPreset').value;
-  const prompt = buildPrompt(preset);
-  const box = document.getElementById('promptBox');
-  box.value = prompt;
-
-  // Copy prompt
-  try { await navigator.clipboard.writeText(prompt); } catch(e){
-    // fallback
+  const preset=document.getElementById('promptPreset').value;
+  const prompt=buildPrompt(preset);
+  const box=document.getElementById('promptBox'); box.value=prompt;
+  try{ await navigator.clipboard.writeText(prompt); }catch(e){
     const ta=document.createElement('textarea'); ta.value=prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
   }
-  // Open ChatGPT ready for paste
   window.open('https://chat.openai.com/', '_blank', 'noopener');
-  setAlert('Prompt copied to clipboard. ChatGPT opened in a new tab — just paste (Cmd/Ctrl+V).','success');
+  setAlert('Prompt copied to clipboard. ChatGPT opened — paste (Cmd/Ctrl+V).','success');
 }
+
+/* ---------- Field helpers ---------- */
+const FIELD_IDS=['f_needs','f_heights','f_system','f_assistance','f_restrictions','f_externalhaz','f_delivery','f_office','f_inst_boiler','f_inst_flue','f_inst_gw','f_inst_disrupt','f_inst_customer','f_inst_special'];
+function getFieldsSnapshot(){
+  const o={}; FIELD_IDS.forEach(id=> o[id]=document.getElementById(id).value); return o;
+}
+function setFieldsFromSnapshot(snap){
+  FIELD_IDS.forEach(id=>{ if(id in snap){ const el=document.getElementById(id); if(el) el.value=snap[id]; } });
+}
+function appendText(id, text){
+  const el=document.getElementById(id); if(!el) return;
+  el.value = (el.value ? el.value.trim()+'\n' : '') + text.trim();
+}
+
+/* ---------- Map staged sections to your fields (for "Append from staged") ---------- */
+const PULL_MAP = new Map([
+  ['Needs','f_needs'],
+  ['Restrictions to work','f_heights'],                 // heights & permissions also map to…
+  ['External hazards','f_externalhaz'],
+  ['Delivery notes','f_delivery'],
+  ['Office notes','f_office'],
+  ['Installer notes - boiler/controls','f_inst_boiler'],
+  ['Flue','f_inst_flue'],
+  ['Gas / Water','f_inst_gw'],                           // virtual bucket via merge below
+  ['Disruption','f_inst_disrupt'],
+  ['Customer actions','f_inst_customer'],
+  ['Special requirements','f_inst_special'],
+  ['System characteristics','f_system'],
+  ['Components that require assistance','f_assistance'],
+]);
 
 /* ---------- Boot & Events ---------- */
 async function boot(){
   load();
-  await loadDefault();        // tries ./Options.txt; falls back to demo
-  renderStaging(); renderCopy();
-
-  // Loading controls
+  await loadDefault();
+  wireUI();
+}
+function wireUI(){
   document.getElementById('reloadBtn').onclick=()=>loadDefault();
   document.getElementById('loadUrlBtn').onclick=()=>{ const u=document.getElementById('urlInput').value.trim(); if(u) loadFromUrl(u); };
   document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
   document.getElementById('fileInput').onchange=e=>{ const f=e.target.files?.[0]; if(f) loadFromFile(f); e.target.value=''; };
   document.getElementById('loadPasteBtn').onclick=()=>loadFromPaste();
 
-  // Picker
   document.getElementById('sectionSelect').onchange=e=>{ state.currentSection=e.target.value; renderItems(); };
   document.getElementById('filterBox').oninput=e=>{ state.filter=e.target.value||''; renderItems(); };
   window.addEventListener('keydown',e=>{ if(e.key==='/'){ e.preventDefault(); document.getElementById('filterBox').focus(); } });
-
   document.getElementById('selectVisibleBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=true); };
   document.getElementById('clearSelectionBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=false); };
 
-  // Add flows
   document.getElementById('addCheckedTargetBtn').onclick=()=>{
     const target=document.getElementById('outputSectionSelect').value||'General';
     const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
     if(!cbs.length) return;
     pushManyTarget(cbs.map(cb=>JSON.parse(cb.dataset.payload)), target);
     cbs.forEach(cb=>cb.checked=false);
-    renderStaging(); renderCopy();
+    renderStaging(); renderCopy(); save();
   };
   document.getElementById('addCheckedPreserveBtn').onclick=()=>{
     const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
     if(!cbs.length) return;
     pushManyPreserve(cbs.map(cb=>JSON.parse(cb.dataset.payload)));
     cbs.forEach(cb=>cb.checked=false);
-    renderStaging(); renderCopy();
+    renderStaging(); renderCopy(); save();
   };
   document.getElementById('addVisibleTargetBtn').onclick=()=>{
     const items=visibleItems(); if(!items.length) return;
     const target=document.getElementById('outputSectionSelect').value||'General';
     pushManyTarget(items, target);
-    renderStaging(); renderCopy();
+    renderStaging(); renderCopy(); save();
   };
   document.getElementById('addVisiblePreserveBtn').onclick=()=>{
     const items=visibleItems(); if(!items.length) return;
     pushManyPreserve(items);
-    renderStaging(); renderCopy();
+    renderStaging(); renderCopy(); save();
   };
 
-  // Output & GPT
   document.getElementById('includeHeaders').onchange=()=>renderCopy();
   document.getElementById('copyBtn').onclick=()=>{
     const ta=document.getElementById('copyBox'); ta.select(); ta.setSelectionRange(0,999999);
     try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
   };
-  document.getElementById('promptPreset').onchange=()=>{
-    if(document.getElementById('promptPreset').value!=='custom'){
-      document.getElementById('promptBox').value=''; // rebuild fresh to avoid stale edits
-    }
+  document.getElementById('copyFullBtn').onclick=()=>{
+    const full=buildFullPackage();
+    const ta=document.createElement('textarea'); ta.value=full; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    setAlert('Full package copied (semicolon lines + all free-text fields).','success');
   };
-  document.getElementById('buildPromptBtn').onclick=()=>{
-    const preset=document.getElementById('promptPreset').value;
-    document.getElementById('promptBox').value = buildPrompt(preset);
-  };
+
+  document.getElementById('promptPreset').onchange=()=>{ if(document.getElementById('promptPreset').value!=='custom') document.getElementById('promptBox').value=''; };
+  document.getElementById('buildPromptBtn').onclick=()=>{ document.getElementById('promptBox').value = buildPrompt(document.getElementById('promptPreset').value); };
   document.getElementById('sendToGptBtn').onclick=()=>sendToGPT();
 
-  // Reset
-  document.getElementById('resetBtn').onclick=()=>{
-    localStorage.removeItem(STORAGE_KEY);
-    location.href = location.pathname + '?reset=' + Date.now();
-  };
+  document.getElementById('resetBtn').onclick=()=>{ localStorage.removeItem(STORAGE_KEY); location.href = location.pathname+'?reset='+Date.now(); };
+
+  // Append-from-staged buttons
+  document.querySelectorAll('button[data-pull]').forEach(btn=>{
+    btn.onclick=()=>{
+      const src=btn.getAttribute('data-pull');
+      // Build a merged "Gas / Water" virtual section if needed
+      const gasWaterMerge = ['Gas run','Water services','Condensate','Discharge','Primaries & Filtration','Primaries','Primaries & filtration'];
+      const merged = [];
+      if(src==='Gas / Water'){
+        gasWaterMerge.forEach(name=>{
+          const items = state.output[name] || state.output[name.replace('&','and')] || [];
+          merged.push(...items);
+        });
+        const text = merged.map(it=>it.text+';').join('\n');
+        appendText('f_inst_gw', text); save(); return;
+      }
+      // Normal case
+      const items=(state.output[src]||[]).map(it=>it.text+';').join('\n');
+      const targetId = PULL_MAP.get(src);
+      if(!targetId){ setAlert(`No staged section named “${src}” to pull.`, 'error'); return; }
+      appendText(targetId, items); save();
+    };
+  });
+
+  // Persist fields live
+  FIELD_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener('input', ()=>save());
+  });
 }
+
+/* ---------- Kickoff ---------- */
 boot();
 </script>
 </body>
