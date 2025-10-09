@@ -1,4 +1,4 @@
-[# Needs]
+[Needs]
 Better water pressure
 Faster hot water delivery
 More usable space
@@ -7,7 +7,7 @@ Easier controls
 Quieter operation
 Future-ready system
 
-[# Safety & Access (Working at Heights)]
+[Safety & Access (Working at Heights)]
 Ladder access required
 Scaffold tower – standard
 Scaffold tower – bridging
@@ -18,7 +18,7 @@ Loft access — unboarded
 MEWP required
 Flat roof work — specialist builder to make good
 
-[# System — Existing Characteristics]
+[System — Existing Characteristics]
 System type: regular (open-vented with F&E tank)
 System type: regular (sealed system kit present)
 System boiler hot water: open-vented
@@ -32,7 +32,7 @@ System pressure: low
 Controls: mechanical timer / room stat
 Controls: hard-wired only
 
-[# System — Proposed / New]
+[System — Proposed / New]
 System type: combi boiler
 System type: system boiler with unvented cylinder
 System type: system boiler with Mixergy cylinder
@@ -47,7 +47,7 @@ Controls compatibility: Hive
 Controls compatibility: Hive Mini
 Controls preference: simple / manual
 
-[# Components — Assistance / Heavy / Specialist]
+[Components — Assistance / Heavy / Specialist]
 Cylinder — removal required
 Cylinder — replacement required
 Cold water storage tank — removal required
@@ -60,7 +60,7 @@ Flue — wall thickness > 450 mm
 Electrical — new fused spur
 Electrical — new wiring centre
 
-[# Site Restrictions]
+[Site Restrictions]
 No loft access
 Restricted clearance
 Parking limited / permit required
@@ -73,7 +73,7 @@ Listed building — consent required
 Listed building — permission required
 Flats — management permission required
 
-[# External Hazards]
+[External Hazards]
 Asbestos suspected
 Fragile roof tiles / material
 Flood risk / standing water
@@ -84,7 +84,7 @@ Pet mess present
 Dog(s) present
 Other potentially dangerous animals
 
-[# Delivery & Logistics]
+[Delivery & Logistics]
 Preferred slot: AM
 Preferred slot: PM
 Vehicle access: large vehicle suitable
@@ -95,14 +95,14 @@ Contact: call ahead on arrival
 Handling: double-handed lift
 Handling: stairs / no lift
 
-[# Office & Admin]
+[Office & Admin]
 Direct labour required
 Specialist works — asbestos removal
 Specialist works — specialist builder
 Specialist works — scaffolding
 Double-handed assistance required
 
-[# Boiler — Location & Controls]
+[Boiler — Location & Controls]
 Location: kitchen — not in cupboard
 Location: kitchen — within cupboard
 Location: kitchen — cupboard to be removed
@@ -145,7 +145,7 @@ Cupboard: customer to modify cupboard
 Cupboard: engineer to remove cupboard
 Cupboard: engineer to modify cupboard
 
-[# Flue (Make Good & New)]
+[Flue (Make Good & New)]
 Make good: old balanced flue
 Make good: old fanned flue
 Make good: old roof terminal
