@@ -1,3 +1,59 @@
+[Arse_cover_notes]
+ARS01 | System | Sealing an old system may expose hidden leaks
+ARS02 | System | Existing radiators and valves may leak once pressurised
+ARS03 | System | Old vented pipework and joints not designed for pressure
+ARS04 | System | System converted from open vent to sealed — pressure relief valve fitted for safety
+ARS05 | System | Pressure drops after installation may indicate existing weeps or hidden leaks
+ARS06 | System | Customer advised to monitor pressure during initial days of use
+ARS07 | System | No liability for existing system weaknesses or pre-existing faults
+
+ARS08 | Combi | Combination boilers supply one outlet at a time — flow reduces with multiple use
+ARS09 | Combi | Flow rate limited by mains water supply — cannot exceed incoming pressure or flow
+ARS10 | Combi | Large households or multiple bathrooms may experience reduced performance
+ARS11 | Combi | Cold mains restrictions may affect shower performance
+ARS12 | Combi | Hot water temperature varies slightly with flow rate
+ARS13 | Combi | Not suitable for power showers with pump — pump must be removed
+ARS14 | Combi | Shower performance dependent on incoming cold main flow and pressure
+
+ARS15 | Hot water | Stored cylinder water may take time to reheat
+ARS16 | Hot water | Mixergy or unvented cylinders require periodic servicing for safety
+ARS17 | Hot water | Unvented cylinder discharge tested and compliant at time of install only
+ARS18 | Hot water | Hot water recovery times vary depending on usage pattern
+ARS19 | Hot water | No liability for customer-supplied fixtures not designed for mains pressure
+
+ARS20 | Condensate | Condensate routes external — insulated to reduce freezing risk, not guaranteed
+ARS21 | Condensate | External soakaway provided only where suitable drainage available
+ARS22 | Condensate | Customer responsible for maintaining condensate route clear and free-flowing
+ARS23 | Condensate | No responsibility for freezing if installation complies with manufacturer MI
+
+ARS24 | Controls | Controls installed in accordance with manufacturer’s instructions
+ARS25 | Controls | Hive system can operate without Wi-Fi; only remote app access requires router connection and USB power
+ARS26 | Controls | Smart controls may require network access for optional app features
+ARS27 | Controls | No responsibility for internet connectivity or app integration issues
+ARS28 | Controls | Room stat location based on best judgement at time of survey
+
+ARS29 | Flue | Flue termination checked for clearance at time of install — future obstructions not covered
+ARS30 | Flue | Brickwork and render made good to reasonable standard, not decorative finish
+ARS31 | Flue | Flue sealing and flashings weatherproof only — not decorative
+ARS32 | Flue | Existing holes or redundant flues made safe and sealed where practical
+
+ARS33 | Access | Safe access provided for installation only — permanent access is customer responsibility
+ARS34 | Access | Loft must be boarded, lit, and safe before works commence
+ARS35 | Access | Working at height precautions apply — scaffold or tower may be required
+ARS36 | Access | No work above safe height without suitable equipment
+
+ARS37 | Customer | Customer to clear working area and ensure safe access
+ARS38 | Customer | Pets to be contained during works
+ARS39 | Customer | Noise, dust, and disruption unavoidable during installation
+ARS40 | Customer | Water and heating supply may be temporarily unavailable during works
+ARS41 | Customer | Customer responsible for redecorating or boxing in after completion
+
+ARS42 | General | All works carried out to Gas Safe and Building Regs at time of install
+ARS43 | General | Manufacturer warranty subject to annual service
+ARS44 | General | No liability for pre-existing faults or unrelated plumbing issues
+ARS45 | General | Installation performance depends on system design and existing pipework
+ARS46 | General | Recommendations given in good faith based on visible inspection
+
 [Needs]
 NE01 | Need | Better water pressure
 NE02 | Need | Faster hot water delivery
