@@ -39,7 +39,7 @@ SCOLD06 | Pressure | Low system pressure
 SCOLD07 | Controls | Mechanical timer / room stat
 SCOLD08 | Controls | Hard-wired only
 
-SCNEW0 | proposed new system
+SCNEW0 | proposed NEW system
 SCNEW01 | System type | Combi boiler
 SCNEW02A | System boiler | With unvented cylinder
 SCNEW02B | System boiler | With Mixergy cylinder
@@ -89,6 +89,8 @@ HAZEXT04B | Nesting insects | Bees
 HAZEXT05 | Site | Poor lighting / No power
 HAZEXT06 | Site | Pet mess present
 HAZEXT07 | see working at heights
+HAZEXT08 | dog(s)
+HAZEXT09 | other potentially dangerous animals
 
 [delivery_notes]
 DEL01 | Preferred slot | AM
@@ -102,10 +104,6 @@ DEL07A | Handling | Double-handed lift
 DEL07B | Handling | Stairs / No lift
 
 [office_notes]
-OFF01 | Admin | Warranty / registration required
-OFF02 | Admin | Grant / finance paperwork
-OFF03A | Photos | Before
-OFF03B | Photos | After
 OFF04 | Labour | Direct labour required
 OFF05A | Specialist works | Asbestos removal
 OFF05B | Specialist works | Specialist builder
@@ -120,23 +118,28 @@ NBCLOC01B | location | kitchen | cupboard to be removed
 NBCLOC02 | Location | Utility room
 NBCLOC03 | Location | Loft
 NBCLOC04 | Location | Garage
-NBCLOC05 | Location | Cupboard / Airing
+NBCLOC05 | Location | bedroom
+NBCLOC05A | Location | Airing Cupboard
 NBCLOC06 | Location | Other internal
+NBCLOC06A | Location | See photos/floor plan
 NBCLOC07 | Location | adjacent wall
 NBCLOC08 | Location | minor move to gain clearances
 
-NBCUC0 |new_boiler
+NBTYPE1 | Type | Regular/heat only/conventional
+NBTYPE2 | Type | System
+NBTYPE3 | Type | Combi
+
 NBCUC01 | User control | Hive
 NBCUC02 | User control | Hive Mini
 NBCUC03 | User control | Programmable thermostat
-NBCUC04 | User control | Manual mechanical stat
-NBCUC05 | User control | On/off only
-NBCUC06 | Hive | App access enabled
+NBCUC04 | User control | programmer | mechanical 
+NBCUC05 | User control | Room stat | wireless
+NBCUC06 | User control | programmer | 2 channel
 
 NBCSC0 | system_controls
-NBCSC01 | Wiring configuration | S-plan
-NBCSC02 | Wiring configuration | Y-plan
-NBCSC03 | Control method | OpenTherm
+NBCSC01 | configuration | S-plan | additional zone
+NBCSC02 | configuration | Y-plan
+NBCSC03 | configuration | Stat and TRVs
 NBCSC04 | Control method | Load compensation
 NBCSC05 | Wiring | New wiring centre required
 NBCSC06 | Room stat | Relocation required
@@ -150,12 +153,15 @@ CUP04A | Cupboard | Engineer to remove cupboard
 CUP04B | Cupboard | Engineer to modify cupboard
 
 [flue]
-FLOLD | old flue making good
-FLOLD01 | Make good | Internal wall and external leaf
+FLOLD | make good | old balanced Flue
+FLOLD01 | Make good | Fanned flue
 FLOLD03 | Make good | Roof terminal
 FLOLD04 | Brick up | Old flue opening
 
 FLNEW | new flue
+FLNEW1 | same hole | minor change
+FLNEW2 | new hole same wall
+FLNEW3 | new hole through _
 FLNEW01A | Orientation | Horizontal
 FLNEW01B | Orientation | Vertical
 FLNEW02A | Sealing | Seal brickwork to flue
@@ -164,6 +170,8 @@ FLNEW02C | Sealing | Flat roof flashing by specialist builder
 FLNEW03 | Add-on | Plume kit required
 FLNEW04 | Add-on | Flue extension
 FLNEW05 | Safety | Terminal guard required
+FLNEW06 | Orientation | front aspect
+FLNEW07 | Orientation | rear aspect
 
 [gas_water_gas_supply]
 GAS01 | Gas supply | Upgrade to 22 mm
@@ -180,7 +188,6 @@ GAS07D | Route complexity | Complex (clipping/drilling/routing)
 GAS08A | Gas notes | Meter tail lead – replace
 GAS08B | Gas notes | Pressure drop risk over length
 
-[gas_water_condensate]
 CON01A | Condensate | Connect to internal waste – P-trap present
 CON01B | Condensate | Connect to internal waste – New trap required
 CON02A | Condensate | External run – Insulate (42 mm MI)
@@ -193,7 +200,6 @@ CON06 | Condensate | Upgrade 32 mm → 42 mm (Full MI compliance)
 CON07 | Condensate | Discharge to external soil stack – Termination check
 CON08 | Condensate | Neutraliser fitted (where required)
 
-[gas_water_discharge]
 DIS01 | Discharge | PRV pipework to outside
 DIS02 | Discharge | Visible tundish – compliant
 DIS03A | Discharge route | Under floor to outside
@@ -201,7 +207,6 @@ DIS03B | Discharge route | Direct to outside
 DIS03C | Discharge route | Behind cupboards
 DIS03D | Discharge route | Through cupboards
 
-[gas_water_dcw_dhw]
 DCW01 | Cold/Hot water | Increase mains pressure/flow
 DCW02 | Cold/Hot water | Pressure reducing valve required
 DCW03 | Cold/Hot water | Secondary return present
@@ -210,7 +215,6 @@ DCW05 | Cold/Hot water | Stop tap / service valve access
 DCW06A | Cold/Hot water route | To under-counter
 DCW06B | Cold/Hot water route | To airing cupboard
 
-[gas_water_primaries]
 PRIM01 | Primaries | Power flush required
 PRIM02 | Primaries | Chemical clean and inhibit
 PRIM03A | Filtration | Magnetic filter – Fernox TF1 (brass)
@@ -218,7 +222,7 @@ PRIM03B | Filtration | Magnetic filter – Other
 PRIM04 | Primaries | Pipework alterations required
 PRIM05 | Primaries | Pipe size upgrade required
 
-[radiators]
+[Radiators]
 RAD01 | Radiators | Replace radiator(s)
 RAD02 | Radiators | Install additional radiator(s)
 RAD03 | Radiators | Fit TRVs / Lockshields
@@ -234,6 +238,15 @@ DISR02 | Disruption | Moderate – Carpets lifted
 DISR03 | Disruption | High – Floors lifted
 DISR04 | Preparation | Customer to clear areas and routes
 DISR05 | Protection | Dust protection required
+
+[Customer agreed actions]
+CUSTD01 | customer to | clear working areas
+CUSTD02 | customer to | Gain permission 
+CUSTD03 | customer to | ensure animals are kept safely 
+CUSTD04 | customer to | remove cupboard 
+CUSTD05 | customer to | rebuild cupboard 
+CUSTD06 | customer to |remove old flue and weather seal
+CUSTD07 | customer to | supply 
 
 [anything_else]
 AE01 | Underfloor heating | Not covered
@@ -251,16 +264,14 @@ DHW-COMBIC | combination cylinder
 DHW-SC | storage combi
 DHW-MP | multi point water heater
 
-[cylinder_capacity]
-CYL-98 | Cylinder ~ 98l
-CYL-120 | Cylinder ~120 L
-CYL-150 | Cylinder ~150 L
-CYL-200 | Cylinder ~200 L
-CYL-250 | Cylinder ~250 L
-CYL-300 | Cylinder ~300 L
+[cylinder]
+CYL1 | install new | open vented same size
+CYL2 | install new |open vented different size | mixergy
+CYL-150 | Install new unvented | mixergy
+CYL-200 | remove existing cylinder
 
 [filter]
-F-TF1 | Fernox TF1 (brass)
+F-TF1 | Fernox TF1
 F-MAG | Magnetic filter (other)
 F-EXIST | Existing filter retained
 F-NONE | No filter (not suitable)
