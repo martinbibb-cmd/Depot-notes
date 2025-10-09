@@ -1,521 +1,638 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light dark">
-<title>Depot Notes – Picker</title>
+<title>Depot Notes Picker — Rebuild</title>
 <style>
-  /* ===== THEME VARIABLES ===== */
   :root {
-    --bg: #0a0a0a;
-    --fg: #f5f5f5;
-    --muted: #bbb;
-    --panel: #111;
-    --line: #333;
-    --accent: #3088ff;
-    --accent-600: #1e6ad9;
-    --accent-weak: #16243a;
+    --bg: #0f1115;
+    --panel: #151823;
+    --muted: #8b95a7;
+    --text: #e6eaf2;
+    --accent: #6aa7ff;
+    --ok: #2bb673;
+    --warn: #ffb84d;
+    --danger: #ff6a6a;
+    --border: #242a38;
+    --chip: #1e2332;
+    --input: #0f1320;
   }
-  :root[data-theme="light"] {
-    color-scheme: light;
-    --bg: #ffffff;
-    --fg: #111111;
-    --muted: #666;
-    --panel: #ffffff;
-    --line: #e3e7f2;
-    --accent: #0a5cff;
-    --accent-600: #084ad1;
-    --accent-weak: #eef2ff;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+    background: linear-gradient(180deg, #0c0f16, #0f1115 140px);
+    color: var(--text);
   }
-  :root[data-theme="dark"] {
-    color-scheme: dark;
-    --bg: #0a0a0a;
-    --fg: #f5f5f5;
-    --muted: #bbb;
-    --panel: #111;
-    --line: #333;
-    --accent: #3088ff;
-    --accent-600: #1e6ad9;
-    --accent-weak: #16243a;
+  header {
+    padding: 16px clamp(12px, 2vw, 24px);
+    border-bottom: 1px solid var(--border);
+    background: #0f1115a8;
+    backdrop-filter: blur(6px);
+    position: sticky; top: 0; z-index: 5;
   }
-
-  *{box-sizing:border-box}
-  body{
-    margin:0;background:var(--bg);color:var(--fg);
-    font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+  header h1 {
+    margin: 0 0 8px 0; font-size: 20px; letter-spacing: .2px;
   }
-
-  /* BANNERS */
-  .banner{
-    background:var(--accent);color:#fff;padding:14px 16px;
-    border-bottom:1px solid var(--accent-600);position:sticky;top:0;z-index:5
+  header .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .pill {
+    background: var(--chip); border: 1px solid var(--border);
+    padding: 8px 10px; border-radius: 10px; color: var(--muted);
+    font-size: 12px;
   }
-  .banner h1{margin:0;font-size:18px;letter-spacing:.2px}
-  .header-actions{position:absolute;right:12px;top:10px;display:flex;gap:8px;align-items:center}
-  .gear, .theme{
-    background:#fff;color:var(--accent);border:1px solid var(--line);
-    border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px
+  .wrap {
+    display: grid;
+    grid-template-columns: 1.08fr .92fr; /* left wider for 13 copy boxes */
+    gap: 16px;
+    padding: 16px clamp(12px, 2vw, 24px) 28px;
   }
-  :root[data-theme="dark"] .gear, :root[data-theme="dark"] .theme { background:#222;color:#fff;border-color:#444 }
-  .gear:hover, .theme:hover{filter:brightness(0.96)}
-
-  .subbanner{
-    background:var(--accent);color:#fff;padding:10px 16px;margin:16px 0 8px;border-radius:8px
+  @media (max-width: 1100px){
+    .wrap { grid-template-columns: 1fr; }
   }
-  .subbanner h2{margin:0;font-size:16px}
-
-  /* LAYOUT */
-  .container{max-width:1100px;margin:0 auto;padding:16px}
-  .row{display:flex;gap:16px;flex-wrap:wrap}
-  .col{flex:1 1 360px;min-width:320px}
-  .sticky{position:sticky;top:76px}
-
-  /* FORMS */
-  label{display:block;font-weight:600;margin:8px 0 6px}
-  input[type="text"], textarea, select{
-    width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg)
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
   }
-  .controls{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-  button{
-    padding:8px 10px;border:1px solid var(--line);
-    background:var(--panel);border-radius:8px;color:var(--fg);cursor:pointer
+  .panel h2 {
+    margin: 2px 0 12px 0;
+    font-size: 16px; color: #cfd6e6; letter-spacing: .2px;
   }
-  button:hover{filter:brightness(0.96)}
-  .pill{
-    font-size:12px;padding:4px 10px;border-radius:999px;
-    background:var(--accent-weak);color:var(--fg);border:1px solid var(--line)
+  .grid-left {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
   }
-  .muted{color:var(--muted);font-size:13px}
-  .out{
-    width:100%;min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px
+  @media (max-width: 1200px){ .grid-left { grid-template-columns: 1fr; } }
+  .box {
+    background: #0f121b;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 8px;
+    min-height: 190px;
   }
-  .sep{height:1px;background:var(--line);margin:12px 0}
-
-  /* EDITOR (collapsed) */
-  details.editor-wrap{margin-top:16px}
-  summary{
-    list-style:none;cursor:pointer;display:flex;align-items:center;gap:.5rem;
-    padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg)
+  .box .title {
+    font-size: 13px; font-weight: 600; color: #dfe7fb;
+    display: flex; justify-content: space-between; align-items: center;
   }
-  summary::marker{display:none}
-  .editor{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}
-  .editor .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  @media (max-width:900px){ .editor .grid{grid-template-columns:1fr} }
-  .badge{background:#fff;color:var(--accent);border-radius:999px;padding:2px 8px;font-size:12px}
-  :root[data-theme="dark"] .badge{background:#222;color:#fff;border:1px solid #444}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-
-  /* CUSTOM LISTBOX (fixes iOS select issues) */
-  .listbox{
-    border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);
-    min-height:460px;max-height:460px;overflow:auto;padding:4px
+  .mini {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
   }
-  .list-item{
-    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer;user-select:none
+  .mini button, .mini select {
+    background: var(--chip); color: var(--text);
+    border: 1px solid var(--border); border-radius: 9px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer;
   }
-  .list-item:hover{background:color-mix(in oklab, var(--panel), #fff 8%)}
-  .list-item.selected{outline:2px solid var(--accent);background:var(--accent-weak)}
-  .list-item.disabled{cursor:default;color:var(--muted);background:color-mix(in oklab, var(--panel), #fff 4%)}
-  .list-item.sub{ /* per-depth padding set inline via JS */ }
-  .bullet{width:11px;height:11px;border:2px solid var(--accent);border-radius:2px}
-  .list-item.selected .bullet{background:var(--accent)}
+  .mini button:hover { outline: 1px solid #2b3350; }
+  textarea.copy {
+    width: 100%; min-height: 110px; resize: vertical;
+    background: var(--input); color: var(--text);
+    border: 1px solid #21283a; border-radius: 10px;
+    padding: 8px 10px; line-height: 1.45; font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+  }
+  .right .toolbar {
+    display: grid; gap: 10px;
+    grid-template-columns: 1fr 1fr;
+    margin-bottom: 12px;
+  }
+  .rowline { display: flex; gap: 10px; }
+  input[type="text"], select, input[type="url"] {
+    width: 100%; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid #21283a; background: var(--input); color: var(--text);
+    font-size: 14px;
+  }
+  .btn {
+    padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: #172036; color: var(--text); cursor: pointer; font-weight: 600;
+  }
+  .btn.ok { background: #153222; border-color: #1f4b33; }
+  .btn.warn { background: #3a2a12; border-color: #57421a; }
+  .btn.danger { background: #3a1717; border-color: #5a2424; }
+  .btn.accent { background: #162545; border-color: #23406e; }
+  .btn:hover { filter: brightness(1.1); }
+  .picker {
+    background: #0f121b; border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px; max-height: 55vh; overflow: auto;
+  }
+  .item {
+    display: grid; grid-template-columns: 24px 1fr; gap: 10px;
+    align-items: start; padding: 8px; border-radius: 8px;
+  }
+  .item:hover { background: #12182a; }
+  .item small { color: var(--muted); display: block; margin-top: 3px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; padding: 3px 8px; border-radius: 100px;
+    background: #1b2233; color: #c9d3ea; border: 1px solid #2a3450;
+  }
+  .footer {
+    display: grid; gap: 10px; grid-template-columns: 1fr auto;
+    margin-top: 12px; align-items: center;
+  }
+  .final-box textarea { min-height: 160px; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .small { font-size: 12px; color: var(--muted); }
+  .kbd {
+    background: #0c1220; border: 1px solid #1e2843; border-bottom-color: #0a0e1a;
+    padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: 12px; color: #cdd8f2;
+  }
 </style>
 </head>
 <body>
-
-<!-- Header -->
-<div class="banner">
-  <h1>Depot Notes – Picker</h1>
-  <div class="header-actions">
-    <button id="btn-theme" class="theme" title="Toggle theme">🌙</button>
-    <button id="btn-editor-toggle" class="gear" title="Open Editor">⚙️</button>
-  </div>
-</div>
-
-<div class="container">
-  <!-- Instructions -->
-  <div class="subbanner"><h2>Instructions</h2></div>
-  <ol class="muted" style="margin-top:8px">
-    <li>Select a <strong>Section</strong>, filter if needed.</li>
-    <li>Tap items to toggle them. Use <strong>Select all</strong> or <strong>Clear</strong> as needed.</li>
-    <li>Click <strong>Copy</strong> to put the <code>;</code>-separated list on your clipboard.</li>
-    <li>Use the <strong>⚙️ Editor</strong> at the bottom to load/preview <span class="mono">Options.txt</span>. (Edits here do not auto-save to GitHub.)</li>
-  </ol>
-
-  <!-- Picker -->
-  <div class="subbanner"><h2>Picker</h2></div>
+<header>
+  <h1>Depot Notes Picker — Section Copy Boxes (Left) • Picker (Right)</h1>
   <div class="row">
-    <div class="col sticky">
-      <label for="section-select">Section</label>
-      <select id="section-select"></select>
-
-      <div class="controls">
-        <input id="filter" type="text" placeholder="Filter visible options…" />
-        <button id="btn-select-all" class="pill">Select all (visible)</button>
-        <button id="btn-clear" class="pill">Clear</button>
-      </div>
-
-      <label for="options-list">Options</label>
-      <div id="options-list" class="listbox" role="listbox" aria-multiselectable="true" tabindex="0" aria-label="Options list"></div>
-      <div class="muted">Dividers not used. Multi-layer items are shown with increasing indent.</div>
-    </div>
-
-    <div class="col">
-      <label for="output">Copy Box Output (; line breaks)</label>
-      <textarea id="output" class="out" readonly></textarea>
-      <div class="controls">
-        <label class="muted"><input type="checkbox" id="include-headers" /> Include section headers</label>
-        <button id="btn-rebuild">Rebuild</button>
-        <button id="btn-copy">Copy</button>
-      </div>
-    </div>
+    <span class="pill">Tip: filter (<span class="kbd">/</span>), add to current section (<span class="kbd">Enter</span>), copy section (<span class="kbd">⌘/Ctrl+C</span> in box)</span>
+    <span class="pill">Autosaves to your browser (localStorage)</span>
+    <span class="pill">Output uses <strong>semicolon+newline</strong> formatting</span>
   </div>
+</header>
 
-  <!-- Editor (collapsed) -->
-  <div class="subbanner"><h2>Advanced – Editor</h2></div>
-  <details id="editor-panel" class="editor-wrap">
-    <summary><span class="slabel">Show / Hide Editor</span> <span class="badge">⚙️</span></summary>
-    <div class="editor" role="region" aria-label="Options Editor">
-      <p class="muted">Load the live <span class="mono">Options.txt</span>, edit locally, and preview parsing. Use <em>Copy</em> or <em>Download</em> to update your repo manually.</p>
-      <div class="grid">
-        <div>
-          <label for="txt-editor">Options.txt (local edit)</label>
-          <textarea id="txt-editor" style="height:340px" placeholder="[needs]
-NE01 | Better water pressure
-NE02 | Faster hot water delivery"></textarea>
-          <div class="controls">
-            <button id="btn-load-remote">Load from Options.txt</button>
-            <button id="btn-apply-local">Apply (Preview)</button>
-            <button id="btn-download">Download Options.txt</button>
-            <button id="btn-copy-txt">Copy Text</button>
-          </div>
-          <div class="muted" id="active-source">Source: (not loaded yet)</div>
-        </div>
-        <div>
-          <label for="parsed-preview">Parsed (debug)</label>
-          <textarea id="parsed-preview" class="out" style="height:340px" readonly></textarea>
-          <div class="controls">
-            <button id="btn-reset">Reset to remote</button>
-          </div>
-        </div>
+<div class="wrap">
+  <!-- LEFT: 13 per-section copy boxes -->
+  <section class="panel">
+    <h2>Section Copy Boxes</h2>
+    <div id="boxes" class="grid-left"></div>
+  </section>
+
+  <!-- RIGHT: picker + controls -->
+  <aside class="panel right">
+    <h2>Picker & Controls</h2>
+    <div class="toolbar">
+      <div class="rowline">
+        <select id="targetSection"></select>
+        <button class="btn accent" id="btnAdd">Add selected → section</button>
       </div>
-      <p class="muted"><strong>Note:</strong> This app does not push changes to GitHub automatically.</p>
+      <div class="rowline">
+        <input id="search" type="text" placeholder="Search phrases… (press / to focus)" />
+        <select id="category"></select>
+      </div>
     </div>
-  </details>
+
+    <div class="rowline" style="margin-bottom:10px;">
+      <button class="btn" id="btnSelectVisible">Select all (visible)</button>
+      <button class="btn" id="btnClearSelection">Clear selection</button>
+      <button class="btn ok" id="btnQuickAdd">Quick-add custom line</button>
+    </div>
+
+    <div id="picker" class="picker" aria-label="Options Picker"></div>
+
+    <div class="footer">
+      <div class="small">Manage option source</div>
+      <div class="rowline">
+        <button class="btn" id="btnLoadBuiltin">Load built-in options</button>
+        <button class="btn" id="btnPasteJSON">Paste JSON…</button>
+        <input id="jsonUrl" type="url" placeholder="Load JSON from URL (GitHub raw, etc.)" />
+        <button class="btn" id="btnFetchURL">Fetch</button>
+      </div>
+    </div>
+
+    <div class="panel final-box" style="margin-top:14px;">
+      <h2>Final Copy (All Sections → with LLM instruction)</h2>
+      <div class="rowline" style="margin-bottom:8px;">
+        <button class="btn ok" id="btnBuildFinal">Build Final</button>
+        <button class="btn" id="btnCopyFinal">Copy Final</button>
+        <button class="btn warn" id="btnClearAll">Clear ALL Sections</button>
+      </div>
+      <textarea id="finalOut" class="copy" placeholder="Click ‘Build Final’ to compile everything…"></textarea>
+      <p class="hint">This compiles each section with headers and semicolon-separated lines, followed by a short instruction for an LLM to draft a readable customer summary letter (≤ 2 pages A4).</p>
+    </div>
+
+  </aside>
 </div>
 
 <script>
-/* ==============================
-   Theme toggle (persisted)
-================================= */
-const THEME_KEY = 'depot.theme';
-function applyTheme(theme){
-  const t = theme || localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light');
-  document.documentElement.setAttribute('data-theme', t);
-  const btn = document.getElementById('btn-theme');
-  if (btn) btn.textContent = (t === 'dark') ? '☀️' : '🌙';
-  localStorage.setItem(THEME_KEY, t);
-}
-document.getElementById('btn-theme').addEventListener('click', () => {
-  const cur = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(cur === 'light' ? 'dark' : 'light');
-});
-applyTheme();
+/* =========================
+   CONFIG & SECTION SETUP
+   ========================= */
+const SECTION_LIST = [
+  'Needs',
+  'Working at heights',
+  'System characteristics',
+  'Components that require assistance',
+  'Restrictions to work',
+  'External hazards',
+  'Delivery notes',
+  'Office notes',
+  'New boiler and controls',
+  'Flue',
+  'Pipe work',
+  'Disruption',
+  'Customer actions'
+];
 
-/* ==============================
-   State
-================================= */
-const State = {
-  sections: {}, order: [], current: null,
-  rawTxt: '', sourceUrl: '',
-  selectedBySection: {}  // { sectionName: Set<string> }
+// localStorage keys
+const LS_PREFIX = 'depotPickerV2';
+const keyBox = s => `${LS_PREFIX}:box:${s}`;
+const keyOptions = `${LS_PREFIX}:options`;
+const keyTarget = `${LS_PREFIX}:target`;
+
+// Default options (starter set). Structure: { items:[ {text, category, tags[]} ] }
+const BUILTIN = {
+  items: [
+    // Needs
+    { text: 'Customer requires reliable heating and hot water year-round', category: 'Needs', tags:['priority'] },
+    { text: 'Minimise downtime during switchover', category: 'Needs' },
+    { text: 'Keep system serviceable and compliant', category: 'Needs' },
+
+    // WAH
+    { text: 'Access to flue requires steps only (no ladders)', category: 'Working at heights', tags:['access'] },
+    { text: 'Roof access not required', category: 'Working at heights' },
+    { text: 'No scaffold required', category: 'Working at heights' },
+
+    // System characteristics
+    { text: 'Existing system: regular boiler with cylinder (open-vented)', category: 'System characteristics', tags:['existing'] },
+    { text: 'Pressurisation to be sealed (expansion vessel)', category: 'System characteristics' },
+    { text: 'Primary circuit fully pumped', category: 'System characteristics' },
+
+    // Components require assistance
+    { text: 'Double-handed delivery for boiler/cylinder', category: 'Components that require assistance', tags:['delivery'] },
+    { text: 'Large cylinder manoeuvre assistance', category: 'Components that require assistance' },
+
+    // Restrictions
+    { text: 'Work areas to be cleared by customer prior to installation', category: 'Restrictions to work' },
+    { text: 'Limited space around current boiler location', category: 'Restrictions to work' },
+
+    // External hazards
+    { text: 'No overhead power lines near roof work', category: 'External hazards' },
+    { text: 'Pets on site; ensure doors/gates remain closed', category: 'External hazards' },
+
+    // Delivery
+    { text: 'Delivery to garage; stairs involved', category: 'Delivery notes' },
+    { text: 'On-road parking available', category: 'Delivery notes' },
+
+    // Office
+    { text: 'Record model/serial numbers post-install', category: 'Office notes' },
+    { text: 'Warranty registration required', category: 'Office notes', tags:['admin'] },
+
+    // New boiler & controls
+    { text: 'New boiler: Worcester 8000 (system) with Hive controls', category: 'New boiler and controls', tags:['controls'] },
+    { text: 'Commission to manufacturer spec and Benchmark', category: 'New boiler and controls' },
+
+    // Flue
+    { text: 'Replace existing flue; ensure terminal clearances (include plume kit if needed)', category: 'Flue', tags:['mandatory'] },
+    { text: 'Rear flue with plume kit to clear opening/conservatory', category: 'Flue' },
+
+    // Pipe work
+    { text: 'Gas run reviewed; size to meet maximum input', category: 'Pipe work' },
+    { text: 'Primary pipework adjustments as required for sealing', category: 'Pipe work' },
+
+    // Disruption
+    { text: 'Protect floor coverings and work surfaces', category: 'Disruption' },
+    { text: 'Water/gas off during switchover period', category: 'Disruption' },
+
+    // Customer actions
+    { text: 'Customer to clear working areas before arrival', category: 'Customer actions' },
+    { text: 'Provide access on agreed date/time', category: 'Customer actions' }
+  ]
 };
-const $ = sel => document.querySelector(sel);
-const setSourceLabel = url => $('#active-source').textContent = 'Source: ' + (url || '(fallback)');
 
-/* ==============================
-   Load Options.txt
-================================= */
-async function fetchFirstAvailable(urls){
-  for (const url of urls){
-    try{
-      const res = await fetch(url, { cache:'no-store' });
-      if (res.ok){ State.sourceUrl = url; return await res.text(); }
-    }catch(_){}
-  }
-  throw new Error('Unable to load Options.txt');
-}
-async function loadOptionsTxt(){
-  const base = location.pathname.replace(/\/[^/]*$/, '/') || '/';
-  const candidates = [
-    'Options.txt', base+'Options.txt', './Options.txt',
-    'options.txt', base+'options.txt', './options.txt',
-    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/Options.txt',
-    'https://raw.githubusercontent.com/martinbibb-cmd/Depot-notes/main/options.txt'
-  ];
-  const txt = await fetchFirstAvailable(candidates);
-  setSourceLabel(State.sourceUrl);
-  return txt;
-}
+/* =========================
+   STATE
+   ========================= */
+let OPTIONS = loadOptions();
+let SELECTION = new Set(); // ids of visible->selected
+let FILTER = { q: '', cat: 'All' };
 
-/* ==============================
-   INI-style parser with multi-layer levels
-   [section]
-   CODE | Level1 | Level2 | ... LevelN
-================================= */
-function parseOptionsText(txt){
-  const db = {}; let section = null;
-  for (const raw of txt.split(/\r?\n/)){
-    const line = raw.trim();
-    if (!line || line.startsWith('#') || line.startsWith(';') || line.startsWith('//')) continue;
+/* =========================
+   DOM HOOKS
+   ========================= */
+const boxesEl = document.getElementById('boxes');
+const pickerEl = document.getElementById('picker');
+const targetSel = document.getElementById('targetSection');
+const searchEl = document.getElementById('search');
+const categoryEl = document.getElementById('category');
+const btnAdd = document.getElementById('btnAdd');
+const btnQuickAdd = document.getElementById('btnQuickAdd');
+const btnSelectVisible = document.getElementById('btnSelectVisible');
+const btnClearSelection = document.getElementById('btnClearSelection');
+const btnLoadBuiltin = document.getElementById('btnLoadBuiltin');
+const btnPasteJSON = document.getElementById('btnPasteJSON');
+const jsonUrlEl = document.getElementById('jsonUrl');
+const btnFetchURL = document.getElementById('btnFetchURL');
+const btnBuildFinal = document.getElementById('btnBuildFinal');
+const btnCopyFinal = document.getElementById('btnCopyFinal');
+const btnClearAll = document.getElementById('btnClearAll');
+const finalOut = document.getElementById('finalOut');
 
-    const sec = line.match(/^\[([^\]]+)\]$/);
-    if (sec){
-      section = sec[1].trim();
-      if (!db[section]) db[section] = [];
-      continue;
-    }
-    if (!section) continue;
+/* =========================
+   INIT
+   ========================= */
+buildBoxes();
+buildTargetSelector();
+buildCategoryFilter();
+renderPicker();
+restoreTarget();
 
-    const parts = line.split('|').map(s => s.trim()).filter(Boolean);
-    if (parts.length >= 2){
-      const code = parts[0];
-      const levels = parts.slice(1); // arbitrary depth
-      db[section].push({
-        type: 'item',
-        code,
-        levels,
-        label: levels[0] || '' // legacy label for compatibility
-      });
-    }
-  }
-  return db;
-}
+function buildBoxes(){
+  boxesEl.innerHTML = '';
+  SECTION_LIST.forEach(section => {
+    const box = document.createElement('div');
+    box.className = 'box';
+    box.dataset.section = section;
 
-/* ==============================
-   Rendering (Sections + Custom Listbox)
-================================= */
-function populateSectionDropdown(){
-  const sel = $('#section-select');
-  sel.innerHTML = '';
-  State.order = Object.keys(State.sections);
-  State.order.forEach(name => {
-    const o = document.createElement('option');
-    o.value = name; o.textContent = name;
-    sel.appendChild(o);
-  });
-  if (!State.current) State.current = State.order[0] || null;
-  sel.value = State.current || '';
-}
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.innerHTML = `<span>${section}</span>`;
+    box.appendChild(title);
 
-function getSelectedSet(section){
-  if (!State.selectedBySection[section]) State.selectedBySection[section] = new Set();
-  return State.selectedBySection[section];
-}
+    // mini controls
+    const mini = document.createElement('div');
+    mini.className = 'mini';
+    mini.innerHTML = `
+      <button data-act="copy">Copy</button>
+      <button data-act="clear">Clear</button>
+      <button data-act="addLine">+ Line</button>
+      <span class="small" style="margin-left:auto;">Format: <span class="kbd">item;</span> one per line</span>
+    `;
+    box.appendChild(mini);
 
-function refreshOutput() {
-  document.getElementById('output').value = selectedValuesToCopy();
-}
+    // textarea
+    const ta = document.createElement('textarea');
+    ta.className = 'copy';
+    ta.placeholder = `Add lines here… each ends with a semicolon (;) then newline`;
+    ta.value = localStorage.getItem(keyBox(section)) || '';
+    ta.addEventListener('input', () => {
+      localStorage.setItem(keyBox(section), ta.value);
+    });
+    box.appendChild(ta);
 
-function buildOptionsForCurrent(filterText=''){
-  const box = document.getElementById('options-list');
-  const items = State.sections[State.current] || [];
-  const q = (filterText || '').toLowerCase();
-  const selectedSet = getSelectedSet(State.current);
-  box.innerHTML = '';
+    // footer: info
+    const info = document.createElement('div');
+    info.className = 'small';
+    info.textContent = 'Tip: paste; lines here or use picker → target section to append';
+    box.appendChild(info);
 
-  function addRow({ idText, text, depth = 0 }){
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    if (depth > 0) div.classList.add('sub');
-    div.style.paddingLeft = (10 + depth * 18) + 'px';   // progressive indent
-
-    div.setAttribute('role', 'option');
-    div.setAttribute('data-id', idText);
-    div.setAttribute('aria-selected', selectedSet.has(idText) ? 'true' : 'false');
-
-    const b = document.createElement('span'); b.className = 'bullet';
-    const t = document.createElement('span'); t.textContent = text;
-    div.appendChild(b); div.appendChild(t);
-
-    if (selectedSet.has(idText)) div.classList.add('selected');
-
-    div.addEventListener('click', () => {
-      const now = div.classList.toggle('selected');
-      div.setAttribute('aria-selected', now ? 'true' : 'false');
-      if (now) selectedSet.add(idText); else selectedSet.delete(idText);
-      refreshOutput();
+    // wire mini buttons
+    mini.addEventListener('click', (e) => {
+      const action = e.target?.dataset?.act;
+      if(!action) return;
+      if(action === 'copy'){
+        ta.select();
+        document.execCommand('copy');
+      } else if (action === 'clear'){
+        if(confirm(`Clear all lines in “${section}”?`)){
+          ta.value = '';
+          localStorage.removeItem(keyBox(section));
+        }
+      } else if (action === 'addLine'){
+        const v = prompt('Add a line (semicolon will be added if missing):','');
+        if(v && v.trim()){
+          const line = ensureSemicolon(v.trim());
+          appendToBox(section, line);
+        }
+      }
     });
 
-    box.appendChild(div);
-  }
-
-  // For each item, render Level1 then deeper paths “L1 — L2 — …”
-  items.forEach(it => {
-    if (it.type !== 'item' || !Array.isArray(it.levels) || !it.levels.length) return;
-
-    const level1 = it.levels[0];
-    const m1 = !q || level1.toLowerCase().includes(q);
-    if (m1) addRow({ idText: level1, text: level1, depth: 0 });
-
-    for (let d = 1; d < it.levels.length; d++){
-      const path = it.levels.slice(0, d + 1);
-      const text = `↳ ${path.join(' — ')}`;
-      const match = !q || text.toLowerCase().includes(q);
-      if (match) addRow({ idText: text, text, depth: d });
-    }
+    boxesEl.appendChild(box);
   });
-
-  // Keyboard basics
-  box.onkeydown = (e) => {
-    const focusables = [...box.querySelectorAll('.list-item')];
-    const idx = focusables.indexOf(document.activeElement.closest('.list-item'));
-    if (e.key === 'ArrowDown'){ (focusables[idx+1]||focusables[0])?.focus(); e.preventDefault(); }
-    if (e.key === 'ArrowUp'){ (focusables[idx-1]||focusables.at(-1))?.focus(); e.preventDefault(); }
-    if (e.key === ' ' || e.key === 'Enter'){ document.activeElement.closest('.list-item')?.click(); e.preventDefault(); }
-  };
-  box.querySelectorAll('.list-item').forEach(li => li.tabIndex = 0);
-
-  refreshOutput(); // keep copy box in sync after render/filter
 }
 
-function selectedValuesToCopy(){
-  const set = getSelectedSet(State.current);
-  const head = $('#include-headers').checked ? (State.current + ':') : null;
-  const lines = [];
-  if (head) lines.push(head);
-  lines.push(...set);
-  return lines.join(';\n');
+function buildTargetSelector(){
+  targetSel.innerHTML = '';
+  SECTION_LIST.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = s;
+    targetSel.appendChild(opt);
+  });
+  targetSel.addEventListener('change', () => {
+    localStorage.setItem(keyTarget, targetSel.value);
+  });
 }
 
-/* ==============================
-   Events
-================================= */
-$('#section-select').addEventListener('change', e => {
-  State.current = e.target.value;
-  getSelectedSet(State.current); // ensure set exists
-  buildOptionsForCurrent($('#filter').value);
-});
-
-$('#filter').addEventListener('input', e => {
-  buildOptionsForCurrent(e.target.value);
-});
-
-$('#btn-select-all').addEventListener('click', () => {
-  const set = getSelectedSet(State.current);
-  document.querySelectorAll('#options-list .list-item').forEach(div => {
-    div.classList.add('selected');
-    div.setAttribute('aria-selected','true');
-    set.add(div.textContent.trim());
-  });
-  refreshOutput();
-});
-
-$('#btn-clear').addEventListener('click', () => {
-  const set = getSelectedSet(State.current);
-  set.clear();
-  document.querySelectorAll('#options-list .list-item.selected').forEach(div => {
-    div.classList.remove('selected');
-    div.setAttribute('aria-selected','false');
-  });
-  refreshOutput();
-});
-
-$('#btn-rebuild').addEventListener('click', refreshOutput);
-
-$('#btn-copy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('#output').value || selectedValuesToCopy()); } catch {}
-});
-
-/* ==============================
-   Editor controls
-================================= */
-const editorPanel = $('#editor-panel');
-$('#btn-editor-toggle').addEventListener('click', () => {
-  editorPanel.open = !editorPanel.open;
-  if (editorPanel.open) editorPanel.scrollIntoView({behavior:'smooth',block:'start'});
-});
-
-async function fetchFirstAvailable(urls){
-  for (const url of urls){
-    try{
-      const res = await fetch(url, { cache:'no-store' });
-      if (res.ok){ State.sourceUrl = url; return await res.text(); }
-    }catch(_){}
+function restoreTarget(){
+  const saved = localStorage.getItem(keyTarget);
+  if(saved && SECTION_LIST.includes(saved)){
+    targetSel.value = saved;
   }
-  throw new Error('Unable to load Options.txt');
 }
 
-$('#btn-load-remote').addEventListener('click', async () => {
-  try {
-    const txt = await loadOptionsTxt(); State.rawTxt = txt;
-    $('#txt-editor').value = txt; setSourceLabel(State.sourceUrl);
-  } catch (e) {
-    $('#txt-editor').value = `Error: ${e.message}`;
+function buildCategoryFilter(){
+  const cats = ['All', ...new Set(OPTIONS.items.map(x => x.category).filter(Boolean))];
+  categoryEl.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  categoryEl.addEventListener('change', () => {
+    FILTER.cat = categoryEl.value;
+    renderPicker();
+  });
+}
+
+/* =========================
+   PICKER RENDER
+   ========================= */
+function renderPicker(){
+  pickerEl.innerHTML = '';
+  SELECTION.clear();
+
+  const q = FILTER.q.toLowerCase();
+  const cat = FILTER.cat;
+  const filtered = OPTIONS.items
+    .map((it, idx) => ({...it, _id: idx}))
+    .filter(it => (cat === 'All' || it.category === cat))
+    .filter(it => !q || (it.text.toLowerCase().includes(q) || (it.tags||[]).some(t => t.toLowerCase().includes(q))));
+
+  if(filtered.length === 0){
+    pickerEl.innerHTML = `<div class="small" style="padding:10px;">No items match your filter.</div>`;
+    return;
+  }
+
+  filtered.forEach(it => {
+    const row = document.createElement('label');
+    row.className = 'item';
+    row.innerHTML = `
+      <input type="checkbox" data-id="${it._id}" />
+      <div>
+        <div>${escapeHTML(it.text)}</div>
+        <small>
+          <span class="chip">${it.category || 'Uncategorised'}</span>
+          ${Array.isArray(it.tags)? it.tags.map(t => `<span class="chip">${escapeHTML(t)}</span>`).join('') : ''}
+        </small>
+      </div>
+    `;
+    const cb = row.querySelector('input[type=checkbox]');
+    cb.addEventListener('change', () => {
+      if(cb.checked) SELECTION.add(it._id); else SELECTION.delete(it._id);
+    });
+    pickerEl.appendChild(row);
+  });
+}
+
+/* =========================
+   EVENTS
+   ========================= */
+searchEl.addEventListener('input', () => {
+  FILTER.q = searchEl.value.trim();
+  renderPicker();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)){
+    e.preventDefault(); searchEl.focus();
+  }
+  if(e.key === 'Enter' && document.activeElement !== searchEl){
+    e.preventDefault(); addSelectedToTarget();
   }
 });
 
-$('#btn-apply-local').addEventListener('click', () => {
-  const local = $('#txt-editor').value || '';
-  try {
-    const parsed = parseOptionsText(local);
-    State.sections = parsed;
-    State.current = Object.keys(parsed)[0] || null;
-    State.selectedBySection = {};
-    populateSectionDropdown();
-    buildOptionsForCurrent($('#filter').value);
-    $('#parsed-preview').value = JSON.stringify(parsed, null, 2);
-  } catch (e) {
-    $('#parsed-preview').value = `Parse error: ${e.message}`;
+btnAdd.addEventListener('click', addSelectedToTarget);
+
+btnSelectVisible.addEventListener('click', () => {
+  const cbs = pickerEl.querySelectorAll('input[type=checkbox]');
+  cbs.forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change')); });
+});
+
+btnClearSelection.addEventListener('click', () => {
+  const cbs = pickerEl.querySelectorAll('input[type=checkbox]');
+  cbs.forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event('change')); });
+});
+
+btnQuickAdd.addEventListener('click', () => {
+  const v = prompt(`Quick-add to “${targetSel.value}”:\n(semicolon will be added if missing)`);
+  if(v && v.trim()){
+    appendToBox(targetSel.value, ensureSemicolon(v.trim()));
   }
 });
 
-$('#btn-reset').addEventListener('click', async () => {
-  await init();
-  $('#txt-editor').value = State.rawTxt;
-  $('#parsed-preview').value = '';
+btnLoadBuiltin.addEventListener('click', () => {
+  if(!confirm('Replace current options with the built-in starter set?')) return;
+  OPTIONS = JSON.parse(JSON.stringify(BUILTIN));
+  persistOptions();
+  buildCategoryFilter();
+  renderPicker();
 });
 
-$('#btn-copy-txt').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('#txt-editor').value || ''); } catch {}
-});
-
-$('#btn-download').addEventListener('click', () => {
-  const blob = new Blob([$('#txt-editor').value || ''], {type:'text/plain'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'Options.txt';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-});
-
-/* ==============================
-   Boot
-================================= */
-async function init(){
-  let txt = '';
+btnPasteJSON.addEventListener('click', () => {
+  const v = prompt('Paste JSON with shape: { "items": [ { "text": "...", "category": "Flue", "tags": ["..."] }, ... ] }','');
+  if(!v) return;
   try{
-    txt = await loadOptionsTxt();
-  }catch(e){
-    console.warn(e);
-    txt = `[needs]
-NE01 | Better water pressure
-NE02 | Faster hot water delivery`;
-    State.sourceUrl = '(fallback)';
+    const obj = JSON.parse(v);
+    if(!obj || !Array.isArray(obj.items)) throw new Error('Missing items[]');
+    OPTIONS = obj;
+    persistOptions();
+    buildCategoryFilter();
+    renderPicker();
+    alert('Options loaded.');
+  } catch(err){
+    alert('Invalid JSON: ' + err.message);
   }
-  State.rawTxt = txt;
-  State.sections = parseOptionsText(txt);
-  State.current = Object.keys(State.sections)[0] || null;
-  State.selectedBySection = {};
-  populateSectionDropdown();
-  buildOptionsForCurrent('');
-  refreshOutput();
-  setSourceLabel(State.sourceUrl);
+});
+
+btnFetchURL.addEventListener('click', async () => {
+  const url = jsonUrlEl.value.trim();
+  if(!url) { alert('Enter a JSON URL first.'); return; }
+  try{
+    const res = await fetch(url, {cache:'no-cache'});
+    if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
+    const obj = await res.json();
+    if(!obj || !Array.isArray(obj.items)) throw new Error('JSON must include items[]');
+    OPTIONS = obj;
+    persistOptions();
+    buildCategoryFilter();
+    renderPicker();
+    alert('Options fetched and loaded.');
+  } catch(err){
+    alert('Fetch failed: ' + err.message);
+  }
+});
+
+btnBuildFinal.addEventListener('click', () => {
+  const compiled = compileAllSections();
+  finalOut.value = compiled;
+  finalOut.focus();
+  finalOut.select();
+});
+
+btnCopyFinal.addEventListener('click', () => {
+  finalOut.focus(); finalOut.select(); document.execCommand('copy');
+});
+
+btnClearAll.addEventListener('click', () => {
+  if(!confirm('Clear ALL section copy boxes? This cannot be undone.')) return;
+  SECTION_LIST.forEach(s => localStorage.removeItem(keyBox(s)));
+  buildBoxes();
+});
+
+/* =========================
+   HELPERS
+   ========================= */
+function addSelectedToTarget(){
+  const ids = [...SELECTION];
+  if(ids.length === 0){ alert('Select some picker items first.'); return; }
+  const lines = ids.map(id => OPTIONS.items[id]?.text).filter(Boolean).map(ensureSemicolon);
+  appendToBox(targetSel.value, lines.join('\n'));
+  // clear selection after add
+  btnClearSelection.click();
 }
-init();
+
+function appendToBox(section, text){
+  const ta = findBox(section);
+  if(!ta) return;
+  const cur = ta.value.trim();
+  ta.value = (cur ? (cur + '\n') : '') + text;
+  localStorage.setItem(keyBox(section), ta.value);
+  // small visual nudge
+  ta.style.outline = '2px solid #2b7bff';
+  setTimeout(()=> ta.style.outline='none', 350);
+}
+
+function findBox(section){
+  const box = boxesEl.querySelector(`.box[data-section="${cssEscape(section)}"]`);
+  return box?.querySelector('textarea.copy') || null;
+}
+
+function ensureSemicolon(s){
+  return s.endsWith(';') ? s : s + ';';
+}
+
+function compileAllSections(){
+  const blocks = SECTION_LIST.map(sec => {
+    const ta = findBox(sec);
+    const raw = (ta?.value || '').trim();
+    if(!raw) return null;
+    const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const pretty = lines.join('\n');
+    return `### ${sec}\n${pretty}`;
+  }).filter(Boolean);
+
+  const instruction = [
+    '***',
+    'INSTRUCTION FOR LLM:',
+    'Using the notes above (by section), draft a customer-friendly summary letter in clear UK English.',
+    'Keep it professional, warm, and concise. Explain the rationale for key works (e.g., flue replacement is mandatory, sealing the system, gas pipe sizing checks).',
+    'Avoid boilerplate; remove internal jargon. Use headings sparingly. Do not exceed two A4 pages.',
+    'If information is missing or uncertain, state this plainly and suggest how it will be confirmed.',
+    '***'
+  ].join('\n');
+
+  return blocks.join('\n\n') + (blocks.length ? '\n\n' : '') + instruction + '\n';
+}
+
+function loadOptions(){
+  try{
+    const raw = localStorage.getItem(keyOptions);
+    if(!raw) return JSON.parse(JSON.stringify(BUILTIN));
+    const obj = JSON.parse(raw);
+    if(!obj || !Array.isArray(obj.items)) throw 0;
+    return obj;
+  }catch{ return JSON.parse(JSON.stringify(BUILTIN)); }
+}
+
+function persistOptions(){
+  localStorage.setItem(keyOptions, JSON.stringify(OPTIONS));
+}
+
+function escapeHTML(s){
+  return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// css.escape polyfill-ish (minimal)
+function cssEscape(s){ return s.replace(/["\\]/g, '\\$&'); }
 </script>
 </body>
 </html>
