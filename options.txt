@@ -1,22 +1,259 @@
-# ===========================
-# SYSTEM CHARACTERISTICS
-# ===========================
+# =====================================================
+# DEPOT NOTES OPTIONS – KISS FLAT LEAVES
+# Each selectable item is a leaf line (no deep nesting).
+# Format: CODE | Category | Specific
+# =====================================================
 
-[system_type]
-ST-COMBI | Combi boiler
-ST-SYSTEM | System (integrated pump and expansion)
-ST-REG | Heat-only (regular)|with open vented cylinder; | with unvented cylinder; 
-ST-BBU | Back boiler
-ST-WA | warm air
-ST-E | electric heating
+[needs]
+NE01 | Need | Better water pressure
+NE02 | Need | Faster hot water delivery
+NE03 | Need | More usable space
+NE04 | Need | Lower running costs
+NE05 | Need | Easier controls
+NE06 | Need | Quieter operation
+NE07 | Need | Future-ready system
 
-[pressurisation]
-PR-SEAL | Sealed (expansion vessel)
-PR-OV | Open-vented (F&E tank)
+[working_at_heights]
+WAH01 | Access | Ladder access required
+WAH02A | Scaffolding | Tower – Standard
+WAH02B | Scaffolding | Tower – Bridging
+WAH02C | Scaffolding | Cantilever
+WAH03 | Roof access | Permit required
+WAH04A | Loft access | Boarded
+WAH04B | Loft access | Unboarded
+WAH05 | Access | MEWP required
+WAH06 | Flat roof work | Specialist builder to make good
 
-[primary_circuit]
-PC-PUMP | Fully pumped
-PC-GRAV | Gravity primaries
+[system_characteristics]
+SCOLD0 | present system type
+SCOLD01A | System type (regular) | Open-vented (F&E tank)
+SCOLD01B | System type (regular) | Sealed system kit present
+SCOLD02A | System boiler HW | Open-vented hot water
+SCOLD02B | System boiler HW | Unvented hot water
+SCOLD03A | Configuration | Y-plan (3-port valve)
+SCOLD03B | Configuration | S-plan (2-port valves)
+SCOLD03C | Configuration | Gravity primaries
+SCOLD04 | Legacy install | Combi
+SCOLD05 | Pipework | Microbore
+SCOLD06 | Pressure | Low system pressure
+SCOLD07 | Controls | Mechanical timer / room stat
+SCOLD08 | Controls | Hard-wired only
+
+SCNEW0 | proposed NEW system
+SCNEW01 | System type | Combi boiler
+SCNEW02A | System boiler | With unvented cylinder
+SCNEW02B | System boiler | With Mixergy cylinder
+SCNEW03A | Regular boiler | Open-vented hot water
+SCNEW03B | Regular boiler | Unvented hot water
+SCNEW04A | Heating circuit | Open-vented
+SCNEW04B | Heating circuit | Sealed / pressurised
+SCNEW05 | Heating zones | TRVs on all radiators
+SCNEW06A | Heating zones | Zoned via 2-port valves | additional zones
+SCNEW06B | Heating zones | Y-plan existing
+SCNEW07 | Controls compatibility | Hive
+SCNEW08 | Controls compatibility | Hive Mini
+SCNEW09 | Controls | Simple / manual preferred
+
+[components_that_need_assistance]
+CTA01A | Cylinder | Removal required
+CTA01B | Cylinder | Replacement required
+CTA02 | Cold water storage tank | Removal required
+CTA03A | Boiler | Removal requires double-handed lift
+CTA03B | Boiler | Relocation required
+CTA04A | Gas pipe | Upgrade
+CTA04B | Gas pipe | Reroute
+CTA05A | Flue | Core drill required
+CTA05B | Flue | Wall thickness > 450 mm
+CTA06A | Electrical | New fused spur
+CTA06B | Electrical | New wiring centre
+
+[restrictions_to_work]
+RTW01 | Access | No loft access
+RTW02 | Access | Restricted clearance
+RTW03 | Parking | Limited / permit required
+RTW04 | Working hours | Restricted
+RTW05 | Site | Pets on site
+RTW06 | Site | Vulnerable occupant present
+RTW07 | Site | Noise restrictions in place
+RTW08 | Site | Sectpic tank - not suitable for condensate
+RTW08A | Listed building | Consent required
+RTW08B | Listed building | Permission required
+RTW09 | Flats | Management permission required
+
+[external_hazards]
+HAZEXT01 | Hazard | Asbestos suspected
+HAZEXT02 | Roof | Fragile tiles / material
+HAZEXT03 | Site | Flood risk / standing water
+HAZEXT04A | Nesting insects | Wasps
+HAZEXT04B | Nesting insects | Bees
+HAZEXT05 | Site | Poor lighting / No power
+HAZEXT06 | Site | Pet mess present
+HAZEXT07 | see working at heights
+HAZEXT08 | dog(s)
+HAZEXT09 | other potentially dangerous animals
+
+[delivery_notes]
+DEL01 | Preferred slot | AM
+DEL02 | Preferred slot | PM
+DEL03 | Vehicle access | Large vehicle suitable
+DEL04 | Vehicle access | Large vehicle restricted
+DEL05A | Delivery location | To garage
+DEL05B | Delivery location | To room within property
+DEL06 | Contact | Call ahead on arrival
+DEL07A | Handling | Double-handed lift
+DEL07B | Handling | Stairs / No lift
+
+[office_notes]
+OFF04 | Labour | Direct labour required
+OFF05A | Specialist works | Asbestos removal
+OFF05B | Specialist works | Specialist builder
+OFF05C | Specialist works | Scaffolding
+OFF06 | Labour | Double-handed assistance required
+
+[new_boiler_and_controls]
+NBCLOC0 | location
+NBCLOC01 | Location | Kitchen | not in cupboard
+NBCLOC01A | location | kitchen | within cupboard
+NBCLOC01B | location | kitchen | cupboard to be removed
+NBCLOC02 | Location | Utility room
+NBCLOC03 | Location | Loft
+NBCLOC04 | Location | Garage
+NBCLOC05 | Location | bedroom
+NBCLOC05A | Location | Airing Cupboard
+NBCLOC06 | Location | Other internal
+NBCLOC06A | Location | See photos/floor plan
+NBCLOC07 | Location | adjacent wall
+NBCLOC08 | Location | minor move to gain clearances
+
+NBTYPE1 | Type | Regular/heat only/conventional
+NBTYPE2 | Type | System
+NBTYPE3 | Type | Combi
+
+NBCUC01 | User control | Hive
+NBCUC02 | User control | Hive Mini
+NBCUC03 | User control | Programmable thermostat
+NBCUC04 | User control | programmer | mechanical 
+NBCUC05 | User control | Room stat | wireless
+NBCUC06 | User control | programmer | 2 channel
+
+NBCSC0 | system_controls
+NBCSC01 | configuration | S-plan | additional zone
+NBCSC02 | configuration | Y-plan
+NBCSC03 | configuration | Stat and TRVs
+NBCSC04 | Control method | Load compensation
+NBCSC05 | Wiring | New wiring centre required
+NBCSC06 | Room stat | Relocation required
+
+CUP | cupboard
+CUP01 | Cupboard | Not within a cupboard
+CUP02 | Cupboard | Fits – modification required
+CUP03A | Cupboard | Customer to remove cupboard
+CUP03B | Cupboard | Customer to modify cupboard
+CUP04A | Cupboard | Engineer to remove cupboard
+CUP04B | Cupboard | Engineer to modify cupboard
+
+[flue]
+FLOLD | make good | old balanced Flue
+FLOLD01 | Make good | Fanned flue
+FLOLD03 | Make good | Roof terminal
+FLOLD04 | Brick up | Old flue opening
+
+FLNEW | new flue
+FLNEW1 | same hole | minor change
+FLNEW2 | new hole same wall
+FLNEW3 | new hole through _
+FLNEW01A | Orientation | Horizontal
+FLNEW01B | Orientation | Vertical
+FLNEW02A | Sealing | Seal brickwork to flue
+FLNEW02B | Sealing | Vertical flashing kit
+FLNEW02C | Sealing | Flat roof flashing by specialist builder
+FLNEW03 | Add-on | Plume kit required
+FLNEW04 | Add-on | Flue extension
+FLNEW05 | Safety | Terminal guard required
+FLNEW06 | Orientation | front aspect
+FLNEW07 | Orientation | rear aspect
+
+[gas_water_gas_supply]
+GAS01 | Gas supply | Upgrade to 22 mm
+GAS02 | Gas supply | Tightness test pass required
+GAS03 | Gas supply | Meter location restricts route
+GAS04 | Gas supply | Internal reroute
+GAS05 | Gas supply | External reroute
+GAS06A | Meter type | U6 – Inside
+GAS06B | Meter type | U6 – Outside
+GAS07A | Route complexity | Simple / local
+GAS07B | Route complexity | Reuse existing
+GAS07C | Route complexity | Upsize sections for capacity
+GAS07D | Route complexity | Complex (clipping/drilling/routing)
+GAS08A | Gas notes | Meter tail lead – replace
+GAS08B | Gas notes | Pressure drop risk over length
+
+CON01A | Condensate | Connect to internal waste – P-trap present
+CON01B | Condensate | Connect to internal waste – New trap required
+CON02A | Condensate | External run – Insulate (42 mm MI)
+CON02B | Condensate | External run – Replace with 42 mm (MI compliant)
+CON03 | Condensate | Pump required
+CON04A | Condensate | Soakaway – 42 mm pipe
+CON04B | Condensate | Soakaway – Gravel trap
+CON05 | Condensate | Fall / Gradient correction
+CON06 | Condensate | Upgrade 32 mm → 42 mm (Full MI compliance)
+CON07 | Condensate | Discharge to external soil stack – Termination check
+CON08 | Condensate | Neutraliser fitted (where required)
+
+DIS01 | Discharge | PRV pipework to outside
+DIS02 | Discharge | Visible tundish – compliant
+DIS03A | Discharge route | Under floor to outside
+DIS03B | Discharge route | Direct to outside
+DIS03C | Discharge route | Behind cupboards
+DIS03D | Discharge route | Through cupboards
+
+DCW01 | Cold/Hot water | Increase mains pressure/flow
+DCW02 | Cold/Hot water | Pressure reducing valve required
+DCW03 | Cold/Hot water | Secondary return present
+DCW04 | Cold/Hot water | Scale filter required
+DCW05 | Cold/Hot water | Stop tap / service valve access
+DCW06A | Cold/Hot water route | To under-counter
+DCW06B | Cold/Hot water route | To airing cupboard
+
+PRIM01 | Primaries | Power flush required
+PRIM02 | Primaries | Chemical clean and inhibit
+PRIM03A | Filtration | Magnetic filter – Fernox TF1 (brass)
+PRIM03B | Filtration | Magnetic filter – Other
+PRIM04 | Primaries | Pipework alterations required
+PRIM05 | Primaries | Pipe size upgrade required
+
+[Radiators]
+RAD01 | Radiators | Replace radiator(s)
+RAD02 | Radiators | Install additional radiator(s)
+RAD03 | Radiators | Fit TRVs / Lockshields
+RAD04 | Radiators | Balance system on completion
+RAD05 | Radiators | Replace towel rail
+RAD06 | Radiators | Cap redundant radiator pipework
+RAD07 | Radiators | Old / Mixed condition
+RAD08 | Constraint | Prevents flushing
+
+[disruption]
+DISR01 | Disruption | Minimal
+DISR02 | Disruption | Moderate – Carpets lifted
+DISR03 | Disruption | High – Floors lifted
+DISR04 | Preparation | Customer to clear areas and routes
+DISR05 | Protection | Dust protection required
+
+[Customer agreed actions]
+CUSTD01 | customer to | clear working areas
+CUSTD02 | customer to | Gain permission 
+CUSTD03 | customer to | ensure animals are kept safely 
+CUSTD04 | customer to | remove cupboard 
+CUSTD05 | customer to | rebuild cupboard 
+CUSTD06 | customer to |remove old flue and weather seal
+CUSTD07 | customer to | supply 
+
+[anything_else]
+AE01 | Underfloor heating | Not covered
+AE02 | Materials | Mixed metals present
+AE03 | Materials | True-weld fittings present
+AE04 | Customer requirement | Specific request noted
+AE05 | Unusual system | Specify in notes
 
 [hot_water_strategy]
 DHW-OD | on demand DHW (combi)
@@ -27,92 +264,14 @@ DHW-COMBIC | combination cylinder
 DHW-SC | storage combi
 DHW-MP | multi point water heater
 
-[cylinder_capacity]
-CYL-120 | Cylinder ~120 L
-CYL-150 | Cylinder ~150 L
-CYL-200 | Cylinder ~200 L
-CYL-250 | Cylinder ~250 L
-CYL-300 | Cylinder ~300 L
-
-[system_condition]
-SC-AGE-NEW | Recent install / modern
-SC-AGE-MID | Mid-life, serviceable
-SC-AGE-OLD | Old, poor efficiency
-SC-LEAK-SUS | Suspected leak / air ingress
-SC-HEP | hep plastic pipe work
-SC-MM | mixed metals eg steel and copper
-SC-TW | true weld - this pipe work is highly prone to leak and so should always be replaced
-
-# ===========================
-# FLUE & CONDENSATE (FLUE IS NEVER OPTIONAL)
-# ===========================
-
-[flue_type]
-FL-HOR | Horizontal through wall
-FL-VER | Vertical through roof
-FL-REAR | Rear outlet (where applicable)
-
-[flue_route]
-FR-SAME | Same route as existing
-FR-REAR-PLUME | Rear flue with plume kit to clear opening
-FR-RELOC | Relocated to gain clearances
-FR-ROOF | Through roof with terminal kit
-
-[plume_kit]
-PK-REQ | Plume kit required
-PK-NO | Plume kit not required
-
-[flue_access]
-FA-STEPS | Access via steps only
-FA-LADDER | Ladder access required
-FA-TOWER | Tower/scaffold required
-FA-EASY | Ground-level access
-
-[condensate_route]
-CD | condensate route
-CD-IN-SOIL | Internal to soil stack
-CD-IN-PTRAP | Internal to waste with trap
-CD-EXT-FALL | External with continuous fall
-CD-PUMP | Pumped condensate
-CD-NEUT | With neutraliser (where required)
-CD-SOAK | to installer installed soak away. Soft ground.
-CD-SOAKB | to specialist builder installed soak away.
-
-# ===========================
-# GAS / METER / ROUTE
-# ===========================
-
-[gas_meter]
-GM-U6-IN | U6, inside
-GM-U6-OUT | U6, outside
-GM-LPG1 | LPG cylinders next to 
-GM-LPG2 | LPG cylinder remote
-
-[gas_route]
-GR-SIMPLE | Simple route / local
-GR-REUSE | Reuse existing route
-GR-UPSIZE | Upsize section(s) for capacity
-GR-COMPLEX | Complex route (clipping/drilling/routing)
-
-[gas_notes]
-GN-LEAD | Meter tail is lead → needs replacement
-GN-22MM | 22 mm run to appliance
-GN-BORE | Pressure drop risk over length
-
-# ===========================
-# CONTROLS / FILTRATION / WATER TREATMENT
-# ===========================
-
-[controls]
-CT-HIVE | Hive controls
-CT-PROGSTAT | Programmer + room stat
-CT-PROG | programmer 
-CT-STAT | hard wired room stat
-CT-MECH | mechanical timer
-CT-LOADCOMP | Weather/load compensation
+[cylinder]
+CYL1 | install new | open vented same size
+CYL2 | install new |open vented different size | mixergy
+CYL-150 | Install new unvented | mixergy
+CYL-200 | remove existing cylinder
 
 [filter]
-F-TF1 | Fernox TF1 (brass)
+F-TF1 | Fernox TF1
 F-MAG | Magnetic filter (other)
 F-EXIST | Existing filter retained
 F-NONE | No filter (not suitable)
@@ -120,107 +279,3 @@ F-NONE | No filter (not suitable)
 [water_treatment]
 WT-FLUSH | Powerflush
 WT-CLEANSE | Chemical cleanse & inhibit
-
-# ===========================
-# RADIATORS / PIPEWORK
-# ===========================
-
-[radiators]
-RAD-OLD | Radiators old / mixed condition
-RAD-REPLACE | Replace selected radiators
-RAD-VALVES | Replace TRVs/lockshields
-RAD-NOFLUSH | Rads/valves prevent flushing
-
-[pipework_notes]
-PW-OK | Pipework sound / adequate
-PW-UNDER | Primary undersized sections present
-PW-RE-PROUT | Re-route/alterations required
-
-# ===========================
-# ACCESS / DELIVERY / PARKING / PERMISSIONS
-# ===========================
-
-[site_access]
-SA-GROUND | All works at ground level
-SA-LOFT | Loft access required
-SA-TIGHT | Tight access/working area
-SA-STAIRS | Stairs involved for delivery
-
-[delivery_requirements]
-DL-STANDARD | Standard delivery
-DL-DOUBLE | Double-handed lift required
-DL-TO-LOFT | Delivery to loft area
-
-[parking]
-PK-ONROAD | On-road parking available
-PK-RESTRICT | Restricted / permit required
-PK-NO | No parking near property
-
-[permissions]
-PM-NONE | No special permissions
-PM-BUILDING | Building management permission required
-PM-PLANNING | Planning/landlord permission required
-PM-CUSTOMER | Customer to arrange access/clearance
-
-# ===========================
-# ROOF / WORK AT HEIGHTS
-# ===========================
-
-[roof_work]
-RW-NONE | No roof work
-RW-LOW | Low-level roof work
-RW-WAH | Work at heights equipment required
-
-# ===========================
-# HAZARDS / ASBESTOS
-# ===========================
-
-[hazards_general]
-HZ-DOGS | Dogs on site
-HZ-TRIP | Trip hazards / low objects
-HZ-NOHAND | Missing handrails
-HZ-EARTH | Electrical earthing concerns
-HZ-OTHER | Other hazard (specify)
-
-[asbestos_status]
-ASB-NONE | None / Artex only
-ASB-SUS | Suspected (survey required)
-ASB-KNOWN | Known ACMs present (area isolated)
-
-# ===========================
-# WATER / PRESSURE / FLOW / SUITABILITY
-# ===========================
-
-[water_pressure_band]
-WP-LOW | Low pressure area
-WP-MED | Typical/adequate pressure
-WP-HIGH | High pressure — PRV may be needed
-
-[flow_rate_band]
-FR-<10 | Flow rate <10 L/min
-FR-10-12 | Flow rate 10–12 L/min
-FR-12-15 | Flow rate 12–15 L/min
-FR-15+ | Flow rate ≥15 L/min
-
-[shower_compatibility]
-SH-YES | Shower compatible
-SH-PUMP | Shower pump present/required
-SH-NO | Shower not recommended with new system.
-
-[combi_suitability]
-CS-NO | Combi not recommended (pressure/flow/usage)
-CS-BORDER | Borderline for combi
-CS-YES | Combi suitable
-
-# ===========================
-# CUSTOMER TASKS / NOTES
-# ===========================
-
-[customer_tasks]
-CT-CLEAR | Clear working areas before install
-CT-ACCESS | Provide meter/cupboard access
-CT-PERMITS | Arrange permits/parking (if required)
-
-[office_notes]
-ON-NONE | None
-ON-FOLLOW | Follow-up required (specify)
