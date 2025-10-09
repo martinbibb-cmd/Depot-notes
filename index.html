@@ -221,24 +221,111 @@ function load(){
 }
 
 /* ---------- Parser ---------- */
+<script>
+// --- Add these helpers near the top of your script (or inside the same <script> tag) ---
+function titleCase(s){
+  return s.replace(/[_\-]+/g,' ')
+          .replace(/\s+/g,' ')
+          .trim()
+          .toLowerCase()
+          .replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Map raw section headers -> friendly bucket to show in the UI
+// Anything not listed is title-cased automatically.
+const HEADER_ALIASES = {
+  // access / restrictions
+  'working_at_heights': 'Restrictions to work',
+  'site_restrictions':  'Restrictions to work',
+
+  // system notes
+  'system_existing':    'System characteristics',
+  'system_characteristics': 'System characteristics',
+
+  // components assistance
+  'components_specialist': 'Components that require assistance',
+  'components_spe-cialist': 'Components that require assistance', // typo variant from screenshot
+
+  // office / admin
+  'office_admin':       'Office notes',
+
+  // installer – boiler/controls (group related)
+  'boiler_location_controls': 'Installer notes - boiler/controls',
+  'boiler_location_-controls': 'Installer notes - boiler/controls',
+  'boiler_type':        'Installer notes - boiler/controls',
+  'user_controls':      'Installer notes - boiler/controls',
+  'system_config':      'Installer notes - boiler/controls',
+  'cupboards':          'Installer notes - boiler/controls',
+  'system_new':         'Installer notes - boiler/controls',
+
+  // flue (merge make-good + new)
+  'flue_make_good':     'Flue',
+  'flue_new':           'Flue',
+
+  // gas / water family (merge several)
+  'gas_run':            'Gas / Water',
+  'water_services':     'Gas / Water',
+  'condensate':         'Gas / Water',
+  'discharge':          'Gas / Water',
+  'primaries_filtration': 'Gas / Water',
+  'primaries & filtration': 'Gas / Water',
+  'primaries':          'Gas / Water',
+
+  // unchanged but prettified
+  'delivery_logistics': 'Delivery notes',
+  'external_hazards':   'External hazards',
+  'customer_actions':   'Customer actions',
+  'disruption':         'Disruption',
+  'needs':              'Needs'
+};
+
+// Convert raw header to a display bucket
+function bucketizeHeader(rawHeader){
+  const key = rawHeader.trim().toLowerCase().replace(/\s+/g,'_');
+  if (HEADER_ALIASES[key]) return HEADER_ALIASES[key];
+  // default: prettify
+  return titleCase(rawHeader);
+}
+
+// ---- REPLACE your current parseOptionsText with this version ----
 function parseOptionsText(text){
-  let t=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
-  const lines=t.split('\n'); const out={}; let current=null; const hdr=/^\s*\[([^\]]+)\]\s*$/;
-  for(const raw of lines){
-    const line=norm(raw);
-    if(!line || line.startsWith('#') || line.startsWith('//')) continue;
-    const m=line.match(hdr);
-    if(m){ current=m[1].trim(); if(!out[current]) out[current]=[]; continue; }
-    if(!current) continue;
-    const parts=line.split('|').map(s=>s.trim());
+  let t = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const lines = t.split('\n');
+
+  const out = {};           // { bucketName: [items] }
+  let currentBucket = null;
+
+  const headerRe = /^\s*\[([^\]]+)\]\s*$/;
+
+  for (const raw of lines){
+    const line = (raw || '').replace(/[–—]/g,'-').trim();
+    if (!line || line.startsWith('#') || line.startsWith('//')) continue;
+
+    const m = line.match(headerRe);
+    if (m){
+      const rawHeader   = m[1].trim();
+      const bucketLabel = bucketizeHeader(rawHeader);
+      currentBucket = bucketLabel;
+      if (!out[currentBucket]) out[currentBucket] = [];
+      continue;
+    }
+
+    if (!currentBucket) continue;
+
+    // Accept: "CODE | Category | Text" (tolerate 1–2 parts)
+    const parts = line.split('|').map(s=>s.trim());
     let code='', category='', textOut='';
-    if(parts.length===1){ textOut=parts[0]; }
-    else if(parts.length===2){ code=parts[0]; textOut=parts[1]; }
-    else { code=parts[0]; category=parts[1]; textOut=parts.slice(2).join(' | '); }
-    if(textOut){ out[current].push({code,category,text:textOut,section:current}); }
+    if (parts.length === 1) { textOut = parts[0]; }
+    else if (parts.length === 2) { code = parts[0]; textOut = parts[1]; }
+    else { code = parts[0]; category = parts[1]; textOut = parts.slice(2).join(' | '); }
+
+    if (textOut){
+      out[currentBucket].push({ code, category, text: textOut, section: currentBucket });
+    }
   }
   return out;
 }
+</script>
 
 /* ---------- Loaders ---------- */
 async function loadDefault(){
