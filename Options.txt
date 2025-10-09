@@ -142,13 +142,13 @@ CB05 | Cupboard | Engineer to remove cupboard
 CB06 | Cupboard | Engineer to modify cupboard
 
 [Flue]
-Old flue
+|Old flue
 FMG01 | Make good | Old balanced flue
 FMG02 | Make good | Old fanned flue
 FMG03 | Make good | Old roof terminal
 FMG04 | Make good | Brick up old flue opening
 
-flue_new
+|flue_new
 FN01 | New flue | Use same hole – minor change
 FN02 | New flue | New hole – same wall
 FN03 | New flue | New hole – alternative wall
