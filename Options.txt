@@ -48,7 +48,7 @@ SN11 | Controls compatibility | Hive
 SN12 | Controls compatibility | Hive Mini
 SN13 | Controls preference | Simple / manual
 
-ARS00 | Arse_cover_notes
+[Arse_cover_notes]
 ARS01 | System | Sealing an old system may expose hidden leaks
 ARS02 | System | Existing radiators and valves may leak once pressurised
 ARS03 | System | Old vented pipework and joints not designed for pressure
