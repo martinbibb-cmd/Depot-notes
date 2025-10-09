@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Depot Notes Picker — Restored</title>
+<title>Depot Notes Picker — Source-safe</title>
 <style>
   :root{--gap:10px;--pad:12px;--radius:10px}
   *{box-sizing:border-box}
@@ -12,8 +12,8 @@
   .badge{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:12px}
   .hint{font-size:12px;color:#6b7280}
   .space{flex:1}
-  main{display:grid;grid-template-columns:1.2fr 1.1fr;gap:var(--gap);padding:var(--pad)}
-  @media (max-width:1100px){main{grid-template-columns:1fr}}
+  main{display:grid;grid-template-columns:1.05fr 1fr;gap:var(--gap);padding:var(--pad)}
+  @media (max-width:1050px){main{grid-template-columns:1fr}}
   section{background:#fff;border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 2px rgba(0,0,0,.05)}
   h2{margin:0 0 6px 0;font-size:18px}
   h3{margin:8px 0 6px 0;font-size:16px}
@@ -22,7 +22,6 @@
   button{background:#e5e7eb;border-color:#c8ccd1;cursor:pointer}
   button.primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
   button.ghost{background:#fff}
-  button:disabled{opacity:.55;cursor:not-allowed}
   .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#374151}
   .toolbar{display:flex;gap:var(--gap);align-items:center;margin:var(--gap) 0;flex-wrap:wrap}
   .list{display:grid;gap:6px;max-height:50vh;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px}
@@ -31,28 +30,37 @@
   .muted{color:#6b7280}
   .divider{height:1px;background:#e5e7eb;margin:8px 0}
   textarea{width:100%;min-height:160px}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  @media (max-width:900px){.cols{grid-template-columns:1fr}}
-  details>summary{cursor:pointer;padding:6px;border-radius:8px;background:#f9fafb}
-  .sec-head{display:flex;gap:8px;align-items:center}
-  .sec-actions button{padding:4px 8px}
+  .error{background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;padding:8px;border-radius:8px}
+  .success{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;padding:8px;border-radius:8px}
 </style>
 </head>
 <body>
 <header>
   <strong>Depot Notes Picker</strong>
-  <span class="badge">v2.4 · restored</span>
-  <span class="hint" id="metaInfo"></span>
+  <span class="badge">v2.4 · source-safe</span>
+  <span class="hint" id="metaInfo">Loading…</span>
   <span class="space"></span>
-  <button class="ghost" id="importBtn">Import state</button>
-  <button class="ghost" id="exportBtn">Export state</button>
   <button class="ghost" id="resetBtn">Reset</button>
 </header>
 
 <main>
-  <!-- LEFT: Source picker -->
+  <!-- LEFT: Source & picker -->
   <section>
-    <h2>Picker (from Options.txt)</h2>
+    <h2>Source</h2>
+    <div id="loadMsg" class="hint">Looks for <code>./Options.txt</code> first. If not found, use one of the loaders below.</div>
+    <div class="row" style="margin-top:6px">
+      <button id="reloadBtn">Reload ./Options.txt</button>
+      <input id="urlInput" type="text" placeholder="https://raw.githubusercontent.com/.../Options.txt" style="flex:1">
+      <button id="loadUrlBtn" class="ghost">Load URL</button>
+      <input id="fileInput" type="file" accept=".txt,.csv,.md,.conf" style="display:none">
+      <button id="loadFileBtn" class="ghost">Upload file…</button>
+      <button id="loadPasteBtn" class="ghost">Paste text…</button>
+    </div>
+    <div id="alert" style="margin-top:8px"></div>
+
+    <div class="divider"></div>
+
+    <h3>Picker</h3>
     <div class="toolbar">
       <label>Section</label>
       <select id="sectionSelect"></select>
@@ -60,28 +68,23 @@
       <button id="selectVisibleBtn">Select all (visible)</button>
       <button id="clearSelectionBtn">Clear selection</button>
     </div>
-
     <div id="itemsList" class="list" aria-label="items list"></div>
 
     <div class="divider"></div>
-
     <div class="row">
       <input id="quickAddText" type="text" placeholder="Quick-add custom line" style="flex:1">
       <button id="quickAddBtn" class="ghost">Add</button>
     </div>
-
     <div class="row">
       <label>Add selected →</label>
       <select id="outputSectionSelect"></select>
       <button id="addToOutputBtn" class="primary">Add</button>
-      <span class="hint">Choose the output section to send the checked items to.</span>
     </div>
   </section>
 
-  <!-- RIGHT: Output / staging & copy -->
+  <!-- RIGHT: Output -->
   <section>
-    <h2>Output (staged by section)</h2>
-
+    <h2>Output</h2>
     <div class="row">
       <span class="pill" id="countBadge">0 lines</span>
       <label style="display:flex;align-items:center;gap:6px;margin-left:12px;">
@@ -90,298 +93,231 @@
       <span class="space"></span>
       <button id="copyBtn" class="primary">Copy ;-lines</button>
     </div>
-
     <textarea id="copyBox" readonly placeholder="Your staged lines will appear here…"></textarea>
-
-    <h3>Staged per section</h3>
+    <h3>Staged</h3>
     <div id="stagingWrap" class="list"></div>
   </section>
 </main>
 
 <script>
-/* ====== Config / State ====== */
+/* ===== Built-in demo (so UI never empty) ===== */
+const DEMO_TEXT = `
+[Needs]
+NE01 | Need | Better water pressure
+NE02 | Need | Faster hot water delivery
+
+[Flue]
+FN01 | New flue | Use same hole - minor change
+FN12 | Orientation | Front aspect
+
+[Customer actions]
+CA01 | Customer | Clear working areas
+`;
+
+/* ===== State ===== */
 const OPTIONS_URL = './Options.txt';
-const STORAGE_KEY = 'dnp_restored_state_v1';
+const STORAGE_KEY = 'dnp_source_safe_v1';
+const state = { sections:{}, filter:'', currentSection:'All', output:{} };
 
-const state = {
-  sections: {},           // parsed source sections: {Section: [{code,category,text,section}]}
-  filter: '',
-  currentSourceSection: 'All',
-  // staged output: {Section: [ {text, code?, category?} ]}
-  output: {},
-};
-
-/* ====== Utils ====== */
+/* ===== Utils ===== */
 const norm = s => (s||'').replace(/[–—]/g,'-').trim();
 const byName = (a,b)=>a.localeCompare(b);
-function saveState(){
-  const payload = { output: state.output };
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); }catch(e){}
-}
-function loadState(){
-  try{
-    const p = JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');
-    state.output = p.output && typeof p.output==='object' ? p.output : {};
-  }catch(e){}
-}
-function copyToClipboard(text){
-  const ta = document.createElement('textarea');
-  ta.value = text; document.body.appendChild(ta); ta.select();
-  try { document.execCommand('copy'); } catch(e){}
-  ta.remove();
-}
+const setAlert = (html, cls='')=>{
+  const a=document.getElementById('alert'); a.className=cls; a.innerHTML=html||'';
+};
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({output:state.output})); }catch(e){} }
+function load(){ try{ const j=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); state.output=j.output||{}; }catch(e){} }
 
-/* ====== Parse Options.txt (robust) ====== */
+/* ===== Parser (robust) ===== */
 function parseOptionsText(text){
-  let t = text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
-  const lines = t.split('\n');
-  const out = {};
-  let current = null;
-  const headerRe = /^\s*\[([^\]]+)\]\s*$/;
-
-  for (const raw of lines){
-    const line = norm(raw);
-    if (!line) continue;
-    if (line.startsWith('#') || line.startsWith('//')) continue;
-
-    const m = line.match(headerRe);
-    if (m){
-      current = m[1].trim();
-      if (!out[current]) out[current] = [];
-      continue;
-    }
-    if (!current) continue;
-
-    const parts = line.split('|').map(s=>s.trim());
+  let t=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
+  const lines=t.split('\n'); const out={}; let current=null; const hdr=/^\s*\[([^\]]+)\]\s*$/;
+  for(const raw of lines){
+    const line=norm(raw);
+    if(!line || line.startsWith('#') || line.startsWith('//')) continue;
+    const m=line.match(hdr);
+    if(m){ current=m[1].trim(); if(!out[current]) out[current]=[]; continue; }
+    if(!current) continue;
+    const parts=line.split('|').map(s=>s.trim());
     let code='', category='', textOut='';
-    if (parts.length === 1){ textOut = parts[0]; }
-    else if (parts.length === 2){ code = parts[0]; textOut = parts[1]; }
-    else { code = parts[0]; category = parts[1]; textOut = parts.slice(2).join(' | '); }
-
-    if (textOut){
-      out[current].push({ code, category, text: textOut, section: current });
-    }
+    if(parts.length===1){ textOut=parts[0]; }
+    else if(parts.length===2){ code=parts[0]; textOut=parts[1]; }
+    else { code=parts[0]; category=parts[1]; textOut=parts.slice(2).join(' | '); }
+    if(textOut){ out[current].push({code,category,text:textOut,section:current}); }
   }
   return out;
 }
-async function loadOptions(){
-  const res = await fetch(OPTIONS_URL + (OPTIONS_URL.includes('?')?'&':'?') + 'nocache=' + Date.now());
-  const raw = await res.text();
-  return parseOptionsText(raw);
-}
 
-/* ====== Render: Source Picker ====== */
-function populateSourceSectionDropdown(){
-  const sel = document.getElementById('sectionSelect');
-  sel.innerHTML = '';
-  const optAll = document.createElement('option'); optAll.value='All'; optAll.textContent='All';
-  sel.appendChild(optAll);
-  Object.keys(state.sections).sort(byName).forEach(name=>{
-    const o = document.createElement('option'); o.value=name; o.textContent=name;
-    sel.appendChild(o);
-  });
-  sel.value = state.currentSourceSection;
-  // also feed output-section selector choices
-  const outSel = document.getElementById('outputSectionSelect');
-  outSel.innerHTML = '';
-  Object.keys(state.sections).sort(byName).forEach(name=>{
-    const o = document.createElement('option'); o.value=name; o.textContent=name;
-    outSel.appendChild(o);
-  });
-}
-
-function renderSourceItems(){
-  const box = document.getElementById('itemsList');
-  box.innerHTML = '';
-  const filter = state.filter.toLowerCase();
-  let items = [];
-  if (state.currentSourceSection === 'All'){
-    for (const k of Object.keys(state.sections)) items = items.concat(state.sections[k]);
-  }else{
-    items = state.sections[state.currentSourceSection] || [];
+/* ===== Loading options (4 ways) ===== */
+async function loadFromUrl(url){
+  setAlert('Loading…','hint');
+  try{
+    const res=await fetch(url+(url.includes('?')?'&':'?')+'nocache='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const raw=await res.text();
+    const secs=parseOptionsText(raw);
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections (check headers like [Needs])');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from URL.`);
+  }catch(err){
+    setAlert(`Failed to load from URL: <code>${url}</code><br>${err.message}`,'error');
   }
-  const visible = items.filter(it=>{
-    if (!filter) return true;
+}
+async function loadDefault(){
+  setAlert('Looking for ./Options.txt …','hint');
+  try{
+    const res=await fetch(OPTIONS_URL+(OPTIONS_URL.includes('?')?'&':'?')+'nocache='+Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const raw=await res.text();
+    const secs=parseOptionsText(raw);
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from ./Options.txt`);
+  }catch(err){
+    // fall back to demo
+    const secs=parseOptionsText(DEMO_TEXT);
+    setSections(secs, `Could not fetch ./Options.txt (${err.message}). Using built-in demo.`, true);
+  }
+}
+function loadFromFile(file){
+  const r=new FileReader();
+  r.onload=()=>{ try{
+      const secs=parseOptionsText(String(r.result||''));
+      if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+      setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from file.`);
+    }catch(e){ setAlert('File parse error: '+e.message,'error'); } };
+  r.readAsText(file);
+}
+function loadFromPaste(){
+  const t=prompt('Paste your Options.txt content:');
+  if(!t) return;
+  try{
+    const secs=parseOptionsText(t);
+    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
+    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from pasted text.`);
+  }catch(e){ setAlert('Paste parse error: '+e.message,'error'); }
+}
+function setSections(sections, msg, warn=false){
+  state.sections=sections; state.currentSection='All';
+  populateDropdowns(); renderItems(); setAlert(msg, warn?'error':'success');
+  document.getElementById('metaInfo').textContent =
+    `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
+}
+
+/* ===== UI: picker ===== */
+function populateDropdowns(){
+  const sel=document.getElementById('sectionSelect'); sel.innerHTML='';
+  const all=document.createElement('option'); all.value='All'; all.textContent='All'; sel.appendChild(all);
+  Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  sel.value='All';
+
+  const outSel=document.getElementById('outputSectionSelect'); outSel.innerHTML='';
+  Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; outSel.appendChild(o); });
+}
+function renderItems(){
+  const box=document.getElementById('itemsList'); box.innerHTML='';
+  const filter=(state.filter||'').toLowerCase(); let items=[];
+  if(state.currentSection==='All'){ for(const k of Object.keys(state.sections)) items=items.concat(state.sections[k]); }
+  else items=state.sections[state.currentSection]||[];
+  const visible=items.filter(it=>{
+    if(!filter) return true;
     return (`${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase()).includes(filter);
   });
-
-  if (!visible.length){
-    const empty = document.createElement('div');
-    empty.className = 'hint'; empty.style.padding='8px';
-    empty.textContent = 'No items match your filter.';
-    box.appendChild(empty); return;
-  }
-
+  if(!visible.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='No items match your filter.'; box.appendChild(e); return; }
   visible.forEach(it=>{
-    const row = document.createElement('div'); row.className='item';
-    const cb = document.createElement('input'); cb.type='checkbox'; cb.dataset.payload = JSON.stringify(it);
-    const label = document.createElement('div');
-    label.innerHTML = `<div><strong>${it.text}</strong></div>
-      <div class="muted">${it.section}${it.category? ' • '+it.category:''}${it.code? ' • '+it.code:''}</div>`;
-    const plus = document.createElement('button'); plus.className='ghost'; plus.textContent='＋';
-    plus.title = 'Add to output (uses current output section selector)';
-    plus.onclick = ()=>{
-      const tgt = document.getElementById('outputSectionSelect').value || it.section;
-      pushToOutput(tgt, it);
-      renderStaging(); renderCopy();
-    };
-    row.appendChild(cb); row.appendChild(label); row.appendChild(plus);
-    box.appendChild(row);
+    const row=document.createElement('div'); row.className='item';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.payload=JSON.stringify(it);
+    const label=document.createElement('div');
+    label.innerHTML=`<div><strong>${it.text}</strong></div><div class="muted">${it.section}${it.category?' • '+it.category:''}${it.code?' • '+it.code:''}</div>`;
+    const plus=document.createElement('button'); plus.className='ghost'; plus.textContent='＋';
+    plus.onclick=()=>{ pushToOutput((document.getElementById('outputSectionSelect').value||it.section), it); renderStaging(); renderCopy(); };
+    row.appendChild(cb); row.appendChild(label); row.appendChild(plus); box.appendChild(row);
   });
 }
 
-/* ====== Output (staging) ====== */
-function pushToOutput(section, item){
-  if (!state.output[section]) state.output[section] = [];
-  const exists = state.output[section].some(x => x.text===item.text && x.code===item.code && x.category===item.category);
-  if (!exists) state.output[section].push({ text:item.text, code:item.code||'', category:item.category||'' });
-  saveState();
+/* ===== Output staging ===== */
+function pushToOutput(section, it){
+  if(!state.output[section]) state.output[section]=[];
+  if(!state.output[section].some(x=>x.text===it.text&&x.code===it.code&&x.category===it.category))
+    state.output[section].push({text:it.text, code:it.code||'', category:it.category||''});
+  save();
 }
-function removeFromOutput(section, idx){
-  if (!state.output[section]) return;
-  state.output[section].splice(idx,1);
-  if (!state.output[section].length) delete state.output[section];
-  saveState();
+function move(section, idx, dir){
+  const a=state.output[section]; const j=idx+dir; if(!a||j<0||j>=a.length) return; [a[idx],a[j]]=[a[j],a[idx]]; save();
 }
-function moveInOutput(section, idx, dir){
-  const arr = state.output[section]; if (!arr) return;
-  const j = idx + dir; if (j<0 || j>=arr.length) return;
-  [arr[idx], arr[j]] = [arr[j], arr[idx]];
-  saveState();
+function removeItem(section, idx){
+  const a=state.output[section]; if(!a) return; a.splice(idx,1); if(!a.length) delete state.output[section]; save();
 }
-
 function renderStaging(){
-  const wrap = document.getElementById('stagingWrap');
-  wrap.innerHTML = '';
-
-  const sectionNames = Object.keys(state.output).sort(byName);
-  if (!sectionNames.length){
-    const empty = document.createElement('div'); empty.className='hint'; empty.style.padding='8px';
-    empty.textContent = 'Nothing staged yet. Select items on the left and use “Add selected → section”, or hit the + buttons.';
-    wrap.appendChild(empty); return;
-  }
-
-  sectionNames.forEach(name=>{
-    const det = document.createElement('details'); det.open = true;
-    const sum = document.createElement('summary'); sum.className='sec-head';
-    const count = (state.output[name]||[]).length;
-    sum.innerHTML = `<strong>${name}</strong> <span class="pill">${count}</span>`;
-    det.appendChild(sum);
-
-    (state.output[name]||[]).forEach((it,idx)=>{
-      const row = document.createElement('div'); row.className='item';
-      const label = document.createElement('div');
-      label.innerHTML = `<div><strong>${it.text}</strong></div>
-                         <div class="muted">${it.category?it.category+' • ':''}${it.code?it.code:''}</div>`;
-      const actions = document.createElement('div'); actions.className='sec-actions';
-      const up = document.createElement('button'); up.textContent='↑'; up.onclick=()=>{ moveInOutput(name, idx, -1); renderStaging(); renderCopy(); };
-      const down = document.createElement('button'); down.textContent='↓'; down.onclick=()=>{ moveInOutput(name, idx, +1); renderStaging(); renderCopy(); };
-      const del = document.createElement('button'); del.textContent='×'; del.onclick=()=>{ removeFromOutput(name, idx); renderStaging(); renderCopy(); };
-      actions.appendChild(up); actions.appendChild(down); actions.appendChild(del);
-      row.appendChild(document.createElement('div')); // spacer to align grid like source list
-      row.appendChild(label); row.appendChild(actions);
-      det.appendChild(row);
-    });
-
-    wrap.appendChild(det);
-  });
-}
-
-function renderCopy(){
-  const includeHeaders = document.getElementById('includeHeaders').checked;
-  let lines = [];
-  const names = Object.keys(state.output).sort(byName);
+  const wrap=document.getElementById('stagingWrap'); wrap.innerHTML='';
+  const names=Object.keys(state.output).sort(byName);
+  if(!names.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='Nothing staged yet.'; wrap.appendChild(e); return; }
   names.forEach(name=>{
-    const items = state.output[name] || [];
-    if (!items.length) return;
-    if (includeHeaders) lines.push(`${name}:`);
-    items.forEach(it=> lines.push(`${it.text};`));
-    if (includeHeaders) lines.push(''); // spacer
+    const head=document.createElement('div'); head.className='row'; head.style.margin='4px 0'; head.innerHTML=`<strong>${name}</strong> <span class="pill">${(state.output[name]||[]).length}</span>`;
+    wrap.appendChild(head);
+    (state.output[name]||[]).forEach((it,i)=>{
+      const row=document.createElement('div'); row.className='item';
+      row.appendChild(document.createElement('div'));
+      const label=document.createElement('div');
+      label.innerHTML=`<div><strong>${it.text}</strong></div><div class="muted">${it.category?it.category+' • ':''}${it.code||''}</div>`;
+      const actions=document.createElement('div');
+      const up=document.createElement('button'); up.textContent='↑'; up.onclick=()=>{move(name,i,-1); renderStaging(); renderCopy();};
+      const down=document.createElement('button'); down.textContent='↓'; down.onclick=()=>{move(name,i,1); renderStaging(); renderCopy();};
+      const del=document.createElement('button'); del.textContent='×'; del.onclick=()=>{removeItem(name,i); renderStaging(); renderCopy();};
+      actions.appendChild(up); actions.appendChild(down); actions.appendChild(del);
+      row.appendChild(label); row.appendChild(actions); wrap.appendChild(row);
+    });
   });
-  document.getElementById('copyBox')..value = lines.join('\n');
-  // count badge
-  const total = names.reduce((n,k)=> n + (state.output[k]?.length||0), 0);
-  document.getElementById('countBadge').textContent = `${total} line${total===1?'':'s'}`;
+}
+function renderCopy(){
+  const includeHeaders=document.getElementById('includeHeaders').checked;
+  let lines=[]; const names=Object.keys(state.output).sort(byName);
+  names.forEach(name=>{
+    const items=state.output[name]||[]; if(!items.length) return;
+    if(includeHeaders) lines.push(`${name}:`);
+    items.forEach(it=>lines.push(`${it.text};`));
+    if(includeHeaders) lines.push('');
+  });
+  document.getElementById('copyBox').value=lines.join('\n');
+  const total=names.reduce((n,k)=>n+(state.output[k]?.length||0),0);
+  document.getElementById('countBadge').textContent=`${total} line${total===1?'':'s'}`;
 }
 
-/* ====== Boot & Wiring ====== */
+/* ===== Boot & events ===== */
 async function boot(){
-  loadState();
-  state.sections = await loadOptions();
-  const total = Object.values(state.sections).reduce((n,a)=>n+a.length,0);
-  document.getElementById('metaInfo').textContent = `Loaded ${total} items · ${Object.keys(state.sections).length} sections`;
+  load();
+  await loadDefault();
+  renderStaging(); renderCopy();
 
-  state.currentSourceSection = 'All';
-  populateSourceSectionDropdown();
-  renderSourceItems();
-  renderStaging();
-  renderCopy();
+  document.getElementById('reloadBtn').onclick=()=>loadDefault();
+  document.getElementById('loadUrlBtn').onclick=()=>{ const u=document.getElementById('urlInput').value.trim(); if(u) loadFromUrl(u); };
+  document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
+  document.getElementById('fileInput').onchange=(e)=>{ const f=e.target.files?.[0]; if(f) loadFromFile(f); e.target.value=''; };
+  document.getElementById('loadPasteBtn').onclick=()=>loadFromPaste();
 
-  // events
-  document.getElementById('sectionSelect').addEventListener('change', e=>{
-    state.currentSourceSection = e.target.value; renderSourceItems();
-  });
-  document.getElementById('outputSectionSelect').addEventListener('change',()=>{ /* no-op */ });
-  document.getElementById('filterBox').addEventListener('input', e=>{
-    state.filter = e.target.value||''; renderSourceItems();
-  });
-  window.addEventListener('keydown', e=>{
-    if (e.key === '/'){ e.preventDefault(); document.getElementById('filterBox').focus(); }
-  });
-  document.getElementById('selectVisibleBtn').addEventListener('click', ()=>{
-    const checkboxes = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]'));
-    checkboxes.forEach(cb=> cb.checked = true);
-  });
-  document.getElementById('clearSelectionBtn').addEventListener('click', ()=>{
-    const checkboxes = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]'));
-    checkboxes.forEach(cb=> cb.checked = false);
-  });
-  document.getElementById('addToOutputBtn').addEventListener('click', ()=>{
-    const target = document.getElementById('outputSectionSelect').value || 'General';
-    const cbs = Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
-    if (!cbs.length) return;
-    cbs.forEach(cb=>{
-      const it = JSON.parse(cb.dataset.payload);
-      pushToOutput(target, it);
-      cb.checked = false;
+  document.getElementById('sectionSelect').onchange=e=>{ state.currentSection=e.target.value; renderItems(); };
+  document.getElementById('filterBox').oninput=e=>{ state.filter=e.target.value||''; renderItems(); };
+  window.addEventListener('keydown',e=>{ if(e.key==='/'){ e.preventDefault(); document.getElementById('filterBox').focus(); } });
+
+  document.getElementById('selectVisibleBtn').onclick=()=>{
+    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=true);
+  };
+  document.getElementById('clearSelectionBtn').onclick=()=>{
+    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=false);
+  };
+  document.getElementById('addToOutputBtn').onclick=()=>{
+    const target=document.getElementById('outputSectionSelect').value||'General';
+    Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked')).forEach(cb=>{
+      const it=JSON.parse(cb.dataset.payload); pushToOutput(target,it); cb.checked=false;
     });
     renderStaging(); renderCopy();
-  });
-  document.getElementById('quickAddBtn').addEventListener('click', ()=>{
-    const v = norm(document.getElementById('quickAddText').value);
-    if (!v) return;
-    if (!state.output.Custom) state.output.Custom = [];
-    state.output.Custom.push({ text:v, code:'', category:'Custom' });
-    document.getElementById('quickAddText').value = '';
-    saveState(); renderStaging(); renderCopy();
-  });
-  document.getElementById('includeHeaders').addEventListener('change', renderCopy);
-  document.getElementById('copyBtn').addEventListener('click', ()=>{
-    copyToClipboard(document.getElementById('copyBox').value);
-  });
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    localStorage.removeItem(STORAGE_KEY);
-    location.href = location.pathname + '?reset=' + Date.now();
-  });
-  document.getElementById('exportBtn').addEventListener('click', ()=>{
-    const blob = new Blob([JSON.stringify({output:state.output}, null, 2)], {type:'application/json'});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'depot-notes-state.json'; a.click();
-    URL.revokeObjectURL(a.href);
-  });
-  document.getElementById('importBtn').addEventListener('click', ()=>{
-    const inp = document.createElement('input'); inp.type='file'; inp.accept='application/json';
-    inp.onchange = async () => {
-      const file = inp.files?.[0]; if (!file) return;
-      const txt = await file.text();
-      try{
-        const data = JSON.parse(txt);
-        if (data && typeof data==='object' && data.output){
-          state.output = data.output; saveState(); renderStaging(); renderCopy();
-        }
-      }catch(e){}
-    };
-    inp.click();
-  });
+  };
+  document.getElementById('quickAddBtn').onclick=()=>{
+    const v=norm(document.getElementById('quickAddText').value); if(!v) return;
+    if(!state.output.Custom) state.output.Custom=[]; state.output.Custom.push({text:v,code:'',category:'Custom'});
+    document.getElementById('quickAddText').value=''; save(); renderStaging(); renderCopy();
+  };
+  document.getElementById('includeHeaders').onchange=()=>renderCopy();
+  document.getElementById('copyBtn').onclick=()=>{ const ta=document.getElementById('copyBox'); ta.select(); ta.setSelectionRange(0,99999); try{ navigator.clipboard.writeText(ta.value);}catch(e){} };
+  document.getElementById('resetBtn').onclick=()=>{ localStorage.removeItem(STORAGE_KEY); location.href=location.pathname+'?reset='+Date.now(); };
 }
 boot();
 </script>
