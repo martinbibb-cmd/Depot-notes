@@ -128,6 +128,7 @@ UC03 | User control | Programmable thermostat
 UC04 | User control | Programmer – mechanical
 UC05 | User control | Room stat – wireless
 UC06 | User control | Programmer – 2 channel
+UC07 | User control | Programmer - single channel 
 
 [system_config]
 SC01 | System controls | S-plan – additional zone
