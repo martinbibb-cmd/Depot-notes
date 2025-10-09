@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Depot Notes Picker — Rebuild</title>
+<title>Depot Notes Picker — Rebuild v2.2</title>
 <style>
+  /* THEME TOKENS */
   :root {
     --bg: #0f1115;
     --panel: #151823;
@@ -17,158 +18,162 @@
     --border: #242a38;
     --chip: #1e2332;
     --input: #0f1320;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
   }
+  [data-theme="light"] {
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --muted: #5b6473;
+    --text: #0f141e;
+    --accent: #3b7cff;
+    --ok: #1e8f5c;
+    --warn: #cc8a2d;
+    --danger: #c95151;
+    --border: #e6e8ef;
+    --chip: #eef2ff;
+    --input: #f5f8ff;
+    --shadow: 0 8px 26px rgba(18,34,66,.08);
+  }
+
   * { box-sizing: border-box; }
   body {
     margin: 0;
     font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
-    background: linear-gradient(180deg, #0c0f16, #0f1115 140px);
+    background: var(--bg);
     color: var(--text);
   }
   header {
+    position: sticky; top: 0; z-index: 5;
     padding: 16px clamp(12px, 2vw, 24px);
     border-bottom: 1px solid var(--border);
-    background: #0f1115a8;
+    background: color-mix(in oklab, var(--bg) 80%, #000 20%);
     backdrop-filter: blur(6px);
-    position: sticky; top: 0; z-index: 5;
   }
-  header h1 {
-    margin: 0 0 8px 0; font-size: 20px; letter-spacing: .2px;
-  }
-  header .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  header h1 { margin: 0 0 8px 0; font-size: 20px; letter-spacing: .2px; }
+  header .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .pill {
+    display: inline-flex; align-items: center; gap: 6px;
     background: var(--chip); border: 1px solid var(--border);
     padding: 8px 10px; border-radius: 10px; color: var(--muted);
-    font-size: 12px;
+    font-size: 12px; box-shadow: var(--shadow);
   }
+  .pill button { all: unset; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  .pill strong { color: var(--text); }
+
   .wrap {
     display: grid;
     grid-template-columns: 1.08fr .92fr; /* left wider for 13 copy boxes */
     gap: 16px;
     padding: 16px clamp(12px, 2vw, 24px) 28px;
   }
-  @media (max-width: 1100px){
-    .wrap { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 1100px){ .wrap { grid-template-columns: 1fr; } }
+
   .panel {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 14px;
+    box-shadow: var(--shadow);
   }
-  .panel h2 {
-    margin: 2px 0 12px 0;
-    font-size: 16px; color: #cfd6e6; letter-spacing: .2px;
-  }
-  .grid-left {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(2, minmax(260px, 1fr));
-  }
+  .panel h2 { margin: 2px 0 12px 0; font-size: 16px; letter-spacing: .2px; }
+
+  .grid-left { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(260px, 1fr)); }
   @media (max-width: 1200px){ .grid-left { grid-template-columns: 1fr; } }
+
   .box {
-    background: #0f121b;
+    background: color-mix(in oklab, var(--panel), var(--bg));
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px;
     display: grid;
     grid-template-rows: auto auto 1fr auto;
-    gap: 8px;
-    min-height: 190px;
+    gap: 8px; min-height: 190px;
   }
-  .box .title {
-    font-size: 13px; font-weight: 600; color: #dfe7fb;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .mini {
-    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
-  }
+  .box .title { font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .mini { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .mini button, .mini select {
     background: var(--chip); color: var(--text);
     border: 1px solid var(--border); border-radius: 9px;
     padding: 6px 10px; font-size: 12px; cursor: pointer;
   }
-  .mini button:hover { outline: 1px solid #2b3350; }
+  .mini button:hover { outline: 1px solid color-mix(in oklab, var(--accent) 50%, transparent); }
+
   textarea.copy {
     width: 100%; min-height: 110px; resize: vertical;
     background: var(--input); color: var(--text);
-    border: 1px solid #21283a; border-radius: 10px;
-    padding: 8px 10px; line-height: 1.45; font-size: 13px;
+    border: 1px solid color-mix(in oklab, var(--border) 80%, #000 20%);
+    border-radius: 10px; padding: 8px 10px; line-height: 1.45; font-size: 13px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
   }
+
   .right .toolbar {
-    display: grid; gap: 10px;
-    grid-template-columns: 1fr 1fr;
-    margin-bottom: 12px;
+    display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-bottom: 12px;
   }
-  .rowline { display: flex; gap: 10px; }
+  .rowline { display: flex; gap: 10px; flex-wrap: wrap; }
   input[type="text"], select, input[type="url"] {
     width: 100%; padding: 10px 12px; border-radius: 10px;
-    border: 1px solid #21283a; background: var(--input); color: var(--text);
-    font-size: 14px;
+    border: 1px solid color-mix(in oklab, var(--border) 80%, #000 20%);
+    background: var(--input); color: var(--text); font-size: 14px;
   }
   .btn {
     padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-    background: #172036; color: var(--text); cursor: pointer; font-weight: 600;
+    background: color-mix(in oklab, var(--accent) 15%, var(--panel) 85%);
+    color: var(--text); cursor: pointer; font-weight: 600;
   }
-  .btn.ok { background: #153222; border-color: #1f4b33; }
-  .btn.warn { background: #3a2a12; border-color: #57421a; }
-  .btn.danger { background: #3a1717; border-color: #5a2424; }
-  .btn.accent { background: #162545; border-color: #23406e; }
-  .btn:hover { filter: brightness(1.1); }
+  .btn.ok { background: color-mix(in oklab, var(--ok) 20%, var(--panel) 80%); border-color: color-mix(in oklab, var(--ok) 40%, var(--border) 60%); }
+  .btn.warn { background: color-mix(in oklab, var(--warn) 25%, var(--panel) 75%); border-color: color-mix(in oklab, var(--warn) 45%, var(--border) 55%); }
+  .btn.danger { background: color-mix(in oklab, var(--danger) 25%, var(--panel) 75%); border-color: color-mix(in oklab, var(--danger) 45%, var(--border) 55%); }
+  .btn:hover { filter: brightness(1.06); }
+
   .picker {
-    background: #0f121b; border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--panel), var(--bg));
+    border: 1px solid var(--border);
     border-radius: 12px; padding: 10px; max-height: 55vh; overflow: auto;
   }
-  .item {
-    display: grid; grid-template-columns: 24px 1fr; gap: 10px;
-    align-items: start; padding: 8px; border-radius: 8px;
-  }
-  .item:hover { background: #12182a; }
+  .item { display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; padding: 8px; border-radius: 8px; }
+  .item:hover { background: color-mix(in oklab, var(--chip) 35%, transparent); }
   .item small { color: var(--muted); display: block; margin-top: 3px; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip {
-    font-size: 11px; padding: 3px 8px; border-radius: 100px;
-    background: #1b2233; color: #c9d3ea; border: 1px solid #2a3450;
-  }
-  .footer {
-    display: grid; gap: 10px; grid-template-columns: 1fr auto;
-    margin-top: 12px; align-items: center;
-  }
+  .chip { font-size: 11px; padding: 3px 8px; border-radius: 100px; background: var(--chip); color: color-mix(in oklab, var(--text) 80%, var(--muted)); border: 1px solid var(--border); }
+
   .final-box textarea { min-height: 160px; }
   .hint { color: var(--muted); font-size: 12px; }
   .small { font-size: 12px; color: var(--muted); }
-  .kbd {
-    background: #0c1220; border: 1px solid #1e2843; border-bottom-color: #0a0e1a;
-    padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
-    font-size: 12px; color: #cdd8f2;
-  }
+  .kbd { background: var(--input); border: 1px solid var(--border); padding: 2px 6px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 12px; }
+  .spacer { flex: 1; }
 </style>
 </head>
 <body>
 <header>
   <h1>Depot Notes Picker — Section Copy Boxes (Left) • Picker (Right)</h1>
   <div class="row">
-    <span class="pill">Tip: filter (<span class="kbd">/</span>), add to current section (<span class="kbd">Enter</span>), copy section (<span class="kbd">⌘/Ctrl+C</span> in box)</span>
+    <span class="pill">Build: <strong id="buildTag">v?</strong></span>
+    <span class="pill">Tip: filter (<span class="kbd">/</span>), add to current section (<span class="kbd">Enter</span>)</span>
     <span class="pill">Autosaves to your browser (localStorage)</span>
-    <span class="pill">Output uses <strong>semicolon+newline</strong> formatting</span>
+    <span class="pill">Output is <strong>semicolon + newline</strong></span>
+    <span class="spacer"></span>
+    <span class="pill">
+      Theme:
+      <button id="btnTheme">Dark</button>
+    </span>
+    <button id="btnResetAll" class="pill" style="cursor:pointer;">Reset (clear storage)</button>
   </div>
 </header>
 
 <div class="wrap">
-  <!-- LEFT: 13 per-section copy boxes -->
+  <!-- LEFT: per-section copy boxes -->
   <section class="panel">
     <h2>Section Copy Boxes</h2>
     <div id="boxes" class="grid-left"></div>
   </section>
 
-  <!-- RIGHT: picker + controls -->
+  <!-- RIGHT: picker, controls, final -->
   <aside class="panel right">
     <h2>Picker & Controls</h2>
     <div class="toolbar">
       <div class="rowline">
         <select id="targetSection"></select>
-        <button class="btn accent" id="btnAdd">Add selected → section</button>
+        <button class="btn" id="btnAdd">Add selected → section</button>
       </div>
       <div class="rowline">
         <input id="search" type="text" placeholder="Search phrases… (press / to focus)" />
@@ -184,16 +189,6 @@
 
     <div id="picker" class="picker" aria-label="Options Picker"></div>
 
-    <div class="footer">
-      <div class="small">Manage option source</div>
-      <div class="rowline">
-        <button class="btn" id="btnLoadBuiltin">Load built-in options</button>
-        <button class="btn" id="btnPasteJSON">Paste JSON…</button>
-        <input id="jsonUrl" type="url" placeholder="Load JSON from URL (GitHub raw, etc.)" />
-        <button class="btn" id="btnFetchURL">Fetch</button>
-      </div>
-    </div>
-
     <div class="panel final-box" style="margin-top:14px;">
       <h2>Final Copy (All Sections → with LLM instruction)</h2>
       <div class="rowline" style="margin-bottom:8px;">
@@ -202,15 +197,36 @@
         <button class="btn warn" id="btnClearAll">Clear ALL Sections</button>
       </div>
       <textarea id="finalOut" class="copy" placeholder="Click ‘Build Final’ to compile everything…"></textarea>
-      <p class="hint">This compiles each section with headers and semicolon-separated lines, followed by a short instruction for an LLM to draft a readable customer summary letter (≤ 2 pages A4).</p>
+      <p class="hint">Compiles each section with headers and semicolon-separated lines, then adds an instruction for an LLM to draft a readable customer summary letter (≤ 2 A4 pages).</p>
     </div>
 
+    <div class="panel" style="margin-top:14px;">
+      <h2>Manage Option Source</h2>
+      <div class="rowline" style="margin-bottom:8px;">
+        <button class="btn" id="btnLoadBuiltin">Load built-in options</button>
+        <button class="btn" id="btnPasteJSON">Paste JSON…</button>
+      </div>
+      <div class="rowline">
+        <input id="jsonUrl" type="url" placeholder="Load JSON from URL (GitHub raw, etc.)" />
+        <button class="btn" id="btnFetchURL">Fetch (cache-busted)</button>
+      </div>
+    </div>
   </aside>
 </div>
 
 <script>
 /* =========================
-   CONFIG & SECTION SETUP
+   VERSION & STORAGE
+   ========================= */
+const APP_VERSION = 'v2.2'; // bump to force fresh storage keys
+const LS_PREFIX = `depotPicker_${APP_VERSION}`;
+const keyBox = s => `${LS_PREFIX}:box:${s}`;
+const keyOptions = `${LS_PREFIX}:options`;
+const keyTarget = `${LS_PREFIX}:target`;
+const keyTheme  = `${LS_PREFIX}:theme`;
+
+/* =========================
+   SECTIONS
    ========================= */
 const SECTION_LIST = [
   'Needs',
@@ -228,13 +244,9 @@ const SECTION_LIST = [
   'Customer actions'
 ];
 
-// localStorage keys
-const LS_PREFIX = 'depotPickerV2';
-const keyBox = s => `${LS_PREFIX}:box:${s}`;
-const keyOptions = `${LS_PREFIX}:options`;
-const keyTarget = `${LS_PREFIX}:target`;
-
-// Default options (starter set). Structure: { items:[ {text, category, tags[]} ] }
+/* =========================
+   BUILT-IN OPTIONS (starter)
+   ========================= */
 const BUILTIN = {
   items: [
     // Needs
@@ -242,7 +254,7 @@ const BUILTIN = {
     { text: 'Minimise downtime during switchover', category: 'Needs' },
     { text: 'Keep system serviceable and compliant', category: 'Needs' },
 
-    // WAH
+    // Working at heights
     { text: 'Access to flue requires steps only (no ladders)', category: 'Working at heights', tags:['access'] },
     { text: 'Roof access not required', category: 'Working at heights' },
     { text: 'No scaffold required', category: 'Working at heights' },
@@ -252,11 +264,11 @@ const BUILTIN = {
     { text: 'Pressurisation to be sealed (expansion vessel)', category: 'System characteristics' },
     { text: 'Primary circuit fully pumped', category: 'System characteristics' },
 
-    // Components require assistance
+    // Components that require assistance
     { text: 'Double-handed delivery for boiler/cylinder', category: 'Components that require assistance', tags:['delivery'] },
     { text: 'Large cylinder manoeuvre assistance', category: 'Components that require assistance' },
 
-    // Restrictions
+    // Restrictions to work
     { text: 'Work areas to be cleared by customer prior to installation', category: 'Restrictions to work' },
     { text: 'Limited space around current boiler location', category: 'Restrictions to work' },
 
@@ -264,15 +276,15 @@ const BUILTIN = {
     { text: 'No overhead power lines near roof work', category: 'External hazards' },
     { text: 'Pets on site; ensure doors/gates remain closed', category: 'External hazards' },
 
-    // Delivery
+    // Delivery notes
     { text: 'Delivery to garage; stairs involved', category: 'Delivery notes' },
     { text: 'On-road parking available', category: 'Delivery notes' },
 
-    // Office
+    // Office notes
     { text: 'Record model/serial numbers post-install', category: 'Office notes' },
     { text: 'Warranty registration required', category: 'Office notes', tags:['admin'] },
 
-    // New boiler & controls
+    // New boiler and controls
     { text: 'New boiler: Worcester 8000 (system) with Hive controls', category: 'New boiler and controls', tags:['controls'] },
     { text: 'Commission to manufacturer spec and Benchmark', category: 'New boiler and controls' },
 
@@ -295,15 +307,12 @@ const BUILTIN = {
 };
 
 /* =========================
-   STATE
+   STATE & DOM HOOKS
    ========================= */
 let OPTIONS = loadOptions();
-let SELECTION = new Set(); // ids of visible->selected
+let SELECTION = new Set();
 let FILTER = { q: '', cat: 'All' };
 
-/* =========================
-   DOM HOOKS
-   ========================= */
 const boxesEl = document.getElementById('boxes');
 const pickerEl = document.getElementById('picker');
 const targetSel = document.getElementById('targetSection');
@@ -321,16 +330,24 @@ const btnBuildFinal = document.getElementById('btnBuildFinal');
 const btnCopyFinal = document.getElementById('btnCopyFinal');
 const btnClearAll = document.getElementById('btnClearAll');
 const finalOut = document.getElementById('finalOut');
+const btnResetAll = document.getElementById('btnResetAll');
+const btnTheme = document.getElementById('btnTheme');
+const buildTag = document.getElementById('buildTag');
 
 /* =========================
    INIT
    ========================= */
+buildTag.textContent = APP_VERSION;
+applyStoredTheme();
 buildBoxes();
 buildTargetSelector();
 buildCategoryFilter();
 renderPicker();
 restoreTarget();
 
+/* =========================
+   BUILD UI
+   ========================= */
 function buildBoxes(){
   boxesEl.innerHTML = '';
   SECTION_LIST.forEach(section => {
@@ -343,7 +360,6 @@ function buildBoxes(){
     title.innerHTML = `<span>${section}</span>`;
     box.appendChild(title);
 
-    // mini controls
     const mini = document.createElement('div');
     mini.className = 'mini';
     mini.innerHTML = `
@@ -354,7 +370,6 @@ function buildBoxes(){
     `;
     box.appendChild(mini);
 
-    // textarea
     const ta = document.createElement('textarea');
     ta.className = 'copy';
     ta.placeholder = `Add lines here… each ends with a semicolon (;) then newline`;
@@ -364,13 +379,11 @@ function buildBoxes(){
     });
     box.appendChild(ta);
 
-    // footer: info
     const info = document.createElement('div');
     info.className = 'small';
-    info.textContent = 'Tip: paste; lines here or use picker → target section to append';
+    info.textContent = 'Tip: paste ;lines here or use picker → target section to append';
     box.appendChild(info);
 
-    // wire mini buttons
     mini.addEventListener('click', (e) => {
       const action = e.target?.dataset?.act;
       if(!action) return;
@@ -399,8 +412,7 @@ function buildTargetSelector(){
   targetSel.innerHTML = '';
   SECTION_LIST.forEach(s => {
     const opt = document.createElement('option');
-    opt.value = s;
-    opt.textContent = s;
+    opt.value = s; opt.textContent = s;
     targetSel.appendChild(opt);
   });
   targetSel.addEventListener('change', () => {
@@ -425,12 +437,11 @@ function buildCategoryFilter(){
 }
 
 /* =========================
-   PICKER RENDER
+   RENDER PICKER
    ========================= */
 function renderPicker(){
   pickerEl.innerHTML = '';
   SELECTION.clear();
-
   const q = FILTER.q.toLowerCase();
   const cat = FILTER.cat;
   const filtered = OPTIONS.items
@@ -452,7 +463,7 @@ function renderPicker(){
         <div>${escapeHTML(it.text)}</div>
         <small>
           <span class="chip">${it.category || 'Uncategorised'}</span>
-          ${Array.isArray(it.tags)? it.tags.map(t => `<span class="chip">${escapeHTML(t)}</span>`).join('') : ''}
+          ${(it.tags||[]).map(t => `<span class="chip">${escapeHTML(t)}</span>`).join('')}
         </small>
       </div>
     `;
@@ -467,10 +478,6 @@ function renderPicker(){
 /* =========================
    EVENTS
    ========================= */
-searchEl.addEventListener('input', () => {
-  FILTER.q = searchEl.value.trim();
-  renderPicker();
-});
 document.addEventListener('keydown', (e) => {
   if(e.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)){
     e.preventDefault(); searchEl.focus();
@@ -480,83 +487,59 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+searchEl.addEventListener('input', () => { FILTER.q = searchEl.value.trim(); renderPicker(); });
 btnAdd.addEventListener('click', addSelectedToTarget);
-
 btnSelectVisible.addEventListener('click', () => {
-  const cbs = pickerEl.querySelectorAll('input[type=checkbox]');
-  cbs.forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change')); });
+  pickerEl.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change')); });
 });
-
 btnClearSelection.addEventListener('click', () => {
-  const cbs = pickerEl.querySelectorAll('input[type=checkbox]');
-  cbs.forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event('change')); });
+  pickerEl.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = false; cb.dispatchEvent(new Event('change')); });
 });
-
 btnQuickAdd.addEventListener('click', () => {
   const v = prompt(`Quick-add to “${targetSel.value}”:\n(semicolon will be added if missing)`);
-  if(v && v.trim()){
-    appendToBox(targetSel.value, ensureSemicolon(v.trim()));
-  }
+  if(v && v.trim()){ appendToBox(targetSel.value, ensureSemicolon(v.trim())); }
 });
-
 btnLoadBuiltin.addEventListener('click', () => {
   if(!confirm('Replace current options with the built-in starter set?')) return;
   OPTIONS = JSON.parse(JSON.stringify(BUILTIN));
-  persistOptions();
-  buildCategoryFilter();
-  renderPicker();
+  persistOptions(); buildCategoryFilter(); renderPicker();
 });
-
 btnPasteJSON.addEventListener('click', () => {
   const v = prompt('Paste JSON with shape: { "items": [ { "text": "...", "category": "Flue", "tags": ["..."] }, ... ] }','');
   if(!v) return;
   try{
     const obj = JSON.parse(v);
     if(!obj || !Array.isArray(obj.items)) throw new Error('Missing items[]');
-    OPTIONS = obj;
-    persistOptions();
-    buildCategoryFilter();
-    renderPicker();
-    alert('Options loaded.');
-  } catch(err){
-    alert('Invalid JSON: ' + err.message);
-  }
+    OPTIONS = obj; persistOptions(); buildCategoryFilter(); renderPicker(); alert('Options loaded.');
+  } catch(err){ alert('Invalid JSON: ' + err.message); }
 });
-
 btnFetchURL.addEventListener('click', async () => {
   const url = jsonUrlEl.value.trim();
   if(!url) { alert('Enter a JSON URL first.'); return; }
   try{
-    const res = await fetch(url, {cache:'no-cache'});
+    const bust = (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
+    const res = await fetch(url + bust, { cache: 'no-cache' });
     if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
     const obj = await res.json();
     if(!obj || !Array.isArray(obj.items)) throw new Error('JSON must include items[]');
-    OPTIONS = obj;
-    persistOptions();
-    buildCategoryFilter();
-    renderPicker();
-    alert('Options fetched and loaded.');
-  } catch(err){
-    alert('Fetch failed: ' + err.message);
-  }
+    OPTIONS = obj; persistOptions(); buildCategoryFilter(); renderPicker();
+    alert('Options fetched and loaded (cache-busted).');
+  } catch(err){ alert('Fetch failed: ' + err.message); }
 });
-
-btnBuildFinal.addEventListener('click', () => {
-  const compiled = compileAllSections();
-  finalOut.value = compiled;
-  finalOut.focus();
-  finalOut.select();
-});
-
-btnCopyFinal.addEventListener('click', () => {
-  finalOut.focus(); finalOut.select(); document.execCommand('copy');
-});
-
+btnBuildFinal.addEventListener('click', () => { finalOut.value = compileAllSections(); finalOut.focus(); finalOut.select(); });
+btnCopyFinal.addEventListener('click', () => { finalOut.focus(); finalOut.select(); document.execCommand('copy'); });
 btnClearAll.addEventListener('click', () => {
   if(!confirm('Clear ALL section copy boxes? This cannot be undone.')) return;
   SECTION_LIST.forEach(s => localStorage.removeItem(keyBox(s)));
   buildBoxes();
 });
+btnResetAll.addEventListener('click', () => {
+  if (!confirm('Clear ALL saved section text and option lists?')) return;
+  Object.keys(localStorage).filter(k => k.startsWith(LS_PREFIX + ':')).forEach(k => localStorage.removeItem(k));
+  buildBoxes(); OPTIONS = JSON.parse(JSON.stringify(BUILTIN)); persistOptions(); buildCategoryFilter(); renderPicker();
+  alert('Storage cleared. Clean slate.');
+});
+btnTheme.addEventListener('click', toggleTheme);
 
 /* =========================
    HELPERS
@@ -566,29 +549,20 @@ function addSelectedToTarget(){
   if(ids.length === 0){ alert('Select some picker items first.'); return; }
   const lines = ids.map(id => OPTIONS.items[id]?.text).filter(Boolean).map(ensureSemicolon);
   appendToBox(targetSel.value, lines.join('\n'));
-  // clear selection after add
-  btnClearSelection.click();
+  btnClearSelection.click(); // reset selection
 }
-
 function appendToBox(section, text){
-  const ta = findBox(section);
-  if(!ta) return;
+  const ta = findBox(section); if(!ta) return;
   const cur = ta.value.trim();
   ta.value = (cur ? (cur + '\n') : '') + text;
   localStorage.setItem(keyBox(section), ta.value);
-  // small visual nudge
-  ta.style.outline = '2px solid #2b7bff';
-  setTimeout(()=> ta.style.outline='none', 350);
+  ta.style.outline = '2px solid var(--accent)'; setTimeout(()=> ta.style.outline='none', 350);
 }
-
 function findBox(section){
   const box = boxesEl.querySelector(`.box[data-section="${cssEscape(section)}"]`);
   return box?.querySelector('textarea.copy') || null;
 }
-
-function ensureSemicolon(s){
-  return s.endsWith(';') ? s : s + ';';
-}
+function ensureSemicolon(s){ return s.endsWith(';') ? s : s + ';'; }
 
 function compileAllSections(){
   const blocks = SECTION_LIST.map(sec => {
@@ -622,17 +596,23 @@ function loadOptions(){
     return obj;
   }catch{ return JSON.parse(JSON.stringify(BUILTIN)); }
 }
-
-function persistOptions(){
-  localStorage.setItem(keyOptions, JSON.stringify(OPTIONS));
-}
-
-function escapeHTML(s){
-  return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-}
-
-// css.escape polyfill-ish (minimal)
+function persistOptions(){ localStorage.setItem(keyOptions, JSON.stringify(OPTIONS)); }
+function escapeHTML(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function cssEscape(s){ return s.replace(/["\\]/g, '\\$&'); }
+
+/* Theme */
+function applyStoredTheme(){
+  const stored = localStorage.getItem(keyTheme) || 'dark';
+  document.documentElement.setAttribute('data-theme', stored);
+  btnTheme.textContent = stored === 'dark' ? 'Dark' : 'Light';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem(keyTheme, next);
+  btnTheme.textContent = next === 'dark' ? 'Dark' : 'Light';
+}
 </script>
 </body>
 </html>
