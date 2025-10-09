@@ -1,4 +1,4 @@
-# Needs
+[# Needs]
 Better water pressure
 Faster hot water delivery
 More usable space
@@ -7,7 +7,7 @@ Easier controls
 Quieter operation
 Future-ready system
 
-# Safety & Access (Working at Heights)
+[# Safety & Access (Working at Heights)]
 Ladder access required
 Scaffold tower – standard
 Scaffold tower – bridging
@@ -18,7 +18,7 @@ Loft access — unboarded
 MEWP required
 Flat roof work — specialist builder to make good
 
-# System — Existing Characteristics
+[# System — Existing Characteristics]
 System type: regular (open-vented with F&E tank)
 System type: regular (sealed system kit present)
 System boiler hot water: open-vented
@@ -32,7 +32,7 @@ System pressure: low
 Controls: mechanical timer / room stat
 Controls: hard-wired only
 
-# System — Proposed / New
+[# System — Proposed / New]
 System type: combi boiler
 System type: system boiler with unvented cylinder
 System type: system boiler with Mixergy cylinder
@@ -47,7 +47,7 @@ Controls compatibility: Hive
 Controls compatibility: Hive Mini
 Controls preference: simple / manual
 
-# Components — Assistance / Heavy / Specialist
+[# Components — Assistance / Heavy / Specialist]
 Cylinder — removal required
 Cylinder — replacement required
 Cold water storage tank — removal required
@@ -60,7 +60,7 @@ Flue — wall thickness > 450 mm
 Electrical — new fused spur
 Electrical — new wiring centre
 
-# Site Restrictions
+[# Site Restrictions]
 No loft access
 Restricted clearance
 Parking limited / permit required
@@ -73,7 +73,7 @@ Listed building — consent required
 Listed building — permission required
 Flats — management permission required
 
-# External Hazards
+[# External Hazards]
 Asbestos suspected
 Fragile roof tiles / material
 Flood risk / standing water
@@ -84,7 +84,7 @@ Pet mess present
 Dog(s) present
 Other potentially dangerous animals
 
-# Delivery & Logistics
+[# Delivery & Logistics]
 Preferred slot: AM
 Preferred slot: PM
 Vehicle access: large vehicle suitable
@@ -95,14 +95,14 @@ Contact: call ahead on arrival
 Handling: double-handed lift
 Handling: stairs / no lift
 
-# Office & Admin
+[# Office & Admin]
 Direct labour required
 Specialist works — asbestos removal
 Specialist works — specialist builder
 Specialist works — scaffolding
 Double-handed assistance required
 
-# Boiler — Location & Controls
+[# Boiler — Location & Controls]
 Location: kitchen — not in cupboard
 Location: kitchen — within cupboard
 Location: kitchen — cupboard to be removed
@@ -116,10 +116,12 @@ Location: see photos / floor plan
 Location: adjacent wall
 Location: minor move to gain clearances
 
+[boiler type]
 Boiler type: regular / heat-only / conventional
 Boiler type: system
 Boiler type: combi
 
+[user controls]
 User control: Hive
 User control: Hive Mini
 User control: programmable thermostat
@@ -127,6 +129,7 @@ User control: programmer — mechanical
 User control: room stat — wireless
 User control: programmer — 2 channel
 
+[system config]
 System controls: S-plan — additional zone
 System controls: Y-plan
 System controls: room stat and TRVs
@@ -134,6 +137,7 @@ Control method: load compensation
 Wiring: new wiring centre required
 Room stat: relocation required
 
+[cupboards]
 Cupboard: not within a cupboard
 Cupboard: fits — modification required
 Cupboard: customer to remove cupboard
@@ -141,12 +145,13 @@ Cupboard: customer to modify cupboard
 Cupboard: engineer to remove cupboard
 Cupboard: engineer to modify cupboard
 
-# Flue (Make Good & New)
+[# Flue (Make Good & New)]
 Make good: old balanced flue
 Make good: old fanned flue
 Make good: old roof terminal
 Brick up old flue opening
 
+[flue New]
 New flue: use same hole — minor change
 New flue: new hole same wall
 New flue: new hole through alternative surface/wall
@@ -161,7 +166,7 @@ Safety: terminal guard required
 Orientation: front aspect
 Orientation: rear aspect
 
-# Gas Run
+[# Gas Run]
 Gas supply: upgrade to 22 mm
 Gas supply: tightness test pass required
 Gas supply: meter location restricts route
@@ -176,7 +181,7 @@ Route complexity: complex (clipping / drilling / routing)
 Gas notes: meter tail lead — replace
 Gas notes: pressure drop risk over length
 
-# Condensate
+[# Condensate]
 Connect to internal waste — P-trap present
 Connect to internal waste — new trap required
 External run — insulate (42 mm MI)
@@ -189,7 +194,7 @@ Upgrade 32 mm → 42 mm (full MI compliance)
 Discharge to external soil stack — termination check
 Neutraliser fitted (where required)
 
-# Discharge (PRV / Tundish)
+[# Discharge (PRV / Tundish)]
 PRV discharge — pipework to outside
 Tundish — visible and compliant
 Discharge route — under floor to outside
@@ -197,7 +202,7 @@ Discharge route — direct to outside
 Discharge route — behind cupboards
 Discharge route — through cupboards
 
-# Water (Cold / Hot / Services)
+[# Water (Cold / Hot / Services)]
 Increase mains pressure / flow
 Pressure reducing valve required
 Secondary return present
@@ -206,7 +211,7 @@ Stop tap / service valve access
 Route — to under-counter
 Route — to airing cupboard
 
-# Primaries & Filtration
+[# Primaries & Filtration]
 Powerflush required
 Chemical clean and inhibit
 Magnetic filter — Fernox TF1 (brass)
@@ -214,7 +219,7 @@ Magnetic filter — other
 Primaries — pipework alterations required
 Primaries — pipe size upgrade required
 
-# Radiators
+[# Radiators]
 Replace radiator(s)
 Install additional radiator(s)
 Fit TRVs / lockshields
@@ -224,14 +229,14 @@ Cap redundant radiator pipework
 Radiators — old / mixed condition
 Constraint — prevents flushing
 
-# Disruption
+[# Disruption]
 Minimal disruption
 Moderate disruption — carpets lifted
 High disruption — floors lifted
 Preparation — customer to clear areas and routes
 Protection — dust protection required
 
-# Customer Actions
+[# Customer Actions]
 Customer to clear working areas
 Customer to gain permission where required
 Customer to ensure animals are kept safely
@@ -240,14 +245,14 @@ Customer to rebuild cupboard
 Customer to remove old flue and weather seal
 Customer to supply specified items
 
-# Anything Else
+[# Anything Else]
 Underfloor heating — not covered
 Materials — mixed metals present
 Materials — true-weld fittings present
 Customer requirement — specific request noted
 Unusual system — specify in notes
 
-# Hot Water Strategy
+[# Hot Water Strategy]
 On-demand DHW (combi)
 Stored DHW — unvented
 Stored DHW — vented
@@ -256,18 +261,18 @@ Combination cylinder
 Storage combi
 Multi-point water heater
 
-# Cylinder
+[# Cylinder]
 Install new open-vented cylinder — same size
 Install new open-vented cylinder — different size (Mixergy option)
 Install new unvented cylinder — Mixergy
 Remove existing cylinder
 
-# Filter (Choice / Status)
+[# Filter (Choice / Status)]
 Fernox TF1
 Magnetic filter — other
 Existing filter retained
 No filter (not suitable)
 
-# Water Treatment
+[# Water Treatment]
 Powerflush
 Chemical cleanse & inhibit
