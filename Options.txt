@@ -1,4 +1,4 @@
-[needs]
+[Needs]
 NE01 | Need | Better water pressure
 NE02 | Need | Faster hot water delivery
 NE03 | Need | More usable space
@@ -7,7 +7,7 @@ NE05 | Need | Easier controls
 NE06 | Need | Quieter operation
 NE07 | Need | Future-ready system
 
-[working_at_heights]
+[Working at heights]
 WAH01 | Access | Ladder access required
 WAH02A | Scaffold | Tower – standard
 WAH02B | Scaffold | Tower – bridging
@@ -18,7 +18,8 @@ WAH04B | Loft access | Unboarded
 WAH05 | Access | MEWP required
 WAH06 | Flat roof | Specialist builder to make good
 
-[system_existing]
+[System characteristics]
+SE00 | Existing system
 SE01 | System type | Regular (open-vented with F&E tank)
 SE02 | System type | Regular (sealed system kit present)
 SE03 | Hot water | System boiler – open-vented
@@ -31,8 +32,7 @@ SE09 | Pipework | Microbore
 SE10 | System pressure | Low
 SE11 | Controls | Mechanical timer / room stat
 SE12 | Controls | Hard-wired only
-
-[system_new]
+SN00 | New boiler
 SN01 | System type | Combi boiler
 SN02 | System type | System boiler with unvented cylinder
 SN03 | System type | System boiler with Mixergy cylinder
@@ -47,20 +47,14 @@ SN11 | Controls compatibility | Hive
 SN12 | Controls compatibility | Hive Mini
 SN13 | Controls preference | Simple / manual
 
-[components_specialist]
+[Components that require assistance]
 CS01 | Cylinder | Removal required
 CS02 | Cylinder | Replacement required
 CS03 | CWS tank | Removal required
 CS04 | Boiler | Double-handed lift required
-CS05 | Boiler | Relocation required
-CS06 | Gas pipe | Upgrade
-CS07 | Gas pipe | Reroute
-CS08 | Flue | Core drill required
-CS09 | Flue | Wall thickness > 450 mm
-CS10 | Electrical | New fused spur
-CS11 | Electrical | New wiring centre
+CS05 | heavy radiators 
 
-[site_restrictions]
+[Restrictions to work]
 SR01 | Access | No loft access
 SR02 | Clearance | Restricted clearance
 SR03 | Parking | Limited / permit required
@@ -73,7 +67,7 @@ SR09 | Building | Listed – consent required
 SR10 | Building | Listed – permission required
 SR11 | Property type | Flats – management permission required
 
-[external_hazards]
+[External hazards]
 EH01 | Asbestos | Suspected
 EH02 | Roof | Fragile tiles / material
 EH03 | Environment | Flood risk / standing water
@@ -84,7 +78,7 @@ EH07 | Site | Pet mess present
 EH08 | Animals | Dog(s) present
 EH09 | Animals | Other potentially dangerous
 
-[delivery_logistics]
+[Delivery notes]
 DL01 | Slot | Preferred AM
 DL02 | Slot | Preferred PM
 DL03 | Access | Large vehicle suitable
@@ -95,14 +89,15 @@ DL07 | Contact | Call ahead on arrival
 DL08 | Handling | Double-handed lift
 DL09 | Handling | Stairs / no lift
 
-[office_admin]
+[Office notes]
 OA01 | Labour | Direct labour required
 OA02 | Specialist works | Asbestos removal
 OA03 | Specialist works | Specialist builder
 OA04 | Specialist works | Scaffolding
 OA05 | Assistance | Double-handed required
 
-[boiler_location_controls]
+[New boiler and controls]
+
 BLC01 | Location | Kitchen – not in cupboard
 BLC02 | Location | Kitchen – within cupboard
 BLC03 | Location | Kitchen – cupboard to be removed
@@ -116,12 +111,12 @@ BLC10 | Location | See photos / floor plan
 BLC11 | Location | Adjacent wall
 BLC12 | Location | Minor move to gain clearances
 
-[boiler_type]
+BT00 | boiler type
 BT01 | Boiler type | Regular / heat-only / conventional
 BT02 | Boiler type | System
 BT03 | Boiler type | Combi
 
-[user_controls]
+UC00 | user controls
 UC01 | User control | Hive
 UC02 | User control | Hive Mini
 UC03 | User control | Programmable thermostat
@@ -130,7 +125,7 @@ UC05 | User control | Room stat – wireless
 UC06 | User control | Programmer – 2 channel
 UC07 | User control | Programmer - single channel 
 
-[system_config]
+SC00 | system_config
 SC01 | System controls | S-plan – additional zone
 SC02 | System controls | Y-plan
 SC03 | System controls | Room stat and TRVs
@@ -138,7 +133,7 @@ SC04 | Control method | Load compensation
 SC05 | Wiring | New wiring centre required
 SC06 | Room stat | Relocation required
 
-[cupboards]
+CB00 |cupboards
 CB01 | Cupboard | Not within a cupboard
 CB02 | Cupboard | Fits – modification required
 CB03 | Cupboard | Customer to remove cupboard
@@ -146,13 +141,14 @@ CB04 | Cupboard | Customer to modify cupboard
 CB05 | Cupboard | Engineer to remove cupboard
 CB06 | Cupboard | Engineer to modify cupboard
 
-[flue_make_good]
+[Flue]
+Old flue
 FMG01 | Make good | Old balanced flue
 FMG02 | Make good | Old fanned flue
 FMG03 | Make good | Old roof terminal
 FMG04 | Make good | Brick up old flue opening
 
-[flue_new]
+flue_new
 FN01 | New flue | Use same hole – minor change
 FN02 | New flue | New hole – same wall
 FN03 | New flue | New hole – alternative wall
@@ -167,7 +163,9 @@ FN11 | Safety | Terminal guard required
 FN12 | Orientation | Front aspect
 FN13 | Orientation | Rear aspect
 
-[gas_run]
+[Pipe work]
+
+gas run
 GR01 | Gas supply | Upgrade to 22 mm
 GR02 | Gas supply | Tightness test pass required
 GR03 | Gas supply | Meter location restricts route
@@ -182,7 +180,7 @@ GR11 | Route complexity | Complex (clipping / drilling / routing)
 GR12 | Gas notes | Replace meter tail lead
 GR13 | Gas notes | Pressure drop risk over length
 
-[condensate]
+condensate
 CD01 | Connection | Internal waste – P-trap present
 CD02 | Connection | Internal waste – new trap required
 CD03 | External run | Insulate (42 mm MI)
@@ -195,7 +193,7 @@ CD09 | Upgrade | 32 mm → 42 mm (MI compliant)
 CD10 | Discharge | External soil stack – termination check
 CD11 | Neutraliser | Fitted (where required)
 
-[discharge]
+discharge
 DS01 | PRV discharge | Pipework to outside
 DS02 | Tundish | Visible and compliant
 DS03 | Route | Under floor to outside
@@ -203,7 +201,7 @@ DS04 | Route | Direct to outside
 DS05 | Route | Behind cupboards
 DS06 | Route | Through cupboards
 
-[water_services]
+water_services
 WS01 | Mains | Increase pressure / flow
 WS02 | Valve | Pressure reducing valve required
 WS03 | Return | Secondary return present
@@ -212,7 +210,9 @@ WS05 | Isolation | Stop tap / service valve access
 WS06 | Route | To under-counter
 WS07 | Route | To airing cupboard
 
-[primaries_filtration]
+[Disruption]
+
+primaries_filtration
 PF01 | Cleaning | Powerflush required
 PF02 | Cleaning | Chemical clean and inhibit
 PF03 | Filter | Magnetic – Fernox TF1 (brass)
@@ -220,7 +220,7 @@ PF04 | Filter | Magnetic – other
 PF05 | Primaries | Pipework alterations required
 PF06 | Primaries | Pipe size upgrade required
 
-[radiators]
+radiators
 RD01 | Radiators | Replace radiator(s)
 RD02 | Radiators | Install additional radiator(s)
 RD03 | Radiators | Fit TRVs / lockshields
@@ -230,14 +230,14 @@ RD06 | Radiators | Cap redundant pipework
 RD07 | Radiators | Old / mixed condition
 RD08 | Constraint | Prevents flushing
 
-[disruption]
+disruption
 DI01 | Disruption | Minimal
 DI02 | Disruption | Moderate – carpets lifted
 DI03 | Disruption | High – floors lifted
 DI04 | Preparation | Customer to clear areas/routes
 DI05 | Protection | Dust protection required
 
-[customer_actions]
+[Customer actions]
 CA01 | Customer | Clear working areas
 CA02 | Customer | Gain permission where required
 CA03 | Customer | Ensure animals are kept safely
