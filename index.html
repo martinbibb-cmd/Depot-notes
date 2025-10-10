@@ -3,518 +3,234 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Depot Notes Picker — Per‑Section Staging + Fields</title>
+  <title>Depot Notes Picker — Targets + Clean Copy</title>
   <style>
-    :root {
-      --bg: #0f172a;        /* slate-900 */
-      --panel: #0b1220;     /* custom */
-      --muted: #111827;     /* gray-900 */
-      --fg: #e5e7eb;        /* gray-200 */
-      --fg-dim: #9ca3af;    /* gray-400 */
-      --accent: #22d3ee;    /* cyan-400 */
-      --ok: #10b981;        /* emerald-500 */
-      --warn: #f59e0b;      /* amber-500 */
-      --danger: #ef4444;    /* red-500 */
-      --radius: 14px;
-    }
-    html, body { height: 100%; }
-    body { margin: 0; background: linear-gradient(180deg, #0b1022, #0a0d18 20%, #0f172a 80%); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    .wrap { max-width: 1240px; margin: 24px auto; padding: 0 16px 48px; }
-
-    header { display: grid; gap: 10px; grid-template-columns: 1fr auto; align-items: end; margin-bottom: 16px; }
-    h1 { font-weight: 700; margin: 0; font-size: 24px; letter-spacing: 0.2px; }
-    .sub { color: var(--fg-dim); font-size: 13px; }
-
-    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .chip { background: var(--muted); border: 1px solid #273244; padding: 8px 10px; border-radius: 999px; display: inline-flex; gap: 8px; align-items: center; }
-
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-
-    .section { grid-column: span 12; background: rgba(17,24,39,0.75); border: 1px solid #20314a; border-radius: var(--radius); overflow: hidden; }
-    .sec-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 14px 16px; background: linear-gradient(180deg, #0e1628, #0b1322); border-bottom: 1px solid #1e2a43; }
-    .sec-title { font-weight: 700; letter-spacing: 0.3px; }
-    .sec-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-
-    .btn { appearance: none; border: 1px solid #243044; background: #111827; color: var(--fg); font-weight: 600; letter-spacing: .2px; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: transform .04s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease; }
-    .btn:hover { border-color: #2f415e; box-shadow: 0 0 0 2px rgba(34,211,238,.12) inset; }
-    .btn:active { transform: translateY(1px); }
-    .btn.ok { border-color: #1e6b54; box-shadow: 0 0 0 2px rgba(16,185,129,.12) inset; }
-    .btn.warn { border-color: #6b4e1e; box-shadow: 0 0 0 2px rgba(245,158,11,.12) inset; }
-
-    .search { min-width: 220px; }
-    .input { width: 100%; background: #0b1220; border: 1px solid #213049; color: var(--fg); padding: 9px 11px; border-radius: 10px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
-    .input::placeholder { color: #6b7280; }
-    .input:focus { border-color: #33557a; box-shadow: 0 0 0 2px rgba(34,211,238,.1); }
-
-    .cols { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 14px 16px; }
-    @media (min-width: 1000px) { .cols { grid-template-columns: 1.2fr 1fr; } }
-
-    .panel { background: var(--panel); border: 1px solid #20314a; border-radius: var(--radius); padding: 12px; display: grid; gap: 10px; }
-    .list { max-height: 280px; overflow: auto; display: grid; gap: 6px; }
-    .row { display: flex; gap: 10px; align-items: center; background: #0a0f1d; border: 1px solid #1a2740; padding: 8px 10px; border-radius: 10px; }
-    .code { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); font-size: 12px; }
-    .text { flex: 1; }
-    .pill { padding: 3px 8px; border: 1px solid #2a3a56; border-radius: 999px; font-size: 12px; color: var(--fg-dim); }
-
-    .copyta { width: 100%; min-height: 96px; background: #07101f; border: 1px solid #1d2b45; color: var(--fg); padding: 10px; border-radius: 10px; resize: vertical; }
-    .muted { color: var(--fg-dim); font-size: 12px; }
-
-    .fields { display:grid; gap:8px; }
-    .field { display:grid; gap:6px; }
-    .label { font-size: 13px; color: var(--fg); opacity:.9; }
-    .inline { display:flex; gap:8px; align-items:center; }
-    .small { font-size: 12px; color: var(--fg-dim); }
+    :root{--bg:#0f172a;--panel:#0b1220;--muted:#111827;--fg:#e5e7eb;--fg-dim:#9ca3af;--accent:#22d3ee;--ok:#10b981;--warn:#f59e0b;--danger:#ef4444;--radius:14px}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1022,#0a0d18 20%,#0f172a 80%);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Apple Color Emoji,Segoe UI Emoji}
+    .wrap{max-width:1240px;margin:24px auto;padding:0 16px 48px}
+    header{display:grid;gap:10px;grid-template-columns:1fr auto;align-items:end;margin-bottom:16px}
+    h1{font-weight:700;margin:0;font-size:24px;letter-spacing:.2px}
+    .sub{color:var(--fg-dim);font-size:13px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .chip{background:var(--muted);border:1px solid #273244;padding:8px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .section{grid-column:span 12;background:rgba(17,24,39,.75);border:1px solid #20314a;border-radius:var(--radius);overflow:hidden}
+    .sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px;background:linear-gradient(180deg,#0e1628,#0b1322);border-bottom:1px solid #1e2a43}
+    .sec-title{font-weight:700;letter-spacing:.3px}
+    .sec-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{appearance:none;border:1px solid #243044;background:#111827;color:var(--fg);font-weight:600;letter-spacing:.2px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:transform .04s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease}
+    .btn:hover{border-color:#2f415e;box-shadow:0 0 0 2px rgba(34,211,238,.12) inset}
+    .btn:active{transform:translateY(1px)}
+    .btn.ok{border-color:#1e6b54;box-shadow:0 0 0 2px rgba(16,185,129,.12) inset}
+    .btn.warn{border-color:#6b4e1e;box-shadow:0 0 0 2px rgba(245,158,11,.12) inset}
+    .search{min-width:220px}
+    .input{width:100%;background:#0b1220;border:1px solid #213049;color:var(--fg);padding:9px 11px;border-radius:10px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+    .input::placeholder{color:#6b7280}
+    .input:focus{border-color:#33557a;box-shadow:0 0 0 2px rgba(34,211,238,.1)}
+    .cols{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 14px 16px}
+    @media(min-width:1000px){.cols{grid-template-columns:1.2fr 1fr}}
+    .panel{background:var(--panel);border:1px solid #20314a;border-radius:var(--radius);padding:12px;display:grid;gap:10px}
+    .list{max-height:280px;overflow:auto;display:grid;gap:6px}
+    .row{display:flex;gap:10px;align-items:center;background:#0a0f1d;border:1px solid #1a2740;padding:8px 10px;border-radius:10px}
+    .code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent);font-size:12px}
+    .text{flex:1}
+    .pill{padding:3px 8px;border:1px solid #2a3a56;border-radius:999px;font-size:12px;color:var(--fg-dim)}
+    .copyta{width:100%;min-height:96px;background:#07101f;border:1px solid #1d2b45;color:var(--fg);padding:10px;border-radius:10px;resize:vertical}
+    .muted{color:var(--fg-dim);font-size:12px}
+    .fields{display:grid;gap:8px}
+    .field{display:grid;gap:6px}
+    .label{font-size:13px;color:var(--fg);opacity:.9}
+    .targets{margin-top:22px}
+    .target{background:rgba(17,24,39,.75);border:1px solid #20314a;border-radius:var(--radius);padding:12px;display:grid;gap:8px}
+    .target h3{margin:0 0 6px 0;font-size:15px}
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div>
-        <h1>Depot Notes Picker (Per‑Section Staging + Fields)</h1>
-        <div class="sub">Tick lines in each section → <strong>Copy to Depot Section</strong> to stage → then <strong>Copy Depot Section</strong> into Depot. Any typed fields and notes are included.</div>
+        <h1>Depot Notes Picker (Targets + Clean Copy)</h1>
+        <div class="sub">Tick lines → build per‑section output → send to any Depot target → copy clean text (no URL encoding). Options load from Options.txt or options.json.</div>
       </div>
       <div class="toolbar">
         <label class="chip"><input id="includeHeaders" type="checkbox" checked> <span>Include section headers</span></label>
         <label class="chip"><input id="semicolonLines" type="checkbox" checked> <span>Use “;” line breaks</span></label>
+        <div class="chip">Send to target:
+          <select id="globalTarget" class="input" style="min-width:200px"></select>
+        </div>
       </div>
     </header>
 
     <div id="grid" class="grid" aria-live="polite"></div>
+
+    <div class="targets" id="targets"></div>
   </div>
 
   <script>
-  // ---- Optional API config (for GPT-style prose per section) --------------
-  const CONFIG = {
-    GPT_URL: '' // e.g. 'https://your-worker.example.com/section'
-  };
+  const CONFIG = { GPT_URL: '' };
 
-  // ---- Load options --------------------------------------------------------
-  // New schema supported per section:
-  // "Section Name": {
-  //    items: [ { code, text }, ... ],
-  //    fields: [ { key, label, type: 'text'|'textarea'|'number'|'select', options?: ['x','y'], placeholder?, hint? }, ... ]
-  // }
-  async function loadOptions() {
-    try {
-      const res = await fetch('./options.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('No options.json');
-      const json = await res.json();
-      return json.sections ? json.sections : json;
-    } catch (e) {
-      console.warn('Falling back to demo options:', e.message);
-      return {
-        'Customer & Job': {
-          items: [
-            { code:'CJ01', text:'Lead number captured' },
-            { code:'CJ02', text:'Email address confirmed' },
-            { code:'CJ03', text:'Parking available' }
-          ],
-          fields: [
-            { key:'lead', label:'Lead number', type:'text', placeholder:'e.g., 50425374' },
-            { key:'email', label:'Email address', type:'text' },
-            { key:'parking', label:'Parking', type:'text', placeholder:'On road / driveway / permit' }
-          ]
-        },
-        'Needs': {
-          items: [
-            { code:'NE01', text:'Better water pressure' },
-            { code:'NE02', text:'Faster hot water delivery' },
-            { code:'NE03', text:'More usable space' },
-            { code:'NE04', text:'Lower running costs' },
-            { code:'NE05', text:'Easier controls' },
-            { code:'NE06', text:'Quieter operation' }
-          ],
-          fields: [ { key:'summary', label:'Customer summary (optional)', type:'textarea' } ]
-        },
-        'Existing System': {
-          items: [
-            { code:'ES01', text:'Old boiler type – Regular' },
-            { code:'ES02', text:'Existing cylinder – Open vented' },
-            { code:'ES03', text:'Primary circuit under floors of bedroom above' }
-          ],
-          fields: [
-            { key:'boiler_make', label:'Make/Model (if known)', type:'text' },
-            { key:'output_kw', label:'Output (kW)', type:'number' }
-          ]
-        },
-        'New Boiler & Config': {
-          items: [
-            { code:'NB01', text:'Replace in same location' },
-            { code:'NB02', text:'Raise slightly for clearance below' },
-            { code:'NB03', text:'System sealed kit included' }
-          ],
-          fields: [
-            { key:'brand', label:'Brand', type:'select', options:['Worcester','Vaillant','Ideal','Viessmann','Baxi','Other'] },
-            { key:'series', label:'Series', type:'text', placeholder:'e.g., 4000 / 8000+' },
-            { key:'output', label:'Output (kW)', type:'number' }
-          ]
-        },
-        'Flue': {
-          items: [
-            { code:'FL01', text:'Old fan flue too close to opening — make good' },
-            { code:'FL02', text:'New rear flue with plume kit to gain clearance' },
-            { code:'FL03', text:'Vertical flue — roof access required' }
-          ],
-          fields: [
-            { key:'old_flue', label:'Old flue', type:'text' },
-            { key:'new_flue', label:'New flue', type:'text' },
-            { key:'access_old', label:'Access to old flue', type:'text' },
-            { key:'access_new', label:'Access to new flue', type:'text' }
-          ]
-        },
-        'Gas': {
-          items: [
-            { code:'GA01', text:'Existing 15mm supply — check capacity' },
-            { code:'GA02', text:'New route from 22mm below' },
-            { code:'GA03', text:'U6 meter, inside' }
-          ],
-          fields: [
-            { key:'meter', label:'Gas meter', type:'text', placeholder:'e.g., U6, inside' },
-            { key:'route', label:'Route/notes', type:'textarea' }
-          ]
-        },
-        'Condensate & Discharge': {
-          items: [
-            { code:'CD01', text:'External to soil' },
-            { code:'CD02', text:'Internal soakaway' }
-          ],
-          fields: [ { key:'discharge', label:'Discharge required?', type:'text' } ]
-        },
-        'Electrical & Controls': {
-          items: [
-            { code:'EC01', text:'Hive controls' },
-            { code:'EC02', text:'Works without Wi‑Fi; remote access needs router + USB power' },
-            { code:'EC03', text:'Replace pump and magnetic filter' }
-          ],
-          fields: [ { key:'controls', label:'New Controls', type:'text' } ]
-        },
-        'Cylinders & DHW': {
-          items: [
-            { code:'CY01', text:'New Mixergy unvented' },
-            { code:'CY02', text:'Shower compatibility confirmed' }
-          ],
-          fields: [
-            { key:'new_cylinder', label:'New cylinder', type:'text' },
-            { key:'old_cylinder', label:'Old cylinder', type:'text' }
-          ]
-        },
-        'Radiators & Pipework': {
-          items: [
-            { code:'RP01', text:'Additional radiators required — detail in notes' },
-            { code:'RP02', text:'Pipework undersized — upgrade required' }
-          ],
-          fields: [ { key:'pipe_plans', label:'Pipework plans', type:'textarea' } ]
-        },
-        'Access & Working at Heights': {
-          items: [
-            { code:'WAH01', text:'Ladder access required' },
-            { code:'WAH02A', text:'Scaffold tower – Standard' },
-            { code:'WAH02B', text:'Scaffold tower – Bridging' },
-            { code:'WAH04A', text:'Loft access – Boarded' },
-            { code:'WAH04B', text:'Loft access – Unboarded' }
-          ],
-          fields: [
-            { key:'loft', label:'Access to loft?', type:'select', options:['Yes','No'] },
-            { key:'delivery', label:'Delivery', type:'text' }
-          ]
-        },
-        'Asbestos & Safety': {
-          items: [
-            { code:'ASB01', text:'Asbestos none / Artex' },
-            { code:'ASB02', text:'No safety observations' },
-            { code:'ASB03', text:'Overhead power near roof work — No' }
-          ],
-          fields: [ { key:'asbestos', label:'Asbestos details', type:'text' } ]
-        },
-        'Customer Summary & Office': {
-          items: [ { code:'OF01', text:'Office notes — None' } ],
-          fields: [
-            { key:'customer_summary', label:'Customer summary (for Depot)', type:'textarea' },
-            { key:'office_notes', label:'Office notes', type:'textarea' }
-          ]
-        }
-      };
-    }
+  // ---------- Loading ----------
+  async function loadOptions(){
+    try{ const r=await fetch('./options.json',{cache:'no-store'}); if(r.ok){const j=await r.json(); return j.sections??j;} }catch(e){}
+    try{ const r=await fetch('./Options.txt',{cache:'no-store'}); if(r.ok){ const t=await r.text(); const p=parseOptionsTxt(t); if(Object.keys(p).length) return p; } }catch(e){}
+    return { 'Needs': { items:[{code:'NE01',text:'Better water pressure'}] } };
   }
 
-  // ---- State --------------------------------------------------------------
-  const state = {
-    sections: {}, // name -> { items, fields, fieldValues:Record, selected:Set, filter:string, staged:string, notes:string, gpt:string }
-    includeHeaders: true,
-    semicolonLines: true,
-  };
+  // ---------- State ----------
+  const state={ sections:{}, targets:{}, includeHeaders:true, semicolonLines:true };
 
-  // ---- Helpers ------------------------------------------------------------
-  const el = (sel, root=document) => root.querySelector(sel);
-  const els = (sel, root=document) => [...root.querySelectorAll(sel)];
-  const escape = (s='') => String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // ---------- Helpers ----------
+  const el=(s,r=document)=>r.querySelector(s);
+  const escapeHtml=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-  // Parse classic KISS flat leaves Options.txt
-  // Supported syntax examples:
-  // [needs]
-  // NE01 | Need | Better water pressure
-  // FIELD | lead | Lead number | text |
-  // FIELD | brand | Brand | select | Worcester,Vaillant,Ideal,Viessmann,Baxi,Other
-  function parseOptionsTxt(src) {
-    const lines = src.split(/\r?\n/g);
-    const sections = {};
-    let current = null;
-
-    const toTitle = s => s.replace(/[_-]+/g,' ').replace(/\b\w/g, m => m.toUpperCase());
-
-    for (let raw of lines) {
-      let line = raw.trim();
-      if (!line || line.startsWith('#') || line.startsWith('//')) continue;
-
-      // section header [name]
-      const m = line.match(/^\[(.+?)\]$/);
-      if (m) {
-        current = toTitle(m[1].trim());
-        if (!sections[current]) sections[current] = { items: [], fields: [] };
-        continue;
+  // robust plain-text copy (iOS-safe, avoids URL encoding)
+  async function copyPlain(text){
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        const item=new ClipboardItem({ 'text/plain': new Blob([text],{type:'text/plain'}) });
+        await navigator.clipboard.write([item]);
+        return;
       }
+    }catch(e){}
+    // fallback: hidden textarea + execCommand
+    const ta=document.createElement('textarea');
+    ta.style.position='fixed'; ta.style.opacity='0'; ta.value=text.replace(/\u2013|\u2014/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"');
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    ta.remove();
+  }
 
-      if (!current) continue; // ignore until first section
+  // Build output for a section
+  function linesForSection(name){
+    const s=state.sections[name]; const items=s.items.filter(it=>s.selected.has(it.id)); const out=[];
+    if(state.includeHeaders && (items.length || hasAnyFieldValue(s) || (s.notes||'').trim())) out.push(name+':');
+    for(const it of items) out.push(it.text);
+    if(s.fields && s.fields.length){ for(const f of s.fields){ const v=(s.fieldValues[f.key]??'').toString().trim(); if(v) out.push(`${f.label||f.key}: ${v}`); } }
+    if((s.notes||'').trim()) out.push('Notes: '+s.notes.trim());
+    return state.semicolonLines? out.join('; ') : out.join('\n');
+  }
 
-      // split by pipes
-      const parts = line.split('|').map(s => s.trim());
-      if (!parts.length) continue;
+  function hasAnyFieldValue(s){ return (s.fields||[]).some(f=> (s.fieldValues[f.key]??'').toString().trim()); }
+  function visibleItems(s){ if(!s.filter) return s.items; const q=s.filter.toLowerCase(); return s.items.filter(it=>(it.text||'').toLowerCase().includes(q) || (it.code||'').toLowerCase().includes(q)); }
 
-      if ((parts[0] || '').toUpperCase() === 'FIELD') {
-        // FIELD | key | label | type | options(optional comma-separated) | placeholder(optional)
-        const key = parts[1] || '';
-        const label = parts[2] || key;
-        const type = (parts[3] || 'text').toLowerCase();
-        const opts = (parts[4] || '').split(',').map(s => s.trim()).filter(Boolean);
-        const placeholder = parts[5] || '';
-        sections[current].fields.push({ key, label, type, options: opts.length ? opts : undefined, placeholder });
-      } else {
-        // CODE | Category | Specific (preferred) OR CODE | Text
-        const code = parts[0] || '';
-        let text = '';
-        if (parts.length >= 3) {
-          // prefer the Specific column as the user-intended leaf
-          text = parts[2];
-        } else {
-          text = parts[1] || '';
-        }
-        // Safety: if still blank, synthesize from remaining content
-        if (!text) text = parts.slice(1).filter(Boolean).join(' – ');
-        sections[current].items.push({ code, text });
-      }
+  // Parse Options.txt (enhanced):
+  // [section_key]
+  // CODE | Category | Specific  (or) CODE | Text  (or) Text only
+  // FIELD | key | label | type | optionsCSV | placeholder
+  // TARGET | key | label
+  // MAP | target_key | section_key  (attach a section to a Depot target)
+  function parseOptionsTxt(src){
+    const lines=src.split(/\r?\n/g); const sections={}; const targets={}; const maps=[];
+    let current=null; const toTitle=s=>s.replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+    for(const raw of lines){
+      const line=raw.trim(); if(!line || line.startsWith('#') || line.startsWith('//')) continue;
+      const mh=line.match(/^\[(.+?)\]$/); if(mh){ current=toTitle(mh[1].trim()); sections[current] ||= {items:[], fields:[]}; continue; }
+      const parts=line.split('|').map(s=>s.trim());
+      if((parts[0]||'').toUpperCase()==='FIELD'){ const [_,key,label,type='text',optCsv='',placeholder='']=parts; const options=optCsv?optCsv.split(',').map(s=>s.trim()).filter(Boolean):undefined; sections[current].fields.push({key,label:label||key,type:type.toLowerCase(),...(options?{options}:{}),...(placeholder?{placeholder}:{}),}); continue; }
+      if((parts[0]||'').toUpperCase()==='TARGET'){ const [_,key,label]=parts; targets[key]={ key, label:label||toTitle(key), value:'' }; continue; }
+      if((parts[0]||'').toUpperCase()==='MAP'){ const [_,tKey,sKey]=parts; maps.push({tKey,sKey}); continue; }
+      // item line
+      if(parts.length>=3){ sections[current].items.push({code:parts[0], text:parts[2]}); }
+      else if(parts.length===2){ sections[current].items.push({code:parts[0], text:parts[1]}); }
+      else { const text=parts[0]; const code='X'+(sections[current].items.length+1).toString().padStart(3,'0'); sections[current].items.push({code,text}); }
     }
+    // store targets and maps on a hidden pseudo-section for return
+    sections.__TARGETS__={items:[],fields:[],__targets:targets,__maps:maps};
     return sections;
   }
 
-  function visibleItems(s) {
-    if(!s.filter) return s.items;
-    const q = s.filter.toLowerCase();
-    return s.items.filter(it => (it.text||'').toLowerCase().includes(q) || (it.code||'').toLowerCase().includes(q));
-  }
-
-  function linesForSection(name){
-    const s = state.sections[name];
-    const items = s.items.filter(it => s.selected.has(it.id));
-    const out = [];
-    if (state.includeHeaders && (items.length || hasAnyFieldValue(s) || (s.notes||'').trim())) out.push(name + ':');
-    for (const it of items) out.push(it.text);
-    // include field values in a stable order
-    if (s.fields && s.fields.length){
-      for (const f of s.fields){
-        const raw = s.fieldValues[f.key];
-        const value = typeof raw === 'string' ? raw.trim() : (raw ?? '');
-        if (String(value).length){ out.push(`${f.label}: ${value}`); }
-      }
-    }
-    if ((s.notes||'').trim()) out.push('Notes: ' + s.notes.trim());
-    return state.semicolonLines ? out.join('; ') : out.join('\\n');
-  }
-
-  function hasAnyFieldValue(s){
-    if (!s.fields) return false;
-    return s.fields.some(f => (s.fieldValues[f.key] ?? '').toString().trim().length > 0);
-  }
-
-  async function copy(text){ try{ await navigator.clipboard.writeText(text); }catch(e){ console.warn('Clipboard failed', e); } }
-
-  // ---- Render -------------------------------------------------------------
-  function renderSection(name){
-    const s = state.sections[name];
-    const grid = el('#grid');
-
-    const sec = document.createElement('section');
-    sec.className = 'section';
-
-    // Header
-    const head = document.createElement('div');
-    head.className = 'sec-head';
-
-    const title = document.createElement('div');
-    title.className = 'sec-title';
-    const count = document.createElement('span');
-    count.className = 'pill';
-    count.id = `count-${name}`;
-    title.innerHTML = `${escape(name)} `;
-    title.appendChild(count);
-
-    const actions = document.createElement('div');
-    actions.className = 'sec-actions';
-
-    // Search
-    const searchWrap = document.createElement('div');
-    searchWrap.className = 'search';
-    const search = document.createElement('input');
-    search.className = 'input'; search.type='search'; search.placeholder='Filter this section…'; search.value=s.filter;
-    search.addEventListener('input', ()=>{ s.filter = search.value; renderList(); });
-    searchWrap.appendChild(search);
-
-    // Buttons
-    const btnSelectAll = document.createElement('button');
-    btnSelectAll.className='btn'; btnSelectAll.textContent='Select All (visible)';
-    btnSelectAll.addEventListener('click', ()=>{ visibleItems(s).forEach(it=>s.selected.add(it.id)); renderList(); });
-
-    const btnClear = document.createElement('button');
-    btnClear.className='btn warn'; btnClear.textContent='Clear Section';
-    btnClear.addEventListener('click', ()=>{ s.selected.clear(); s.notes=''; s.staged=''; s.gpt=''; if(s.fields){ for(const f of s.fields){ s.fieldValues[f.key]=''; } } renderList(); renderFields(); renderStaging(); });
-
-    const btnStage = document.createElement('button');
-    btnStage.className='btn ok'; btnStage.textContent='Copy to Depot Section';
-    btnStage.title = 'Build from ticks + fields + notes and stage below (also copied)';
-    btnStage.addEventListener('click', async ()=>{
-      s.staged = linesForSection(name);
-      await copy(s.staged);
-      renderStaging();
-    });
-
-    const btnGPT = document.createElement('button');
-    btnGPT.className='btn'; btnGPT.textContent='Build via GPT';
-    btnGPT.style.display = CONFIG.GPT_URL ? 'inline-block' : 'none';
-    btnGPT.addEventListener('click', async ()=>{
-      if(!CONFIG.GPT_URL) return;
-      const payload = {
-        section: name,
-        selected: s.items.filter(it=>s.selected.has(it.id)).map(({code,text})=>({code,text})),
-        fields: s.fieldValues,
-        notes: s.notes||''
-      };
-      try{
-        const res = await fetch(CONFIG.GPT_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
-        const data = await res.json();
-        s.gpt = (data && (data.text||data.output||data.result)) || '';
-      }catch(e){ s.gpt = '⚠️ API error — check endpoint.'; }
-      renderStaging();
-    });
-
-    actions.append(searchWrap, btnSelectAll, btnClear, btnStage, btnGPT);
+  // ---------- Render Section cards ----------
+  function renderSection(name){ if(name==='__TARGETS__') return; const s=state.sections[name]; const grid=el('#grid');
+    const sec=document.createElement('section'); sec.className='section';
+    const head=document.createElement('div'); head.className='sec-head';
+    const title=document.createElement('div'); title.className='sec-title'; const count=document.createElement('span'); count.className='pill'; count.id=`count-${name}`; title.innerHTML=`${escapeHtml(name)} `; title.appendChild(count);
+    const actions=document.createElement('div'); actions.className='sec-actions';
+    const searchWrap=document.createElement('div'); searchWrap.className='search'; const search=document.createElement('input'); search.className='input'; search.type='search'; search.placeholder='Filter…'; search.value=s.filter||''; search.addEventListener('input',()=>{ s.filter=search.value; renderList(); }); searchWrap.appendChild(search);
+    const btnAll=document.createElement('button'); btnAll.className='btn'; btnAll.textContent='Select All (visible)'; btnAll.addEventListener('click',()=>{ visibleItems(s).forEach(it=>s.selected.add(it.id)); renderList(); });
+    const btnClear=document.createElement('button'); btnClear.className='btn warn'; btnClear.textContent='Clear'; btnClear.addEventListener('click',()=>{ s.selected.clear(); s.notes=''; s.staged=''; renderList(); renderRight(); });
+    const tgtSel=document.createElement('select'); tgtSel.className='input'; tgtSel.style.minWidth='180px';
+    function syncTgtSel(){ tgtSel.innerHTML=''; for(const k of Object.keys(state.targets)){ const o=document.createElement('option'); o.value=k; o.textContent=state.targets[k].label; tgtSel.appendChild(o);} tgtSel.value=el('#globalTarget').value; }
+    syncTgtSel();
+    const btnStage=document.createElement('button'); btnStage.className='btn ok'; btnStage.textContent='Send to Target'; btnStage.title='Stage this section and append into chosen Depot target';
+    btnStage.addEventListener('click',async()=>{ s.staged=linesForSection(name); await copyPlain(s.staged); // copy clean
+      const key=tgtSel.value; state.targets[key].value = [state.targets[key].value, s.staged].filter(Boolean).join(state.semicolonLines?'; ':"\n\n"); renderTargets(); });
+    if(CONFIG.GPT_URL){ const btnGPT=document.createElement('button'); btnGPT.className='btn'; btnGPT.textContent='Build via GPT'; btnGPT.addEventListener('click',()=>buildViaGPT(name)); actions.append(btnGPT); }
+    actions.append(searchWrap, btnAll, btnClear, tgtSel, btnStage);
     head.append(title, actions);
 
-    // Columns: left = list, right = fields+notes+staging
-    const cols = document.createElement('div'); cols.className='cols';
+    const cols=document.createElement('div'); cols.className='cols';
+    const left=document.createElement('div'); left.className='panel'; const list=document.createElement('div'); list.className='list'; left.append(list);
+    const right=document.createElement('div'); right.className='panel';
+    const notesLabel=document.createElement('div'); notesLabel.innerHTML='<strong>Manual notes</strong> <span class="muted">(included)</span>';
+    const notes=document.createElement('textarea'); notes.className='copyta'; notes.placeholder='Free-typed notes…'; notes.value=s.notes||''; notes.addEventListener('input',()=>{ s.notes=notes.value; });
+    const stagedLabel=document.createElement('div'); stagedLabel.innerHTML='<strong>Section Output</strong> <span class="muted">(clean copy)</span>';
+    const staged=document.createElement('textarea'); staged.className='copyta'; staged.readOnly=true; staged.value=s.staged||'';
+    const act2=document.createElement('div'); act2.style.display='flex'; act2.style.gap='8px';
+    const bCopy=document.createElement('button'); bCopy.className='btn ok'; bCopy.textContent='Copy Section'; bCopy.addEventListener('click',()=>copyPlain(staged.value));
+    const bRebuild=document.createElement('button'); bRebuild.className='btn'; bRebuild.textContent='Rebuild'; bRebuild.addEventListener('click',()=>{ s.staged=linesForSection(name); staged.value=s.staged; });
+    right.append(notesLabel,notes,stagedLabel,staged,act2); act2.append(bCopy,bRebuild);
 
-    // LEFT: list
-    const left = document.createElement('div'); left.className='panel';
-    const list = document.createElement('div'); list.className='list';
-    left.append(list);
+    sec.append(head,(function(){ cols.append(left,right); return cols; })()); grid.appendChild(sec);
 
-    // RIGHT: fields + notes + staged outputs
-    const right = document.createElement('div'); right.className='panel';
-
-    const fieldsWrap = document.createElement('div'); fieldsWrap.className='fields';
-
-    const notesLabel = document.createElement('div'); notesLabel.innerHTML = '<strong>Manual notes</strong> <span class="muted">(included in Depot section & GPT)</span>';
-    const notes = document.createElement('textarea'); notes.className='copyta'; notes.placeholder='Add any free-typed notes for this section…'; notes.value=s.notes||'';
-    notes.addEventListener('input', ()=>{ s.notes = notes.value; });
-
-    const stagedLabel = document.createElement('div'); stagedLabel.innerHTML = '<strong>Depot Section Output</strong> <span class="muted">(copy into Depot)</span>';
-    const staged = document.createElement('textarea'); staged.className='copyta'; staged.readOnly=true; staged.value=s.staged||'';
-
-    const actions2 = document.createElement('div'); actions2.style.display='flex'; actions2.style.gap='8px'; actions2.style.flexWrap='wrap';
-    const btnCopyStaged = document.createElement('button'); btnCopyStaged.className='btn ok'; btnCopyStaged.textContent='Copy Depot Section'; btnCopyStaged.addEventListener('click', async()=>{ await copy(staged.value); });
-    const btnRebuild = document.createElement('button'); btnRebuild.className='btn'; btnRebuild.textContent='Rebuild from ticks + fields + notes'; btnRebuild.addEventListener('click', ()=>{ s.staged = linesForSection(name); staged.value=s.staged; });
-
-    const gptLabel = document.createElement('div'); gptLabel.innerHTML = '<strong>GPT Output</strong> <span class="muted">(from API; optional)</span>';
-    const gptOut = document.createElement('textarea'); gptOut.className='copyta'; gptOut.readOnly=true; gptOut.value=s.gpt||'';
-    const btnCopyGPT = document.createElement('button'); btnCopyGPT.className='btn'; btnCopyGPT.textContent='Copy GPT Output'; btnCopyGPT.addEventListener('click', async()=>{ await copy(gptOut.value); });
-
-    right.append(fieldsWrap, notesLabel, notes, stagedLabel, staged, actions2, gptLabel, gptOut, btnCopyGPT);
-    actions2.append(btnCopyStaged, btnRebuild);
-
-    // Mount
-    sec.append(head, (function(){ cols.append(left,right); return cols; })());
-    grid.appendChild(sec);
-
-    // Renderers
-    function renderCounts(){ el(`#count-${CSS.escape(name)}`).textContent = `${s.selected.size} selected`; }
-
-    function renderList(){
-      renderCounts();
-      list.innerHTML='';
-      for (const it of visibleItems(s)){
-        const row = document.createElement('label'); row.className='row';
-        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = s.selected.has(it.id);
-        cb.addEventListener('change', ()=>{ cb.checked ? s.selected.add(it.id) : s.selected.delete(it.id); renderCounts(); });
-        const code = document.createElement('span'); code.className='code'; code.textContent = it.code;
-        const text = document.createElement('span'); text.className='text'; text.textContent = it.text;
-        row.append(cb, code, text);
-        list.appendChild(row);
-      }
-    }
-
-    function renderFields(){
-      fieldsWrap.innerHTML='';
-      if (!s.fields || !s.fields.length) return;
-      const title = document.createElement('div'); title.innerHTML = '<strong>Section fields</strong>';
-      fieldsWrap.appendChild(title);
-      for (const f of s.fields){
-        const wrap = document.createElement('div'); wrap.className='field';
-        const label = document.createElement('label'); label.className='label'; label.textContent = f.label || f.key;
-        const hint = document.createElement('div'); hint.className='small'; hint.textContent = f.hint || '';
-        let input;
-        if (f.type === 'textarea'){
-          input = document.createElement('textarea'); input.className='copyta'; input.style.minHeight='72px';
-        } else if (f.type === 'select'){
-          input = document.createElement('select'); input.className='input';
-          (f.options||[]).forEach(opt=>{ const o=document.createElement('option'); o.value=opt; o.textContent=opt; input.appendChild(o); });
-        } else if (f.type === 'number'){
-          input = document.createElement('input'); input.className='input'; input.type='number';
-        } else {
-          input = document.createElement('input'); input.className='input'; input.type='text';
-        }
-        input.placeholder = f.placeholder || '';
-        input.value = s.fieldValues[f.key] ?? '';
-        input.addEventListener('input', ()=>{ s.fieldValues[f.key] = input.value; });
-        wrap.append(label, input);
-        if (f.hint) wrap.append(hint);
-        fieldsWrap.appendChild(wrap);
-      }
-    }
-
-    function renderStaging(){ staged.value = s.staged||''; gptOut.value = s.gpt||''; }
-
-    // expose
-    sec.__renderList = renderList;
-
-    renderList();
-    renderFields();
-    renderStaging();
+    function renderCounts(){ el(`#count-${CSS.escape(name)}`).textContent=`${s.selected.size} selected`; }
+    function renderList(){ renderCounts(); list.innerHTML=''; for(const it of visibleItems(s)){ const row=document.createElement('label'); row.className='row'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=s.selected.has(it.id); cb.addEventListener('change',()=>{ cb.checked?s.selected.add(it.id):s.selected.delete(it.id); renderCounts(); }); const code=document.createElement('span'); code.className='code'; code.textContent=it.code; const text=document.createElement('span'); text.className='text'; text.textContent=it.text; row.append(cb,code,text); list.appendChild(row);} }
+    function renderRight(){ staged.value=s.staged||''; }
+    renderList(); renderRight();
   }
 
-  // ---- Init ---------------------------------------------------------------
-  (async function init(){
-    const sections = await loadOptions();
-    // normalize (support arrays or objects with items/fields)
-    for (const [name, raw] of Object.entries(sections)){
-      const arr = Array.isArray(raw) ? raw : (raw.items || []);
-      const fields = Array.isArray(raw) ? [] : (raw.fields || []);
-      const items = (arr||[]).map((x,i)=>({ code: x.code ?? x.CODE ?? `X${i+1}`, text: x.text ?? x.Specific ?? x.specific ?? x.desc ?? x.description ?? String(x), id: `${name}::${x.code ?? x.CODE ?? i}` }));
-      const fieldValues = Object.fromEntries((fields||[]).map(f=>[f.key, '']));
-      state.sections[name] = { items, fields, fieldValues, selected:new Set(), filter:'', staged:'', notes:'', gpt:'' };
-    }
-    el('#includeHeaders').addEventListener('change', (e)=>{ state.includeHeaders = e.target.checked; });
-    el('#semicolonLines').addEventListener('change', (e)=>{ state.semicolonLines = e.target.checked; });
+  async function buildViaGPT(name){ const s=state.sections[name]; const payload={ section:name, selected:s.items.filter(it=>s.selected.has(it.id)).map(({code,text})=>({code,text})), fields:s.fieldValues||{}, notes:s.notes||'' }; try{ const r=await fetch(CONFIG.GPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); const txt=(j.text||j.output||j.result||'').trim(); s.staged = [linesForSection(name), txt].filter(Boolean).join(state.semicolonLines?'; ':"\n\n"); renderTargets(); }catch(e){ alert('GPT endpoint error'); } }
 
-    el('#grid').innerHTML='';
-    for (const name of Object.keys(state.sections)) renderSection(name);
+  // ---------- Targets panel ----------
+  function renderTargets(){ const wrap=el('#targets'); wrap.innerHTML='';
+    const h=document.createElement('h2'); h.textContent='Depot Targets'; wrap.appendChild(h);
+    for(const [key,t] of Object.entries(state.targets)){
+      const card=document.createElement('div'); card.className='target';
+      const title=document.createElement('h3'); title.textContent=t.label; card.appendChild(title);
+      const ta=document.createElement('textarea'); ta.className='copyta'; ta.value=t.value||''; ta.addEventListener('input',()=>{ t.value=ta.value; }); card.appendChild(ta);
+      const row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px';
+      const bCopy=document.createElement('button'); bCopy.className='btn ok'; bCopy.textContent='Copy Target'; bCopy.addEventListener('click',()=>copyPlain(ta.value));
+      const bClear=document.createElement('button'); bClear.className='btn warn'; bClear.textContent='Clear'; bClear.addEventListener('click',()=>{ t.value=''; ta.value=''; });
+      row.append(bCopy,bClear); card.appendChild(row);
+      wrap.appendChild(card);
+    }
+  }
+
+  // ---------- Init ----------
+  (async function init(){
+    const sections=await loadOptions();
+    // pull out TARGETS/MAP if present
+    const tgtSec=sections.__TARGETS__ || { __targets:{}, __maps:[] };
+    const targets = tgtSec.__targets || {};
+    const maps = tgtSec.__maps || [];
+    delete sections.__TARGETS__;
+
+    // normalize sections
+    for(const [name, raw] of Object.entries(sections)){
+      const arr = Array.isArray(raw) ? raw : (raw.items||[]);
+      const fields = Array.isArray(raw) ? [] : (raw.fields||[]);
+      const items = (arr||[]).map((x,i)=>({ code:x.code??x.CODE??`X${i+1}`, text:x.text??x.Specific??x.specific??x.desc??x.description??String(x), id:`${name}::${x.code??x.CODE??i}`}));
+      const fieldValues = Object.fromEntries((fields||[]).map(f=>[f.key,'']));
+      state.sections[name] = { items, fields, fieldValues, selected:new Set(), filter:'', notes:'', staged:'' };
+    }
+
+    // build targets
+    if(Object.keys(targets).length===0){ // sensible defaults
+      ['Installer Notes – Flue','Installer Notes – Boiler','Installer Notes – Gas','Customer Summary'].forEach((lbl,i)=>{ const key='t'+i; state.targets[key]={key,label:lbl,value:''}; });
+    }else{ state.targets = targets; }
+
+    // render global target selector
+    const sel=el('#globalTarget'); sel.innerHTML=''; for(const k of Object.keys(state.targets)){ const o=document.createElement('option'); o.value=k; o.textContent=state.targets[k].label; sel.appendChild(o); }
+
+    // apply MAP lines (optional defaults): join mapped sections into given targets initially
+    for(const m of maps){ const t=state.targets[m.tKey]; if(!t) continue; const sectionKey=(m.sKey||'').replace(/[_-]+/g,' ').replace(/\b\w/g,x=>x.toUpperCase()); const s=state.sections[sectionKey]; if(!s) continue; const built=linesForSection(sectionKey); t.value=[t.value,built].filter(Boolean).join(state.semicolonLines?'; ':"\n\n"); }
+
+    el('#includeHeaders').addEventListener('change',e=>{ state.includeHeaders=e.target.checked; });
+    el('#semicolonLines').addEventListener('change',e=>{ state.semicolonLines=e.target.checked; });
+
+    // render sections + targets
+    el('#grid').innerHTML=''; for(const name of Object.keys(state.sections)) renderSection(name);
+    renderTargets();
   })();
   </script>
 </body>
