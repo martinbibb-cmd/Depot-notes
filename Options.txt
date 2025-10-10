@@ -18,6 +18,11 @@ WAH04A | Loft access | Boarded
 WAH04B | Loft access | Unboarded
 WAH05 | Access | MEWP required
 WAH06 | Flat roof | Specialist builder to make good
+WAH50 | Ladder | 1:4 angle (≈75°) – ~250 mm out per metre rise; secure footing
+WAH51 | Reach | Max practical ladder reach ≈6 m; >2 storeys or >45° roof = scaffold
+WAH52 | Roof | Flat roof work requires edge protection or 2 m exclusion from edge
+WAH53 | Loft | Boiler weight ≤≈35 kg for safe loft handling; use two-person lift if needed
+WAH54 | Access | Fixed loft ladder and permanent lighting required for service access
 
 [System characteristics]
 SE00 | Existing system
@@ -47,6 +52,17 @@ SN10 | Heating zones | Existing Y-plan retained
 SN11 | Controls compatibility | Hive
 SN12 | Controls compatibility | Hive Mini
 SN13 | Controls preference | Simple / manual
+SC50 | System Type | Combi – instantaneous DHW; no tanks
+SC51 | System Type | System – sealed with cylinder; built-in pump/expansion vessel
+SC52 | System Type | Regular – open-vented with F&E tank
+SC53 | System Pressure | Sealed system may expose latent leaks – advise & record disclaimer
+SC54 | Pipework | 22 mm primaries typical; 28 mm if >24 kW or long runs/high resistance
+SC55 | Pipework | One-pipe system not suitable for modern boilers – recommend re-pipe
+SC56 | Pipework | Galvanised/steel pipework – replace rather than flush
+SC57 | Water Softeners | Worcester allows softened water through primary HX
+SC58 | Water Softeners | Vaillant/Ideal – bypass or hard-fill only (no softened water through HX)
+SC59 | Location | Loft installs require boarded area (≈1.5 m radius), fixed ladder & lighting
+SC60 | Condensate | External condensate must be insulated/frost-protected
 
 [Arse_cover_notes]
 ARS01 | System | Sealing an old system may expose hidden leaks
@@ -134,6 +150,11 @@ EH06 | Lighting | Poor / no power
 EH07 | Site | Pet mess present
 EH08 | Animals | Dog(s) present
 EH09 | Animals | Other potentially dangerous
+ASB50 | Asbestos | Visual check each visit; stop work if suspected ACM is damaged/friable
+ASB51 | Asbestos | Non-notifiable tasks only (e.g., cement flue, textured coatings) within limits
+ASB52 | Asbestos | Typical fixings limit: up to 5×20 mm or 4×28 mm holes if unavoidable – record
+HAZ50 | Electrical | Overhead cables within 3 m – escalate/liaise with DNO; control measures required
+HAZ51 | Site | Customer to clear working areas; protect fragile roofs/greenhouses
 
 [Delivery notes]
 DL01 | Slot | Preferred AM
@@ -172,6 +193,14 @@ BT00 | boiler type
 BT01 | Boiler type | Regular / heat-only / conventional
 BT02 | Boiler type | System
 BT03 | Boiler type | Combi
+
+BOIL50 | Boiler Selection | Worcester 4000 Combi – compact cupboard fit; 100/125 mm long flue options
+BOIL51 | Boiler Selection | Worcester 8000 Life/Style – premium finish; very long 125 mm flue runs
+BOIL52 | Boiler Selection | Vaillant ecoFIT Pure – rear-flue capable; cupboard/loft friendly
+BOIL53 | Boiler Selection | Vaillant ecoTEC Plus – stainless steel HX; high DHW outputs
+BOIL54 | Boiler Selection | Ideal Logic Combi – shallow depth; cupboard fit swaps
+BOIL55 | Boiler Selection | System boiler – for cylinders/S-plan; future-ready zoning
+BOIL56 | Boiler Selection | Regular boiler – open-vented systems retaining F&E tank
 
 UC00 | user controls
 UC01 | User control | Hive
@@ -219,6 +248,14 @@ FN10 | Add-on | Flue extension
 FN11 | Safety | Terminal guard required
 FN12 | Orientation | Front aspect
 FN13 | Orientation | Rear aspect
+FLU50 | Flue | Minimum 300 mm from any opening (window/door/vent)
+FLU51 | Flue | Minimum 150 mm from eaves/soffits/building fabric (site-dependent)
+FLU52 | Flue | ≥600 mm to a facing surface/boundary to avoid nuisance pluming
+FLU53 | Flue | Voids require inspection hatches at every joint/change of direction
+FLU54 | Flue | Maintain 26–50 mm per metre fall back to boiler on extended runs
+FLU55 | Flue | High-rise (≥18 m England/Wales; ≥11 m Scotland): fire-rated flue only
+FLU56 | Flue | Rear flue possible on many models – requires new hole (no reuse of old)
+FLU57 | Plume | Plume management 0.5–11.5 m typical; allow 0.5 m internal flue reduction per metre/plume elbow
 
 [Pipe work]
 
@@ -236,6 +273,11 @@ GR10 | Route complexity | Upsize sections for capacity
 GR11 | Route complexity | Complex (clipping / drilling / routing)
 GR12 | Gas notes | Replace meter tail lead
 GR13 | Gas notes | Pressure drop risk over length
+GAS50 | Gas Pipework | Rule-of-thumb: ≤28 kW = 22 mm at boiler; >28 kW = 28 mm (check calcs)
+GAS51 | Gas Compliance | Max 1 mbar drop from meter to appliance on new installations
+GAS52 | Gas Meter | U6 ≈ 63 kW max; U16 ≈ 169 kW max (aggregate load awareness)
+GAS53 | Gas Route | Long runs/many bends increase resistance – upsize and minimise fittings
+GAS54 | Gas Commission | Final pipe size confirmed at commissioning under load with new appliance
 
 |condensate
 CD01 | Connection | Internal waste – P-trap present
@@ -276,6 +318,18 @@ PF03 | Filter | Magnetic – Fernox TF1 (brass)
 PF04 | Filter | Magnetic – other
 PF05 | Primaries | Pipework alterations required
 PF06 | Primaries | Pipe size upgrade required
+PF50 | Powerflush | Mandatory before fitting a new boiler to an old/dirty system
+PF51 | Powerflush | Do not powerflush galvanised/steel pipework – re-pipe recommended
+PF52 | Filter | Fit magnetic filter (e.g., Fernox TF1 Omega) to protect HX/rads
+PF53 | Inhibitor | Dose with corrosion inhibitor after flush/refill
+PF54 | Benefit | Improved circulation & faster warm-up; helps maintain efficiency
+CE50 | Combi DHW | Combi hot water is not truly “instant” – pre-heat & draw-off needed
+CE51 | Flow Limits | Performance depends on mains pressure & flow; demo with flow cup
+CE52 | Single Use | With combi, best to use one high-flow outlet at a time
+CE53 | Sealed Risk | Sealing an old system can expose weeps at valves/rads/pipe joints
+CE54 | Shared Mains | New combi installations not recommended on shared water mains
+CE55 | Frost | External condensate requires insulation & trace/frost protection where exposed
+CE56 | Access | Loft installs need safe access (fixed ladder, light, boarding) for warranty service
 
 |radiators
 RD01 | Radiators | Replace radiator(s)
