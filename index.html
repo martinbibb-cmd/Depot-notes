@@ -1,653 +1,567 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Depot Notes Picker — Rebuild</title>
-<style>
-  :root{--gap:10px;--pad:12px;--radius:10px}
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#f6f7fb;color:#1f2937}
-  header{display:flex;gap:var(--gap);align-items:center;padding:16px var(--pad);background:#fff;position:sticky;top:0;z-index:5;border-bottom:1px solid #e5e7eb}
-  .badge{background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:999px;font-size:12px}
-  .hint{font-size:12px;color:#6b7280}
-  .space{flex:1}
-  main{display:grid;grid-template-columns:1.1fr 1fr;gap:var(--gap);padding:var(--pad)}
-  @media (max-width:1100px){main{grid-template-columns:1fr}}
-  section{background:#fff;border-radius:var(--radius);padding:var(--pad);box-shadow:0 1px 2px rgba(0,0,0,.05)}
-  h2{margin:0 0 6px 0;font-size:18px}
-  h3{margin:10px 0 6px 0;font-size:16px}
-  .row{display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap}
-  select,input[type=text],textarea,button{font:inherit;padding:10px 12px;border-radius:8px;border:1px solid #d1d5db;background:#fff}
-  textarea{width:100%;min-height:120px}
-  button{background:#e5e7eb;border-color:#c8ccd1;cursor:pointer}
-  button.primary{background:#2563eb;color:#fff;border-color:#1d4ed8}
-  button.ghost{background:#fff}
-  button:disabled{opacity:.55;cursor:not-allowed}
-  .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:#f3f4f6;color:#374151}
-  .toolbar{display:flex;gap:var(--gap);align-items:center;margin:var(--gap) 0;flex-wrap:wrap}
-  .list{display:grid;gap:6px;max-height:50vh;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px}
-  .item{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:6px;border-radius:8px}
-  .item:hover{background:#f9fafb}
-  .muted{color:#6b7280}
-  .divider{height:1px;background:#e5e7eb;margin:8px 0}
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-  @media (max-width:920px){.cols{grid-template-columns:1fr}}
-  .error{background:#FEF2F2;color:#991B1B;border:1px solid #FCA5A5;padding:8px;border-radius:8px}
-  .success{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;padding:8px;border-radius:8px}
-  details>summary{cursor:pointer;padding:6px;border-radius:8px;background:#f9fafb}
-  .fieldhead{display:flex;gap:8px;align-items:center;justify-content:space-between}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes Picker — Per‑Section Staging</title>
+  <style>
+    :root {
+      --bg: #0f172a;        /* slate-900 */
+      --panel: #0b1220;     /* custom */
+      --muted: #111827;     /* gray-900 */
+      --fg: #e5e7eb;        /* gray-200 */
+      --fg-dim: #9ca3af;    /* gray-400 */
+      --accent: #22d3ee;    /* cyan-400 */
+      --ok: #10b981;        /* emerald-500 */
+      --warn: #f59e0b;      /* amber-500 */
+      --danger: #ef4444;    /* red-500 */
+      --radius: 14px;
+    }
+    html, body { height: 100%; }
+    body { margin: 0; background: linear-gradient(180deg, #0b1022, #0a0d18 20%, #0f172a 80%); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px 48px; }
+
+    header { display: grid; gap: 10px; grid-template-columns: 1fr auto; align-items: end; margin-bottom: 16px; }
+    h1 { font-weight: 700; margin: 0; font-size: 24px; letter-spacing: 0.2px; }
+    .sub { color: var(--fg-dim); font-size: 13px; }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .chip { background: var(--muted); border: 1px solid #273244; padding: 8px 10px; border-radius: 999px; display: inline-flex; gap: 8px; align-items: center; }
+
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+
+    .section { grid-column: span 12; background: rgba(17,24,39,0.75); border: 1px solid #20314a; border-radius: var(--radius); overflow: hidden; }
+    .sec-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 14px 16px; background: linear-gradient(180deg, #0e1628, #0b1322); border-bottom: 1px solid #1e2a43; }
+    .sec-title { font-weight: 700; letter-spacing: 0.3px; }
+    .sec-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    .btn { appearance: none; border: 1px solid #243044; background: #111827; color: var(--fg); font-weight: 600; letter-spacing: .2px; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: transform .04s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+    .btn:hover { border-color: #2f415e; box-shadow: 0 0 0 2px rgba(34,211,238,.12) inset; }
+    .btn:active { transform: translateY(1px); }
+    .btn.ok { border-color: #1e6b54; box-shadow: 0 0 0 2px rgba(16,185,129,.12) inset; }
+    .btn.warn { border-color: #6b4e1e; box-shadow: 0 0 0 2px rgba(245,158,11,.12) inset; }
+
+    .search { min-width: 220px; }
+    .input { width: 100%; background: #0b1220; border: 1px solid #213049; color: var(--fg); padding: 9px 11px; border-radius: 10px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+    .input::placeholder { color: #6b7280; }
+    .input:focus { border-color: #33557a; box-shadow: 0 0 0 2px rgba(34,211,238,.1); }
+
+    .cols { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 14px 16px; }
+    @media (min-width: 900px) { .cols { grid-template-columns: 1.2fr 1fr; } }
+
+    .panel { background: var(--panel); border: 1px solid #20314a; border-radius: var(--radius); padding: 12px; display: grid; gap: 10px; }
+    .list { max-height: 280px; overflow: auto; display: grid; gap: 6px; }
+    .row { display: flex; gap: 10px; align-items: center; background: #0a0f1d; border: 1px solid #1a2740; padding: 8px 10px; border-radius: 10px; }
+    .code { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); font-size: 12px; }
+    .text { flex: 1; }
+    .pill { padding: 3px 8px; border: 1px solid #2a3a56; border-radius: 999px; font-size: 12px; color: var(--fg-dim); }
+
+    .copyta { width: 100%; min-height: 96px; background: #07101f; border: 1px solid #1d2b45; color: var(--fg); padding: 10px; border-radius: 10px; resize: vertical; }
+    .muted { color: var(--fg-dim); font-size: 12px; }
+  </style>
 </head>
 <body>
-<header>
-  <strong>Depot Notes Picker</strong>
-  <span class="badge">v2.6 · rebuild</span>
-  <span class="hint" id="metaInfo">Loading…</span>
-  <span class="space"></span>
-  <button class="ghost" id="resetBtn">Reset</button>
-</header>
-
-<main>
-  <!-- LEFT: Source + Picker -->
-  <section>
-    <h2>Source</h2>
-    <div class="row" style="margin-top:6px">
-      <button id="reloadBtn">Reload ./Options.txt</button>
-      <input id="urlInput" type="text" placeholder="https://raw.githubusercontent.com/.../Options.txt" style="flex:1">
-      <button id="loadUrlBtn" class="ghost">Load URL</button>
-      <input id="fileInput" type="file" accept=".txt,.csv,.md,.conf" style="display:none">
-      <button id="loadFileBtn" class="ghost">Upload file…</button>
-      <button id="loadPasteBtn" class="ghost">Paste text…</button>
-    </div>
-    <div id="alert" style="margin-top:8px"></div>
-
-    <div class="divider"></div>
-
-    <h3>Picker</h3>
-    <div class="toolbar">
-      <label>Section</label>
-      <select id="sectionSelect"></select>
-      <input id="filterBox" type="text" placeholder="Filter (press / to focus)">
-      <button id="selectVisibleBtn">Check all (visible)</button>
-      <button id="clearSelectionBtn">Uncheck all</button>
-    </div>
-    <div id="itemsList" class="list" aria-label="items list"></div>
-
-    <div class="divider"></div>
-    <div class="cols">
+  <div class="wrap">
+    <header>
       <div>
-        <div class="row">
-          <input id="quickAddText" type="text" placeholder="Quick-add custom line" style="flex:1">
-          <button id="quickAddBtn" class="ghost">Add</button>
-        </div>
+        <h1>Depot Notes Picker (Per‑Section Staging)</h1>
+        <div class="sub">Tick lines in each section → <strong>Copy to Depot Section</strong> to stage → then <strong>Copy Depot Section</strong> into Depot.</div>
       </div>
-      <div>
-        <div class="row">
-          <label>Recipient box (optional)</label>
-          <select id="outputSectionSelect"></select>
-        </div>
-        <div class="row">
-          <button id="addCheckedTargetBtn" class="ghost">Add checked → target</button>
-          <button id="addCheckedPreserveBtn" class="primary">Add checked (preserve sections)</button>
-        </div>
-        <div class="row">
-          <button id="addVisibleTargetBtn" class="ghost">Add visible → target</button>
-          <button id="addVisiblePreserveBtn" class="primary">Add visible (preserve sections)</button>
-        </div>
+      <div class="toolbar">
+        <label class="chip"><input id="includeHeaders" type="checkbox" checked> <span>Include section headers</span></label>
+        <label class="chip"><input id="semicolonLines" type="checkbox" checked> <span>Use “;” line breaks</span></label>
       </div>
-    </div>
+    </header>
 
-    <div class="divider"></div>
-    <h3>Staged (per section)</h3>
-    <div id="stagingWrap" class="list"></div>
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </div>
 
-    <div class="divider"></div>
-    <h3>Copy / Prompt</h3>
-    <div class="row">
-      <span class="pill" id="countBadge">0 lines</span>
-      <label style="display:flex;align-items:center;gap:6px;margin-left:12px;">
-        <input type="checkbox" id="includeHeaders" checked> Include section headers
-      </label>
-      <span class="space"></span>
-      <button id="copyBtn" class="primary">Copy ;-lines</button>
-      <button id="copyFullBtn">Copy Full Package</button>
-    </div>
-    <textarea id="copyBox" readonly placeholder="Your staged lines will appear here…"></textarea>
-    <div class="row" style="margin-top:6px">
-      <select id="promptPreset">
-        <option value="customer">Customer summary (plain-English)</option>
-        <option value="engineer">Depot Notes (engineer)</option>
-        <option value="both" selected>Both (customer + engineer)</option>
-        <option value="custom">Custom…</option>
-      </select>
-      <button id="buildPromptBtn">Build preview</button>
-      <button id="sendToGptBtn" class="primary">Send to GPT</button>
-    </div>
-    <textarea id="promptBox" placeholder="Built prompt will appear here; copied before opening ChatGPT…"></textarea>
-  </section>
+  <script>
+  // ---- Optional API config (for GPT-style prose per section) --------------
+  const CONFIG = {
+    GPT_URL: '' // e.g. 'https://your-worker.example.com/section'
+  };
 
-  <!-- RIGHT: 14 Free-text fields -->
-  <section>
-    <h2>Free-text Notes</h2>
-
-    <div class="fieldhead"><strong>Needs</strong><button class="ghost" data-pull="Needs">Append from staged</button></div>
-    <textarea id="f_needs" placeholder="e.g. Faster hot water delivery; Quieter operation"></textarea>
-
-    <div class="fieldhead"><strong>Describe any work involving safe access at height</strong><button class="ghost" data-pull="Restrictions to work">Append from staged</button></div>
-    <textarea id="f_heights" placeholder="e.g. Ladder access; Scaffold tower – standard"></textarea>
-
-    <div class="fieldhead"><strong>System characteristics notes</strong><button class="ghost" data-pull="System characteristics">Append from staged</button></div>
-    <textarea id="f_system" placeholder="e.g. Regular boiler, gravity primaries, microbore"></textarea>
-
-    <div class="fieldhead"><strong>Are there any components that may require assistance for removal?</strong><button class="ghost" data-pull="Components that require assistance">Append from staged</button></div>
-    <textarea id="f_assistance" placeholder="e.g. Cylinder removal; Boiler double-handed lift"></textarea>
-
-    <div class="fieldhead"><strong>List any restrictions to work areas or specific access permission required?</strong><button class="ghost" data-pull="Restrictions to work">Append from staged</button></div>
-    <textarea id="f_restrictions" placeholder="e.g. Permit parking; Listed building consent"></textarea>
-
-    <div class="fieldhead"><strong>Are there any external work areas that may prove potentially hazardous… Specific hazards?</strong><button class="ghost" data-pull="External hazards">Append from staged</button></div>
-    <textarea id="f_externalhaz" placeholder="e.g. Fragile roof; Wasps; Flood risk"></textarea>
-
-    <div class="fieldhead"><strong>Additional delivery notes</strong><button class="ghost" data-pull="Delivery notes">Append from staged</button></div>
-    <textarea id="f_delivery" placeholder="e.g. Call ahead; Stairs/no lift"></textarea>
-
-    <div class="fieldhead"><strong>Office notes</strong><button class="ghost" data-pull="Office notes">Append from staged</button></div>
-    <textarea id="f_office" placeholder="e.g. Asbestos survey booking; Direct labour"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - boiler/controls</strong><button class="ghost" data-pull="Installer notes - boiler/controls">Append from staged</button></div>
-    <textarea id="f_inst_boiler" placeholder="e.g. Hive Mini; new wiring centre; location change"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - flue</strong><button class="ghost" data-pull="Flue">Append from staged</button></div>
-    <textarea id="f_inst_flue" placeholder="e.g. New hole same wall; plume kit; terminal guard"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - gas/water</strong><button class="ghost" data-pull="Gas / Water">Append from staged</button></div>
-    <textarea id="f_inst_gw" placeholder="e.g. Upsize to 22 mm; PRV; neutraliser"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - disruption</strong><button class="ghost" data-pull="Disruption">Append from staged</button></div>
-    <textarea id="f_inst_disrupt" placeholder="e.g. Floors lifted; protection required"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - customer agreed actions</strong><button class="ghost" data-pull="Customer actions">Append from staged</button></div>
-    <textarea id="f_inst_customer" placeholder="e.g. Clear areas; keep pets secure"></textarea>
-
-    <div class="fieldhead"><strong>Installer notes - special customer requirements (incl. planned home improvements)</strong><button class="ghost" data-pull="Special requirements">Append from staged</button></div>
-    <textarea id="f_inst_special" placeholder="e.g. Kitchen refit planned; retain existing TRVs"></textarea>
-  </section>
-</main>
-
-<script>
-/* ---------- Never-empty demo set ---------- */
-const DEMO_TEXT = `
-[Needs]
-NE01 | Need | Better water pressure
-NE02 | Need | Quieter operation
-
-[Restrictions to work]
-WAH01 | Access | Ladder access required
-SR03  | Parking | Permit required
-
-[External hazards]
-EH02 | Roof | Fragile tiles
-
-[Delivery notes]
-DL07 | Contact | Call ahead on arrival
-
-[Flue]
-FN02 | New flue | New hole - same wall
-FN09 | Add-on | Plume kit required
-
-[Customer actions]
-CA01 | Customer | Clear working areas
-`;
-
-/* ---------- Config & State ---------- */
-const STORAGE_KEY = 'dnp_rebuild_v26';
-const CANDIDATES = ['./Options.txt', './options.txt']; // tries both names
-const state = { sections:{}, filter:'', currentSection:'All', output:{}, fields:{} };
-
-/* ---------- Helpers ---------- */
-const norm = s => (s||'').replace(/[–—]/g,'-').trim();
-const byName = (a,b)=>a.localeCompare(b);
-const setAlert = (html, cls='')=>{ const a=document.getElementById('alert'); a.className=cls; a.innerHTML=html||''; };
-function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({output:state.output, fields:getFieldsSnapshot()})); }catch(e){} }
-function load(){ try{ const j=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); state.output=j.output||{}; if(j.fields) setFieldsFromSnapshot(j.fields);}catch(e){} }
-function titleCase(s){ return s.replace(/[_\-]+/g,' ').replace(/\s+/g,' ').trim().toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
-
-/* ---------- Header aliasing to friendly buckets ---------- */
-const HEADER_ALIASES = {
-  'working_at_heights':'Restrictions to work',
-  'site_restrictions':'Restrictions to work',
-  'restrictions_to_work':'Restrictions to work',
-  'system_existing':'System characteristics',
-  'system_characteristics':'System characteristics',
-  'components_specialist':'Components that require assistance',
-  'components_spe-cialist':'Components that require assistance',
-  'components_that_require_assistance':'Components that require assistance',
-  'office_admin':'Office notes',
-  'boiler_location_controls':'Installer notes - boiler/controls',
-  'boiler_location_-controls':'Installer notes - boiler/controls',
-  'boiler_type':'Installer notes - boiler/controls',
-  'user_controls':'Installer notes - boiler/controls',
-  'system_config':'Installer notes - boiler/controls',
-  'cupboards':'Installer notes - boiler/controls',
-  'system_new':'Installer notes - boiler/controls',
-  'boiler_location_/_controls':'Installer notes - boiler/controls',
-  'flue_make_good':'Flue',
-  'flue_new':'Flue',
-  'flue':'Flue',
-  'gas_run':'Gas / Water',
-  'water_services':'Gas / Water',
-  'condensate':'Gas / Water',
-  'discharge':'Gas / Water',
-  'primaries_filtration':'Gas / Water',
-  'primaries & filtration':'Gas / Water',
-  'primaries':'Gas / Water',
-  'gas_/_water':'Gas / Water',
-  'delivery_logistics':'Delivery notes',
-  'external_hazards':'External hazards',
-  'customer_actions':'Customer actions',
-  'disruption':'Disruption',
-  'needs':'Needs'
-};
-function bucketizeHeader(raw){
-  const key = raw.trim().toLowerCase().replace(/\s+/g,'_');
-  return HEADER_ALIASES[key] || titleCase(raw);
-}
-
-/* ---------- Parser ---------- */
-function parseOptionsText(text){
-  let t=text.replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
-  const lines=t.split('\n'); const out={}; let current=null; const hdr=/^\s*\[([^\]]+)\]\s*$/;
-  for(const raw of lines){
-    const line=norm(raw);
-    if(!line || line.startsWith('#') || line.startsWith('//')) continue;
-    const m=line.match(hdr);
-    if(m){ current=bucketizeHeader(m[1].trim()); if(!out[current]) out[current]=[]; continue; }
-    if(!current) continue;
-    const parts=line.split('|').map(s=>s.trim());
-    let code='', category='', textOut='';
-    if(parts.length===1){ textOut=parts[0]; }
-    else if(parts.length===2){ code=parts[0]; textOut=parts[1]; }
-    else { code=parts[0]; category=parts[1]; textOut=parts.slice(2).join(' | '); }
-    if(textOut){ out[current].push({code,category,text:textOut,section:current}); }
+  // ---- Load options --------------------------------------------------------
+  async function loadOptions() {
+    try {
+      const res = await fetch('./options.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('No options.json');
+      const json = await res.json();
+      return json.sections ? json.sections : json;
+    } catch (e) {
+      console.warn('Falling back to demo options:', e.message);
+      return {
+        'Needs': [
+          { code:'NE01', text:'Better water pressure' },
+          { code:'NE02', text:'Faster hot water delivery' },
+          { code:'NE03', text:'More usable space' }
+        ],
+        'System Characteristics': [
+          { code:'SC01', text:'System type – Regular' },
+          { code:'SC03', text:'Pressurisation – Sealed' },
+          { code:'SC05', text:'Primary circuit – Fully pumped' }
+        ]
+      };
+    }
   }
-  return out;
-}
 
-/* ---------- Loaders (tries both names) ---------- */
-async function loadDefault(){
-  setAlert('Looking for Options.txt …','hint');
-  let lastErr=null;
-  for(const url of CANDIDATES){
-    try{
-      const res=await fetch(url+(url.includes('?')?'&':'?')+'nocache='+Date.now());
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const raw=await res.text();
-      const secs=parseOptionsText(raw);
-      if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-      setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from ${url}`, false);
-      return;
-    }catch(e){ lastErr=e; }
+  // ---- State --------------------------------------------------------------
+  const state = {
+    sections: {}, // name -> { items, selected:Set, filter:string, staged:string, notes:string, gpt:string }
+    includeHeaders: true,
+    semicolonLines: true,
+  };
+
+  // ---- Helpers ------------------------------------------------------------
+  const el = (sel, root=document) => root.querySelector(sel);
+  const els = (sel, root=document) => [...root.querySelectorAll(sel)];
+  const escape = (s='') => String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function visibleItems(s){
+    if(!s.filter) return s.items;
+    const q = s.filter.toLowerCase();
+    return s.items.filter(it => (it.text||'').toLowerCase().includes(q) || (it.code||'').toLowerCase().includes(q));
   }
-  const secs=parseOptionsText(DEMO_TEXT);
-  setSections(secs, `Could not fetch Options.txt (${lastErr?.message||'unknown'}). Using demo set.`, true);
-}
-async function loadFromUrl(url){
-  setAlert('Loading…','hint');
-  try{
-    const res=await fetch(url+(url.includes('?')?'&':'?')+'nocache='+Date.now());
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const raw=await res.text();
-    const secs=parseOptionsText(raw);
-    if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from URL.`, false);
-  }catch(err){ setAlert(`Failed to load from URL: <code>${url}</code><br>${err.message}`,'error'); }
-}
-function loadFromFile(file){
-  const r=new FileReader();
-  r.onload=()=>{ try{
-    const secs=parseOptionsText(String(r.result||'')); if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from file.`, false);
-  }catch(e){ setAlert('File parse error: '+e.message,'error'); } };
-  r.readAsText(file);
-}
-function loadFromPaste(){
-  const t=prompt('Paste your Options.txt content:'); if(!t) return;
-  try{
-    const secs=parseOptionsText(t); if(!Object.keys(secs).length) throw new Error('Parsed 0 sections');
-    setSections(secs, `Loaded ${Object.values(secs).reduce((n,a)=>n+a.length,0)} items from pasted text.`, false);
-  }catch(e){ setAlert('Paste parse error: '+e.message,'error'); }
-}
-function setSections(sections, msg, warn){
-  state.sections=sections; state.currentSection='All';
-  populateDropdowns(); renderItems(); renderStaging(); renderCopy();
-  document.getElementById('metaInfo').textContent =
-    `Sections: ${Object.keys(sections).length} · Items: ${Object.values(sections).reduce((n,a)=>n+a.length,0)}`;
-  setAlert(msg, warn?'error':'success');
-}
 
-/* ---------- Picker UI ---------- */
-function populateDropdowns(){
-  const sel=document.getElementById('sectionSelect'); sel.innerHTML='';
-  const all=document.createElement('option'); all.value='All'; all.textContent='All'; sel.appendChild(all);
-  Object.keys(state.sections).sort(byName).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
-  sel.value='All';
+  function linesForSection(name){
+    const s = state.sections[name];
+    const items = s.items.filter(it => s.selected.has(it.id));
+    const out = [];
+    if (state.includeHeaders && items.length) out.push(name + ':');
+    for (const it of items) out.push(it.text);
+    if ((s.notes||'').trim()) out.push('Notes: ' + s.notes.trim());
+    return state.semicolonLines ? out.join('; ') : out.join('\n');
+  }
 
-  // Recipient boxes
-  const outSel=document.getElementById('outputSectionSelect'); outSel.innerHTML='';
-  RECIPIENTS.forEach(([id,label])=>{ const o=document.createElement('option'); o.value=id; o.textContent=label; outSel.appendChild(o); });
-}
-function visibleItems(){
-  const filter=(state.filter||'').toLowerCase(); let items=[];
-  if(state.currentSection==='All'){ for(const k of Object.keys(state.sections)) items=items.concat(state.sections[k]); }
-  else items=state.sections[state.currentSection]||[];
-  return items.filter(it=>{
-    if(!filter) return true;
-    return (`${it.code} ${it.category} ${it.text} ${it.section}`.toLowerCase()).includes(filter);
-  });
-}
-function renderItems(){
-  const box=document.getElementById('itemsList'); box.innerHTML='';
-  const vis=visibleItems();
-  if(!vis.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='No items match your filter.'; box.appendChild(e); return; }
-  vis.forEach(it=>{
-    const row=document.createElement('div'); row.className='item';
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.dataset.payload=JSON.stringify(it);
-    const label=document.createElement('div');
-    label.innerHTML=`<div><strong>${it.text}</strong></div><div class="muted">${it.section}${it.category?' • '+it.category:''}${it.code?' • '+it.code:''}</div>`;
-    const plus=document.createElement('button'); plus.className='ghost'; plus.textContent='＋';
-    plus.onclick=()=>{ pushToOutput(it.section, it); renderStaging(); renderCopy(); };
-    row.appendChild(cb); row.appendChild(label); row.appendChild(plus); box.appendChild(row);
-  });
-}
+  async function copy(text){ try{ await navigator.clipboard.writeText(text); }catch(e){ console.warn('Clipboard failed', e); } }
 
-/* ---------- Output staging ---------- */
-function pushToOutput(section, it){
-  if(!state.output[section]) state.output[section]=[];
-  if(!state.output[section].some(x=>x.text===it.text&&x.code===it.code&&x.category===it.category))
-    state.output[section].push({text:it.text, code:it.code||'', category:it.category||''});
-  save();
-}
-function pushManyPreserve(items){ items.forEach(it=> pushToOutput(it.section, it)); }
-function pushManyTarget(items,target){ items.forEach(it=> pushToOutput(target, it)); }
-function move(section, idx, dir){
-  const a=state.output[section]; const j=idx+dir; if(!a||j<0||j>=a.length) return; [a[idx],a[j]]=[a[j],a[idx]]; save();
-}
-function removeItem(section, idx){
-  const a=state.output[section]; if(!a) return; a.splice(idx,1); if(!a.length) delete state.output[section]; save();
-}
-function renderStaging(){
-  const wrap=document.getElementById('stagingWrap'); wrap.innerHTML='';
-  const names=Object.keys(state.output).sort(byName);
-  if(!names.length){ const e=document.createElement('div'); e.className='hint'; e.style.padding='8px'; e.textContent='Nothing staged yet.'; wrap.appendChild(e); return; }
-  names.forEach(name=>{
-    const head=document.createElement('div'); head.className='row'; head.style.margin='4px 0'; head.innerHTML=`<strong>${name}</strong> <span class="pill">${(state.output[name]||[]).length}</span>`;
-    wrap.appendChild(head);
-    (state.output[name]||[]).forEach((it,i)=>{
-      const row=document.createElement('div'); row.className='item';
-      row.appendChild(document.createElement('div'));
-      const label=document.createElement('div');
-      label.innerHTML=`<div><strong>${it.text}</strong></div><div class="muted">${it.category?it.category+' • ':''}${it.code||''}</div>`;
-      const actions=document.createElement('div');
-      const up=document.createElement('button'); up.textContent='↑'; up.onclick=()=>{move(name,i,-1); renderStaging(); renderCopy();};
-      const down=document.createElement('button'); down.textContent='↓'; down.onclick=()=>{move(name,i,1); renderStaging(); renderCopy();};
-      const del=document.createElement('button'); del.textContent='×'; del.onclick=()=>{removeItem(name,i); renderStaging(); renderCopy();};
-      actions.appendChild(up); actions.appendChild(down); actions.appendChild(del);
-      row.appendChild(label); row.appendChild(actions); wrap.appendChild(row);
+  // ---- Render -------------------------------------------------------------
+  function renderSection(name){
+    const s = state.sections[name];
+    const grid = el('#grid');
+
+    const sec = document.createElement('section');
+    sec.className = 'section';
+
+    // Header
+    const head = document.createElement('div');
+    head.className = 'sec-head';
+
+    const title = document.createElement('div');
+    title.className = 'sec-title';
+    const count = document.createElement('span');
+    count.className = 'pill';
+    count.id = `count-${name}`;
+    title.innerHTML = `${escape(name)} `;
+    title.appendChild(count);
+
+    const actions = document.createElement('div');
+    actions.className = 'sec-actions';
+
+    // Search
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'search';
+    const search = document.createElement('input');
+    search.className = 'input'; search.type='search'; search.placeholder='Filter this section…'; search.value=s.filter;
+    search.addEventListener('input', ()=>{ s.filter = search.value; renderList(); });
+    searchWrap.appendChild(search);
+
+    // Buttons
+    const btnSelectAll = document.createElement('button');
+    btnSelectAll.className='btn'; btnSelectAll.textContent='Select All (visible)';
+    btnSelectAll.addEventListener('click', ()=>{ visibleItems(s).forEach(it=>s.selected.add(it.id)); renderList(); });
+
+    const btnClear = document.createElement('button');
+    btnClear.className='btn warn'; btnClear.textContent='Clear Section';
+    btnClear.addEventListener('click', ()=>{ s.selected.clear(); s.notes=''; s.staged=''; s.gpt=''; renderList(); });
+
+    const btnStage = document.createElement('button');
+    btnStage.className='btn ok'; btnStage.textContent='Copy to Depot Section';
+    btnStage.title = 'Build from ticks + notes and stage below (also copied)';
+    btnStage.addEventListener('click', async ()=>{
+      s.staged = linesForSection(name);
+      await copy(s.staged);
+      renderStaging();
     });
-  });
-}
 
-/* ---------- Copy builders ---------- */
-function renderCopy(){
-  const includeHeaders=document.getElementById('includeHeaders').checked;
-  let lines=[]; const names=Object.keys(state.output).sort(byName);
-  names.forEach(name=>{
-    const items=state.output[name]||[]; if(!items.length) return;
-    if(includeHeaders) lines.push(`${name}:`);
-    items.forEach(it=>lines.push(`${it.text};`));
-    if(includeHeaders) lines.push('');
-  });
-  document.getElementById('copyBox').value=lines.join('\n');
-  const total=names.reduce((n,k)=>n+(state.output[k]?.length||0),0);
-  document.getElementById('countBadge').textContent=`${total} line${total===1?'':'s'}`;
-}
-function buildFullPackage(){
-  const base=document.getElementById('copyBox').value.trim();
-  const F=getFieldsSnapshot();
-  const blocks=[
-    base,'','--- Free-text fields ---',
-    `Needs:\n${F.f_needs||''}`,
-    `Safe access at height:\n${F.f_heights||''}`,
-    `System characteristics notes:\n${F.f_system||''}`,
-    `Assistance for removal:\n${F.f_assistance||''}`,
-    `Restrictions / permissions:\n${F.f_restrictions||''}`,
-    `External hazards:\n${F.f_externalhaz||''}`,
-    `Additional delivery notes:\n${F.f_delivery||''}`,
-    `Office notes:\n${F.f_office||''}`,
-    `Installer notes - boiler/controls:\n${F.f_inst_boiler||''}`,
-    `Installer notes - flue:\n${F.f_inst_flue||''}`,
-    `Installer notes - gas/water:\n${F.f_inst_gw||''}`,
-    `Installer notes - disruption:\n${F.f_inst_disrupt||''}`,
-    `Installer notes - customer agreed actions:\n${F.f_inst_customer||''}`,
-    `Installer notes - special requirements:\n${F.f_inst_special||''}`,
-  ];
-  return blocks.join('\n');
-}
+    const btnGPT = document.createElement('button');
+    btnGPT.className='btn'; btnGPT.textContent='Build via GPT';
+    btnGPT.style.display = CONFIG.GPT_URL ? 'inline-block' : 'none';
+    btnGPT.addEventListener('click', async ()=>{
+      if(!CONFIG.GPT_URL) return;
+      const payload = {
+        section: name,
+        selected: s.items.filter(it=>s.selected.has(it.id)).map(({code,text})=>({code,text})),
+        notes: s.notes||''
+      };
+      try{
+        const res = await fetch(CONFIG.GPT_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const data = await res.json();
+        s.gpt = (data && (data.text||data.output||data.result)) || '';
+      }catch(e){ s.gpt = '⚠️ API error — check endpoint.'; }
+      renderStaging();
+    });
 
-/* ---------- Prompt Builder + Send to GPT ---------- */
-function notesGrouped(){
-  return Object.keys(state.output).sort(byName).map(sec=>{
-    const lines=(state.output[sec]||[]).map(it=>`- ${it.text}`).join('\n');
-    return `${sec}:\n${lines}`;
-  }).join('\n\n');
-}
-function fieldsBlock(){
-  const F=getFieldsSnapshot();
-  const map=[
-    ['Needs',F.f_needs],
-    ['Safe access at height',F.f_heights],
-    ['System characteristics notes',F.f_system],
-    ['Assistance for removal',F.f_assistance],
-    ['Restrictions / permissions',F.f_restrictions],
-    ['External hazards',F.f_externalhaz],
-    ['Additional delivery notes',F.f_delivery],
-    ['Office notes',F.f_office],
-    ['Installer notes - boiler/controls',F.f_inst_boiler],
-    ['Installer notes - flue',F.f_inst_flue],
-    ['Installer notes - gas/water',F.f_inst_gw],
-    ['Installer notes - disruption',F.f_inst_disrupt],
-    ['Installer notes - customer agreed actions',F.f_inst_customer],
-    ['Installer notes - special requirements',F.f_inst_special],
-  ];
-  return map.map(([k,v])=>`${k}:\n${v||''}`).join('\n\n');
-}
-function buildPrompt(preset){
-  const grouped = notesGrouped() || '(no staged selections)';
-  const freeForm = fieldsBlock();
-  const baseCustomer =
-`Turn these boiler survey notes + free-text into a concise customer summary (plain English bullets; no jargon; call out safety and permissions clearly).
-Selections:
-${grouped}
+    actions.append(searchWrap, btnSelectAll, btnClear, btnStage, btnGPT);
+    head.append(title, actions);
 
-Free-text:
-${freeForm}`;
-  const baseEngineer =
-`Turn these inputs into semicolon-separated Depot Notes grouped by section. Preserve technical specifics (flue clearances, gas upgrades, PRV/condensate) and include safety/access.
-Output only semicolon lines for the notes; ignore headings.
-Selections:
-${grouped}
+    // Columns: left = list, right = notes + staging
+    const cols = document.createElement('div'); cols.className='cols';
 
-Free-text (fold into appropriate sections):
-${freeForm}`;
-  const baseBoth =
-`Produce two parts from these inputs:
+    // LEFT: list
+    const left = document.createElement('div'); left.className='panel';
+    const list = document.createElement('div'); list.className='list';
+    left.append(list);
 
-1) CUSTOMER SUMMARY — plain-English bullets; no jargon; highlight safety/permissions.
-2) DEPOT NOTES — semicolon-separated lines grouped by section; technical detail preserved.
+    // RIGHT: notes + staged outputs
+    const right = document.createElement('div'); right.className='panel';
 
-Selections:
-${grouped}
+    const notesLabel = document.createElement('div'); notesLabel.innerHTML = '<strong>Manual notes (included in Depot section & GPT):</strong>';
+    const notes = document.createElement('textarea'); notes.className='copyta'; notes.placeholder='Add any free-typed notes for this section…'; notes.value=s.notes||'';
+    notes.addEventListener('input', ()=>{ s.notes = notes.value; });
 
-Free-text (fold into relevant sections):
-${freeForm}`;
-  switch(preset){
-    case 'customer': return baseCustomer;
-    case 'engineer': return baseEngineer;
-    case 'both':     return baseBoth;
-    default:         return document.getElementById('promptBox').value || baseBoth;
-  }
-}
-async function sendToGPT(){
-  const preset=document.getElementById('promptPreset').value;
-  const prompt=buildPrompt(preset);
-  const box=document.getElementById('promptBox'); box.value=prompt;
-  try{ await navigator.clipboard.writeText(prompt); }catch(e){
-    const ta=document.createElement('textarea'); ta.value=prompt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-  }
-  window.open('https://chat.openai.com/', '_blank', 'noopener');
-  setAlert('Prompt copied to clipboard. ChatGPT opened — paste (Cmd/Ctrl+V).','success');
-}
+    const stagedLabel = document.createElement('div'); stagedLabel.innerHTML = '<strong>Depot Section Output</strong> <span class="muted">(copy into Depot)</span>';
+    const staged = document.createElement('textarea'); staged.className='copyta'; staged.readOnly=true; staged.value=s.staged||'';
 
-/* ---------- Fields & Append-from-staged ---------- */
-const FIELD_IDS=['f_needs','f_heights','f_system','f_assistance','f_restrictions','f_externalhaz','f_delivery','f_office','f_inst_boiler','f_inst_flue','f_inst_gw','f_inst_disrupt','f_inst_customer','f_inst_special'];
-function getFieldsSnapshot(){ const o={}; FIELD_IDS.forEach(id=> o[id]=document.getElementById(id).value); return o; }
-function setFieldsFromSnapshot(snap){ FIELD_IDS.forEach(id=>{ if(id in snap){ const el=document.getElementById(id); if(el) el.value=snap[id]; } }); }
-function appendText(id, text){ const el=document.getElementById(id); if(!el) return; el.value=(el.value?el.value.trim()+'\n':'')+text.trim(); }
+    const actions2 = document.createElement('div'); actions2.style.display='flex'; actions2.style.gap='8px'; actions2.style.flexWrap='wrap';
+    const btnCopyStaged = document.createElement('button'); btnCopyStaged.className='btn ok'; btnCopyStaged.textContent='Copy Depot Section'; btnCopyStaged.addEventListener('click', async()=>{ await copy(staged.value); });
+    const btnRebuild = document.createElement('button'); btnRebuild.className='btn'; btnRebuild.textContent='Rebuild from ticks + notes'; btnRebuild.addEventListener('click', ()=>{ s.staged = linesForSection(name); staged.value=s.staged; });
 
-// Recipient dropdown contents
-const RECIPIENTS = [
-  ['f_needs','Needs'],
-  ['f_heights','Safe access at height'],
-  ['f_system','System characteristics notes'],
-  ['f_assistance','Components requiring assistance'],
-  ['f_restrictions','Restrictions / permissions'],
-  ['f_externalhaz','External hazards'],
-  ['f_delivery','Additional delivery notes'],
-  ['f_office','Office notes'],
-  ['f_inst_boiler','Installer notes - boiler/controls'],
-  ['f_inst_flue','Installer notes - flue'],
-  ['f_inst_gw','Installer notes - gas/water'],
-  ['f_inst_disrupt','Installer notes - disruption'],
-  ['f_inst_customer','Installer notes - customer agreed actions'],
-  ['f_inst_special','Installer notes - special requirements'],
-];
+    const gptLabel = document.createElement('div'); gptLabel.innerHTML = '<strong>GPT Output</strong> <span class="muted">(from API; optional)</span>';
+    const gptOut = document.createElement('textarea'); gptOut.className='copyta'; gptOut.readOnly=true; gptOut.value=s.gpt||'';
+    const btnCopyGPT = document.createElement('button'); btnCopyGPT.className='btn'; btnCopyGPT.textContent='Copy GPT Output'; btnCopyGPT.addEventListener('click', async()=>{ await copy(gptOut.value); });
 
-// Map staged buckets → fields for the “Append from staged” buttons
-const PULL_MAP = new Map([
-  ['Needs','f_needs'],
-  ['Restrictions to work','f_heights'],
-  ['External hazards','f_externalhaz'],
-  ['Delivery notes','f_delivery'],
-  ['Office notes','f_office'],
-  ['Installer notes - boiler/controls','f_inst_boiler'],
-  ['Flue','f_inst_flue'],
-  ['Gas / Water','f_inst_gw'], // special merge handled below
-  ['Disruption','f_inst_disrupt'],
-  ['Customer actions','f_inst_customer'],
-  ['Special requirements','f_inst_special'],
-  ['System characteristics','f_system'],
-  ['Components that require assistance','f_assistance'],
-]);
+    right.append(notesLabel, notes, stagedLabel, staged, actions2, gptLabel, gptOut, btnCopyGPT);
+    actions2.append(btnCopyStaged, btnRebuild);
 
-/* ---------- Boot & Events ---------- */
-async function boot(){
-  load();
-  await loadDefault();
-  wireUI();
-}
-function wireUI(){
-  // loaders
-  document.getElementById('reloadBtn').onclick=()=>loadDefault();
-  document.getElementById('loadUrlBtn').onclick=()=>{ const u=document.getElementById('urlInput').value.trim(); if(u) loadFromUrl(u); };
-  document.getElementById('loadFileBtn').onclick=()=>document.getElementById('fileInput').click();
-  document.getElementById('fileInput').onchange=e=>{ const f=e.target.files?.[0]; if(f) loadFromFile(f); e.target.value=''; };
-  document.getElementById('loadPasteBtn').onclick=()=>loadFromPaste();
+    // Mount
+    sec.append(head, (function(){ cols.append(left,right); return cols; })());
+    grid.appendChild(sec);
 
-  // picker
-  document.getElementById('sectionSelect').onchange=e=>{ state.currentSection=e.target.value; renderItems(); };
-  document.getElementById('filterBox').oninput=e=>{ state.filter=e.target.value||''; renderItems(); };
-  window.addEventListener('keydown',e=>{ if(e.key==='/'){ e.preventDefault(); document.getElementById('filterBox').focus(); } });
-  document.getElementById('selectVisibleBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=true); };
-  document.getElementById('clearSelectionBtn').onclick=()=>{ Array.from(document.querySelectorAll('#itemsList input[type=checkbox]')).forEach(cb=>cb.checked=false); };
+    // Renderers
+    function renderCounts(){ el(`#count-${CSS.escape(name)}`).textContent = `${s.selected.size} selected`; }
 
-  // add flows
-  document.getElementById('addCheckedTargetBtn').onclick=()=>{
-    const fieldId=document.getElementById('outputSectionSelect').value;
-    const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
-    if(!fieldId || !cbs.length) return;
-    const text=cbs.map(cb=>JSON.parse(cb.dataset.payload).text+';').join('\n');
-    appendText(fieldId, text);
-    cbs.forEach(cb=>cb.checked=false);
-    save();
-  };
-  document.getElementById('addVisibleTargetBtn').onclick=()=>{
-    const fieldId=document.getElementById('outputSectionSelect').value;
-    const items=visibleItems();
-    if(!fieldId || !items.length) return;
-    const text=items.map(it=>it.text+';').join('\n');
-    appendText(fieldId, text);
-    save();
-  };
-  document.getElementById('addCheckedPreserveBtn').onclick=()=>{
-    const cbs=Array.from(document.querySelectorAll('#itemsList input[type=checkbox]:checked'));
-    if(!cbs.length) return;
-    pushManyPreserve(cbs.map(cb=>JSON.parse(cb.dataset.payload)));
-    cbs.forEach(cb=>cb.checked=false);
-    renderStaging(); renderCopy(); save();
-  };
-  document.getElementById('addVisiblePreserveBtn').onclick=()=>{
-    const items=visibleItems(); if(!items.length) return;
-    pushManyPreserve(items);
-    renderStaging(); renderCopy(); save();
-  };
-  document.getElementById('quickAddBtn').onclick=()=>{
-    const v=norm(document.getElementById('quickAddText').value); if(!v) return;
-    if(!state.output.Custom) state.output.Custom=[]; state.output.Custom.push({text:v,code:'',category:'Custom'});
-    document.getElementById('quickAddText').value=''; save(); renderStaging(); renderCopy();
-  };
-
-  // copy & prompt
-  document.getElementById('includeHeaders').onchange=()=>renderCopy();
-  document.getElementById('copyBtn').onclick=()=>{
-    const ta=document.getElementById('copyBox'); ta.select(); ta.setSelectionRange(0,999999);
-    try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
-  };
-  document.getElementById('copyFullBtn').onclick=()=>{
-    const full=buildFullPackage();
-    const ta=document.createElement('textarea'); ta.value=full; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-    setAlert('Full package copied (semicolon lines + all free-text fields).','success');
-  };
-  document.getElementById('promptPreset').onchange=()=>{ if(document.getElementById('promptPreset').value!=='custom') document.getElementById('promptBox').value=''; };
-  document.getElementById('buildPromptBtn').onclick=()=>{ document.getElementById('promptBox').value = buildPrompt(document.getElementById('promptPreset').value); };
-  document.getElementById('sendToGptBtn').onclick=()=>sendToGPT();
-
-  // reset
-  document.getElementById('resetBtn').onclick=()=>{ localStorage.removeItem(STORAGE_KEY); location.href = location.pathname+'?reset='+Date.now(); };
-
-  // append-from-staged buttons
-  document.querySelectorAll('button[data-pull]').forEach(btn=>{
-    btn.onclick=()=>{
-      const src=btn.getAttribute('data-pull');
-      if(src==='Gas / Water'){
-        const mergeNames=['Gas / Water','Gas run','Water services','Condensate','Discharge','Primaries & Filtration','Primaries','Primaries & filtration'];
-        const merged=[];
-        mergeNames.forEach(n=>{ const arr=state.output[n]||state.output[n.replace('&','and')]||[]; merged.push(...arr); });
-        const text = merged.map(it=>it.text+';').join('\n');
-        appendText('f_inst_gw', text); save(); return;
+    function renderList(){
+      renderCounts();
+      list.innerHTML='';
+      for (const it of visibleItems(s)){
+        const row = document.createElement('label'); row.className='row';
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = s.selected.has(it.id);
+        cb.addEventListener('change', ()=>{ cb.checked ? s.selected.add(it.id) : s.selected.delete(it.id); renderCounts(); });
+        const code = document.createElement('span'); code.className='code'; code.textContent = it.code;
+        const text = document.createElement('span'); text.className='text'; text.textContent = it.text;
+        row.append(cb, code, text);
+        list.appendChild(row);
       }
-      const targetId = PULL_MAP.get(src);
-      const items=(state.output[src]||[]).map(it=>it.text+';').join('\n');
-      if(!targetId){ setAlert(`No staged section named “${src}” to pull.`, 'error'); return; }
-      appendText(targetId, items); save();
-    };
-  });
+    }
 
-  // persist fields
-  FIELD_IDS.forEach(id=>{ const el=document.getElementById(id); el.addEventListener('input', ()=>save()); });
-}
+    function renderStaging(){ staged.value = s.staged||''; gptOut.value = s.gpt||''; }
 
-boot();
-</script>
+    // expose
+    sec.__renderList = renderList;
+
+    renderList();
+    renderStaging();
+  }
+
+  // ---- Init ---------------------------------------------------------------
+  (async function init(){
+    const sections = await loadOptions();
+    // normalize
+    for (const [name, arr] of Object.entries(sections)){
+      const items = (arr||[]).map((x,i)=>({ code: x.code ?? x.CODE ?? `X${i+1}`, text: x.text ?? x.Specific ?? x.specific ?? x.desc ?? x.description ?? String(x), id: `${name}::${x.code ?? x.CODE ?? i}` }));
+      state.sections[name] = { items, selected:new Set(), filter:'', staged:'', notes:'', gpt:'' };
+    }
+    el('#includeHeaders').addEventListener('change', (e)=>{ state.includeHeaders = e.target.checked; });
+    el('#semicolonLines').addEventListener('change', (e)=>{ state.semicolonLines = e.target.checked; });
+
+    el('#grid').innerHTML='';
+    for (const name of Object.keys(state.sections)) renderSection(name);
+  })();
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes Picker — Per‑Section Staging</title>
+  <style>
+    :root {
+      --bg: #0f172a;        /* slate-900 */
+      --panel: #0b1220;     /* custom */
+      --muted: #111827;     /* gray-900 */
+      --fg: #e5e7eb;        /* gray-200 */
+      --fg-dim: #9ca3af;    /* gray-400 */
+      --accent: #22d3ee;    /* cyan-400 */
+      --ok: #10b981;        /* emerald-500 */
+      --warn: #f59e0b;      /* amber-500 */
+      --danger: #ef4444;    /* red-500 */
+      --radius: 14px;
+    }
+    html, body { height: 100%; }
+    body { margin: 0; background: linear-gradient(180deg, #0b1022, #0a0d18 20%, #0f172a 80%); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px 48px; }
+
+    header { display: grid; gap: 10px; grid-template-columns: 1fr auto; align-items: end; margin-bottom: 16px; }
+    h1 { font-weight: 700; margin: 0; font-size: 24px; letter-spacing: 0.2px; }
+    .sub { color: var(--fg-dim); font-size: 13px; }
+
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .chip { background: var(--muted); border: 1px solid #273244; padding: 8px 10px; border-radius: 999px; display: inline-flex; gap: 8px; align-items: center; }
+
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+
+    .section { grid-column: span 12; background: rgba(17,24,39,0.75); border: 1px solid #20314a; border-radius: var(--radius); overflow: hidden; }
+    .sec-head { display:flex; align-items:center; justify-content:space-between; gap: 8px; padding: 14px 16px; background: linear-gradient(180deg, #0e1628, #0b1322); border-bottom: 1px solid #1e2a43; }
+    .sec-title { font-weight: 700; letter-spacing: 0.3px; }
+    .sec-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    .btn { appearance: none; border: 1px solid #243044; background: #111827; color: var(--fg); font-weight: 600; letter-spacing: .2px; padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: transform .04s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+    .btn:hover { border-color: #2f415e; box-shadow: 0 0 0 2px rgba(34,211,238,.12) inset; }
+    .btn:active { transform: translateY(1px); }
+    .btn.ok { border-color: #1e6b54; box-shadow: 0 0 0 2px rgba(16,185,129,.12) inset; }
+    .btn.warn { border-color: #6b4e1e; box-shadow: 0 0 0 2px rgba(245,158,11,.12) inset; }
+
+    .search { min-width: 220px; }
+    .input { width: 100%; background: #0b1220; border: 1px solid #213049; color: var(--fg); padding: 9px 11px; border-radius: 10px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+    .input::placeholder { color: #6b7280; }
+    .input:focus { border-color: #33557a; box-shadow: 0 0 0 2px rgba(34,211,238,.1); }
+
+    .cols { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 14px 16px; }
+    @media (min-width: 900px) { .cols { grid-template-columns: 1.2fr 1fr; } }
+
+    .panel { background: var(--panel); border: 1px solid #20314a; border-radius: var(--radius); padding: 12px; display: grid; gap: 10px; }
+    .list { max-height: 280px; overflow: auto; display: grid; gap: 6px; }
+    .row { display: flex; gap: 10px; align-items: center; background: #0a0f1d; border: 1px solid #1a2740; padding: 8px 10px; border-radius: 10px; }
+    .code { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--accent); font-size: 12px; }
+    .text { flex: 1; }
+    .pill { padding: 3px 8px; border: 1px solid #2a3a56; border-radius: 999px; font-size: 12px; color: var(--fg-dim); }
+
+    .copyta { width: 100%; min-height: 96px; background: #07101f; border: 1px solid #1d2b45; color: var(--fg); padding: 10px; border-radius: 10px; resize: vertical; }
+    .muted { color: var(--fg-dim); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Depot Notes Picker (Per‑Section Staging)</h1>
+        <div class="sub">Tick lines in each section → <strong>Copy to Depot Section</strong> to stage → then <strong>Copy Depot Section</strong> into Depot.</div>
+      </div>
+      <div class="toolbar">
+        <label class="chip"><input id="includeHeaders" type="checkbox" checked> <span>Include section headers</span></label>
+        <label class="chip"><input id="semicolonLines" type="checkbox" checked> <span>Use “;” line breaks</span></label>
+      </div>
+    </header>
+
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </div>
+
+  <script>
+  // ---- Optional API config (for GPT-style prose per section) --------------
+  const CONFIG = {
+    GPT_URL: '' // e.g. 'https://your-worker.example.com/section'
+  };
+
+  // ---- Load options --------------------------------------------------------
+  async function loadOptions() {
+    try {
+      const res = await fetch('./options.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('No options.json');
+      const json = await res.json();
+      return json.sections ? json.sections : json;
+    } catch (e) {
+      console.warn('Falling back to demo options:', e.message);
+      return {
+        'Needs': [
+          { code:'NE01', text:'Better water pressure' },
+          { code:'NE02', text:'Faster hot water delivery' },
+          { code:'NE03', text:'More usable space' }
+        ],
+        'System Characteristics': [
+          { code:'SC01', text:'System type – Regular' },
+          { code:'SC03', text:'Pressurisation – Sealed' },
+          { code:'SC05', text:'Primary circuit – Fully pumped' }
+        ]
+      };
+    }
+  }
+
+  // ---- State --------------------------------------------------------------
+  const state = {
+    sections: {}, // name -> { items, selected:Set, filter:string, staged:string, notes:string, gpt:string }
+    includeHeaders: true,
+    semicolonLines: true,
+  };
+
+  // ---- Helpers ------------------------------------------------------------
+  const el = (sel, root=document) => root.querySelector(sel);
+  const els = (sel, root=document) => [...root.querySelectorAll(sel)];
+  const escape = (s='') => String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function visibleItems(s){
+    if(!s.filter) return s.items;
+    const q = s.filter.toLowerCase();
+    return s.items.filter(it => (it.text||'').toLowerCase().includes(q) || (it.code||'').toLowerCase().includes(q));
+  }
+
+  function linesForSection(name){
+    const s = state.sections[name];
+    const items = s.items.filter(it => s.selected.has(it.id));
+    const out = [];
+    if (state.includeHeaders && items.length) out.push(name + ':');
+    for (const it of items) out.push(it.text);
+    if ((s.notes||'').trim()) out.push('Notes: ' + s.notes.trim());
+    return state.semicolonLines ? out.join('; ') : out.join('\n');
+  }
+
+  async function copy(text){ try{ await navigator.clipboard.writeText(text); }catch(e){ console.warn('Clipboard failed', e); } }
+
+  // ---- Render -------------------------------------------------------------
+  function renderSection(name){
+    const s = state.sections[name];
+    const grid = el('#grid');
+
+    const sec = document.createElement('section');
+    sec.className = 'section';
+
+    // Header
+    const head = document.createElement('div');
+    head.className = 'sec-head';
+
+    const title = document.createElement('div');
+    title.className = 'sec-title';
+    const count = document.createElement('span');
+    count.className = 'pill';
+    count.id = `count-${name}`;
+    title.innerHTML = `${escape(name)} `;
+    title.appendChild(count);
+
+    const actions = document.createElement('div');
+    actions.className = 'sec-actions';
+
+    // Search
+    const searchWrap = document.createElement('div');
+    searchWrap.className = 'search';
+    const search = document.createElement('input');
+    search.className = 'input'; search.type='search'; search.placeholder='Filter this section…'; search.value=s.filter;
+    search.addEventListener('input', ()=>{ s.filter = search.value; renderList(); });
+    searchWrap.appendChild(search);
+
+    // Buttons
+    const btnSelectAll = document.createElement('button');
+    btnSelectAll.className='btn'; btnSelectAll.textContent='Select All (visible)';
+    btnSelectAll.addEventListener('click', ()=>{ visibleItems(s).forEach(it=>s.selected.add(it.id)); renderList(); });
+
+    const btnClear = document.createElement('button');
+    btnClear.className='btn warn'; btnClear.textContent='Clear Section';
+    btnClear.addEventListener('click', ()=>{ s.selected.clear(); s.notes=''; s.staged=''; s.gpt=''; renderList(); });
+
+    const btnStage = document.createElement('button');
+    btnStage.className='btn ok'; btnStage.textContent='Copy to Depot Section';
+    btnStage.title = 'Build from ticks + notes and stage below (also copied)';
+    btnStage.addEventListener('click', async ()=>{
+      s.staged = linesForSection(name);
+      await copy(s.staged);
+      renderStaging();
+    });
+
+    const btnGPT = document.createElement('button');
+    btnGPT.className='btn'; btnGPT.textContent='Build via GPT';
+    btnGPT.style.display = CONFIG.GPT_URL ? 'inline-block' : 'none';
+    btnGPT.addEventListener('click', async ()=>{
+      if(!CONFIG.GPT_URL) return;
+      const payload = {
+        section: name,
+        selected: s.items.filter(it=>s.selected.has(it.id)).map(({code,text})=>({code,text})),
+        notes: s.notes||''
+      };
+      try{
+        const res = await fetch(CONFIG.GPT_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const data = await res.json();
+        s.gpt = (data && (data.text||data.output||data.result)) || '';
+      }catch(e){ s.gpt = '⚠️ API error — check endpoint.'; }
+      renderStaging();
+    });
+
+    actions.append(searchWrap, btnSelectAll, btnClear, btnStage, btnGPT);
+    head.append(title, actions);
+
+    // Columns: left = list, right = notes + staging
+    const cols = document.createElement('div'); cols.className='cols';
+
+    // LEFT: list
+    const left = document.createElement('div'); left.className='panel';
+    const list = document.createElement('div'); list.className='list';
+    left.append(list);
+
+    // RIGHT: notes + staged outputs
+    const right = document.createElement('div'); right.className='panel';
+
+    const notesLabel = document.createElement('div'); notesLabel.innerHTML = '<strong>Manual notes (included in Depot section & GPT):</strong>';
+    const notes = document.createElement('textarea'); notes.className='copyta'; notes.placeholder='Add any free-typed notes for this section…'; notes.value=s.notes||'';
+    notes.addEventListener('input', ()=>{ s.notes = notes.value; });
+
+    const stagedLabel = document.createElement('div'); stagedLabel.innerHTML = '<strong>Depot Section Output</strong> <span class="muted">(copy into Depot)</span>';
+    const staged = document.createElement('textarea'); staged.className='copyta'; staged.readOnly=true; staged.value=s.staged||'';
+
+    const actions2 = document.createElement('div'); actions2.style.display='flex'; actions2.style.gap='8px'; actions2.style.flexWrap='wrap';
+    const btnCopyStaged = document.createElement('button'); btnCopyStaged.className='btn ok'; btnCopyStaged.textContent='Copy Depot Section'; btnCopyStaged.addEventListener('click', async()=>{ await copy(staged.value); });
+    const btnRebuild = document.createElement('button'); btnRebuild.className='btn'; btnRebuild.textContent='Rebuild from ticks + notes'; btnRebuild.addEventListener('click', ()=>{ s.staged = linesForSection(name); staged.value=s.staged; });
+
+    const gptLabel = document.createElement('div'); gptLabel.innerHTML = '<strong>GPT Output</strong> <span class="muted">(from API; optional)</span>';
+    const gptOut = document.createElement('textarea'); gptOut.className='copyta'; gptOut.readOnly=true; gptOut.value=s.gpt||'';
+    const btnCopyGPT = document.createElement('button'); btnCopyGPT.className='btn'; btnCopyGPT.textContent='Copy GPT Output'; btnCopyGPT.addEventListener('click', async()=>{ await copy(gptOut.value); });
+
+    right.append(notesLabel, notes, stagedLabel, staged, actions2, gptLabel, gptOut, btnCopyGPT);
+    actions2.append(btnCopyStaged, btnRebuild);
+
+    // Mount
+    sec.append(head, (function(){ cols.append(left,right); return cols; })());
+    grid.appendChild(sec);
+
+    // Renderers
+    function renderCounts(){ el(`#count-${CSS.escape(name)}`).textContent = `${s.selected.size} selected`; }
+
+    function renderList(){
+      renderCounts();
+      list.innerHTML='';
+      for (const it of visibleItems(s)){
+        const row = document.createElement('label'); row.className='row';
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = s.selected.has(it.id);
+        cb.addEventListener('change', ()=>{ cb.checked ? s.selected.add(it.id) : s.selected.delete(it.id); renderCounts(); });
+        const code = document.createElement('span'); code.className='code'; code.textContent = it.code;
+        const text = document.createElement('span'); text.className='text'; text.textContent = it.text;
+        row.append(cb, code, text);
+        list.appendChild(row);
+      }
+    }
+
+    function renderStaging(){ staged.value = s.staged||''; gptOut.value = s.gpt||''; }
+
+    // expose
+    sec.__renderList = renderList;
+
+    renderList();
+    renderStaging();
+  }
+
+  // ---- Init ---------------------------------------------------------------
+  (async function init(){
+    const sections = await loadOptions();
+    // normalize
+    for (const [name, arr] of Object.entries(sections)){
+      const items = (arr||[]).map((x,i)=>({ code: x.code ?? x.CODE ?? `X${i+1}`, text: x.text ?? x.Specific ?? x.specific ?? x.desc ?? x.description ?? String(x), id: `${name}::${x.code ?? x.CODE ?? i}` }));
+      state.sections[name] = { items, selected:new Set(), filter:'', staged:'', notes:'', gpt:'' };
+    }
+    el('#includeHeaders').addEventListener('change', (e)=>{ state.includeHeaders = e.target.checked; });
+    el('#semicolonLines').addEventListener('change', (e)=>{ state.semicolonLines = e.target.checked; });
+
+    el('#grid').innerHTML='';
+    for (const name of Object.keys(state.sections)) renderSection(name);
+  })();
+  </script>
 </body>
 </html>
