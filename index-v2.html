@@ -2,35 +2,38 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Depot Notes v2 — Simple + Pro (Original)</title>
+<title>Depot Notes v2 — Simple (department→section) + Pro (Original)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  /* Scoped wrapper so nothing leaks into your original app */
+  /* Scoped to #depotV2 so v1 stays untouched */
   #depotV2 { --gap:.75rem; --pad:.75rem; --br:10px; --muted:#667085; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; background:#f7f7f9; color:#111; }
   #depotV2 header{background:#0e1217;color:#fff;padding:1rem 1.25rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
   #depotV2 h1{margin:0;font-size:1.05rem}
   #depotV2 .tag{background:#212632;color:#b6c0d1;padding:.2rem .55rem;border-radius:999px;font-size:.8rem}
-  #depotV2 .wrap{max-width:1100px;margin:0 auto;padding:1rem}
+  #depotV2 .wrap{max-width:1200px;margin:0 auto;padding:1rem}
   #depotV2 .tabs{display:flex;gap:.5rem;margin:.5rem 0 1rem}
   #depotV2 .tab{border:1px solid #d9dbe1;background:#fff;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
   #depotV2 .tab.active{background:#0e1217;color:#fff;border-color:#0e1217}
   #depotV2 .pane{display:none}
   #depotV2 .pane.active{display:block}
-  #depotV2 .row{display:flex;gap:1rem}
+  #depotV2 .row{display:flex;gap:1rem;align-items:flex-start}
   #depotV2 .col{background:#fff;border:1px solid #e6e7eb;border-radius:10px;padding:.8rem;flex:1;min-width:0}
-  #depotV2 .col.narrow{flex:0 0 320px}
+  #depotV2 .col.narrow{flex:0 0 380px}
   #depotV2 select,#depotV2 input,#depotV2 textarea{width:100%;padding:.5rem .6rem;border:1px solid #d6d7db;border-radius:8px;font:inherit}
-  #depotV2 .list{border:1px solid #e6e7eb;border-radius:8px;max-height:360px;overflow:auto;padding:.3rem;background:#fff}
-  #depotV2 .item{display:flex;gap:.5rem;align-items:center;padding:.28rem .4rem;border-radius:6px}
+  #depotV2 .list{border:1px solid #e6e7eb;border-radius:8px;max-height:420px;overflow:auto;padding:.3rem;background:#fff}
+  #depotV2 .item{display:flex;gap:.5rem;align-items:center;padding:.28rem .5rem;border-radius:6px}
   #depotV2 .item:hover{background:#f2f3f7}
   #depotV2 .muted{color:#667085}
   #depotV2 .grid{display:grid;gap:.5rem}
   #depotV2 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  #depotV2 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem}
   #depotV2 .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
   #depotV2 button{padding:.55rem .75rem;border:1px solid #d6d7db;border-radius:8px;background:#fff;cursor:pointer}
   #depotV2 button.primary{background:#0e1217;color:#fff;border-color:#0e1217}
   #depotV2 .pill{font-size:.78rem;padding:.15rem .55rem;border:1px solid #d6d7db;border-radius:999px;background:#fafafe}
   #depotV2 .status{font-size:.85rem}
+  #depotV2 .sectionCard{border:1px solid #eceef3;border-radius:10px;padding:.75rem;margin:.75rem 0;background:#fff}
+  #depotV2 .sectionCard h3{margin:.1rem 0 .4rem;font-size:1rem}
   #depotV2 iframe{width:100%;height:85vh;border:1px solid #e6e7eb;border-radius:10px;background:#fff}
 </style>
 </head>
@@ -38,8 +41,8 @@
 <div id="depotV2">
   <header>
     <h1>Depot Notes v2</h1>
-    <span class="tag">Simple picker + Pro (Original)</span>
-    <span class="muted">Pro shows your current app untouched. Simple is the tiny quote-tool style picker.</span>
+    <span class="tag">Simple: Department → Depot Section</span>
+    <span class="tag">Pro: Original (iframe)</span>
   </header>
 
   <div class="wrap">
@@ -51,53 +54,51 @@
     <!-- SIMPLE PANE -->
     <section class="pane active" id="pane-simple">
       <div class="row">
+        <!-- LEFT: Source Department + staging -->
         <div class="col narrow">
           <div class="grid">
-            <label><strong>Section</strong>
-              <select id="s_section"></select>
-            </label>
-
-            <div class="muted">Tick items from this section. You can also attach from any other category.</div>
-
-            <div id="s_list" class="list"></div>
-
-            <label><strong>Quick note (one line)</strong>
-              <textarea id="s_note" rows="3" placeholder="e.g., Raise boiler 60mm for clearance"></textarea>
-            </label>
-
             <div class="grid2">
-              <select id="s_attach">
-                <option value="">+ Attach items from another category…</option>
-              </select>
-              <button id="s_attach_btn" disabled>Attach</button>
+              <label><strong>Source Department</strong>
+                <select id="srcDept"></select>
+              </label>
+              <label><strong>Target Depot Section</strong>
+                <select id="tgtSection"></select>
+              </label>
+            </div>
+
+            <input id="srcFilter" type="text" placeholder="Filter by code or text (optional)">
+
+            <div id="srcList" class="list"></div>
+
+            <div class="actions">
+              <button id="btnSelectAll">Select all (visible)</button>
+              <button id="btnClearVisible">Clear visible</button>
+              <span id="selCount" class="pill">0 selected</span>
             </div>
 
             <div class="actions">
-              <button id="s_copy" class="primary">Copy Section</button>
-              <span id="s_count" class="pill">0 selected</span>
+              <button id="btnSend" class="primary">Send to section</button>
+              <span id="sendStatus" class="status muted"></span>
             </div>
           </div>
         </div>
 
+        <!-- RIGHT: All depot sections, live-populated -->
         <div class="col">
-          <div class="grid2">
-            <label class="muted"><input type="checkbox" id="s_headers" checked> Include section header</label>
-            <label class="muted"><input type="checkbox" id="s_sort" checked> Sort lines</label>
+          <div class="actions" style="justify-content:space-between">
+            <span class="muted">Scroll to copy any section directly into Depot.</span>
+            <div>
+              <label class="muted"><input id="includeHeaders" type="checkbox" checked> Include section headers</label>
+              <label class="muted" style="margin-left:.75rem"><input id="sortLines" type="checkbox" checked> Sort lines</label>
+            </div>
           </div>
-          <textarea id="s_out" rows="16" readonly></textarea>
 
-          <div class="actions">
-            <input id="cf_url" type="text" placeholder="Cloudflare Worker URL (optional for summaries)">
-            <button id="sum_depot">Summarise (Depot)</button>
-            <button id="sum_customer">Summarise (Customer)</button>
-            <button id="copy_clip" class="primary">Copy</button>
-            <span id="s_status" class="status muted"></span>
-          </div>
+          <div id="sectionsStack"></div>
         </div>
       </div>
     </section>
 
-    <!-- PRO PANE = ORIGINAL APP -->
+    <!-- PRO PANE: Original app untouched -->
     <section class="pane" id="pane-pro">
       <p class="muted" style="margin:.25rem 0 .75rem">This loads your current <code>index.html</code> unchanged inside an iframe.</p>
       <iframe src="./" title="Original Depot Notes"></iframe>
@@ -105,6 +106,6 @@
   </div>
 </div>
 
-<script defer src="update-v2.js?v=3"></script>
+<script defer src="update-v2.js?v=4"></script>
 </body>
 </html>
