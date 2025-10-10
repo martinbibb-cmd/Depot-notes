@@ -6,7 +6,7 @@
   /* ------------ CONFIG ------------ */
   const CONFIG = {
     OPTIONS_URL: 'Options.txt',
-    SECTIONS: [
+    DEPOT_SECTIONS: [
       'Customer Summary','Boiler','Flue','Condensate','Gas','Heating Circuit',
       'Cylinder','Controls','Electrical','WAH','Access & Parking','Asbestos',
       'Disposal','Making Good','Notes / Caveats'
@@ -15,9 +15,10 @@
 
   /* ------------ STATE ------------ */
   const state = {
-    active: null,
-    sections: {},        // { [section]: { ticks:Set<string>, note:string } }
-    options: {},         // { [category]: [{code,text}] }
+    options: {},             // { [category]: [{code,text}] }
+    staged: new Set(),       // selected items (strings "CODE; text") in current source view
+    currentDept: null,       // category currently shown
+    sections: {}             // { [section]: { ticks:Set<string>, note:string } }
   };
   const ensure = s => (state.sections[s] ??= { ticks:new Set(), note:'' });
 
@@ -34,30 +35,51 @@
 
   /* ------------ BOOT ------------ */
   window.addEventListener('DOMContentLoaded', async ()=>{
-    // Populate sections
-    $("#s_section").innerHTML = CONFIG.SECTIONS.map(s=>`<option>${s}</option>`).join('');
-    state.active = CONFIG.SECTIONS[0]; ensure(state.active);
+    // hydrate target depot sections
+    $("#tgtSection").innerHTML = CONFIG.DEPOT_SECTIONS.map(s=>`<option>${s}</option>`).join('');
+    CONFIG.DEPOT_SECTIONS.forEach(s => ensure(s));
 
-    // Wire simple events
-    $("#s_section").addEventListener('change', e => { state.active = e.target.value; ensure(state.active); renderSimpleList(); reflectNote(); updateCounts(); buildOut(); });
-    $("#s_note").addEventListener('input', e => { ensure(state.active); state.sections[state.active].note = e.target.value.trim(); buildOut(); });
-    $("#s_attach").addEventListener('change', e => { $("#s_attach_btn").disabled = !e.target.value; });
-    $("#s_attach_btn").addEventListener('click', ()=>{
-      const cat = $("#s_attach").value; if(!cat) return;
-      (state.options[cat]||[]).forEach(it => state.sections[state.active].ticks.add(semi(it.code, it.text)));
-      $("#s_attach").value=''; $("#s_attach_btn").disabled=true;
-      renderSimpleList(); updateCounts(); buildOut();
+    // render the stack of all depot sections (right-hand side)
+    renderSectionsStack();
+
+    // events
+    $("#srcDept").addEventListener('change', ()=>{ state.currentDept = $("#srcDept").value; state.staged.clear(); $("#srcFilter").value=''; renderSrcList(); reflectSelCount(); });
+    $("#srcFilter").addEventListener('input', ()=>{ renderSrcList(); reflectSelCount(); });
+
+    $("#btnSelectAll").addEventListener('click', ()=>{ // select all visible items in current filter
+      $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+        const line = semi(chk.dataset.code, chk.dataset.text);
+        chk.checked = true; state.staged.add(line);
+      });
+      reflectSelCount();
     });
-    $("#s_copy").addEventListener('click', buildOut);
-    $("#copy_clip").addEventListener('click', ()=>{ $("#s_out").select(); document.execCommand('copy'); setStatus('Copied'); });
 
-    $("#sum_depot").addEventListener('click', ()=>summarise(false));
-    $("#sum_customer").addEventListener('click', ()=>summarise(true));
+    $("#btnClearVisible").addEventListener('click', ()=>{ // clear only visible
+      $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+        const line = semi(chk.dataset.code, chk.dataset.text);
+        chk.checked = false; state.staged.delete(line);
+      });
+      reflectSelCount();
+    });
 
-    // Load options and hydrate selectors
+    $("#btnSend").addEventListener('click', ()=>{
+      const tgt = $("#tgtSection").value;
+      if(!tgt || state.staged.size===0){ flashSend('Nothing to send'); return; }
+      ensure(tgt);
+      state.staged.forEach(line => state.sections[tgt].ticks.add(line));
+      state.staged.clear();
+      renderSrcList(); reflectSelCount();
+      updateSectionCard(tgt);
+      flashSend(`Sent to [${tgt}]`);
+    });
+
+    // load options and hydrate source departments
     await loadOptions();
-    hydrateAttachSelect();
-    renderSimpleList(); reflectNote(); buildOut();
+    const cats = Object.keys(state.options).sort();
+    $("#srcDept").innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    state.currentDept = cats[0] || null;
+    renderSrcList();
+    reflectSelCount();
   });
 
   /* ------------ OPTIONS LOADER (KISS flat) ------------ */
@@ -70,117 +92,91 @@
       if(hdr){ cat = hdr[1].trim(); state.options[cat] ??= []; return; }
       if(!cat) return;
       const parts = s.split('|').map(x=>x.trim());
-      if(parts.length>=3){ const [code,,specific] = parts; if(code && specific) state.options[cat].push({code, text:specific}); }
+      if(parts.length>=3){ const [code,,specific]=parts; if(code && specific) state.options[cat].push({code, text:specific}); }
     });
   }
-  function hydrateAttachSelect(){
-    $("#s_attach").innerHTML = `<option value="">+ Attach items from another category…</option>` +
-      Object.keys(state.options).sort().map(c=>`<option value="${c}">${c}</option>`).join('');
-  }
 
-  /* ------------ SIMPLE LIST (quote-tool style) ------------ */
-  function bestCategoryForSection(section){
-    const cats = new Set(Object.keys(state.options));
-    const direct = section.toLowerCase().replace(/[^a-z0-9]+/g,'_');
-    const alias = { wah:'working_at_heights', making_good:'making_good' };
-    if(cats.has(direct)) return direct;
-    if(alias[direct] && cats.has(alias[direct])) return alias[direct];
-    return Object.keys(state.options)[0] || direct;
-  }
+  /* ------------ LEFT: SOURCE (department) LIST ------------ */
+  function renderSrcList(){
+    const dept = state.currentDept; const q = ($("#srcFilter").value||'').toLowerCase();
+    const items = dept ? (state.options[dept] || []) : [];
+    const filtered = items.filter(it => !q || it.code.toLowerCase().includes(q) || it.text.toLowerCase().includes(q));
+    $("#srcList").innerHTML = filtered.length ? filtered.map(it=>{
+      const line = semi(it.code, it.text);
+      const checked = state.staged.has(line) ? 'checked' : '';
+      return `<label class="item"><input type="checkbox" data-code="${it.code}" data-text="${it.text}" ${checked}> <strong>${it.code}</strong> — ${it.text}</label>`;
+    }).join('') : `<div class="muted" style="padding:.5rem">No items match.</div>`;
 
-  function renderSimpleList(){
-    const section = state.active; ensure(section);
-    const cat = bestCategoryForSection(section);
-    const items = state.options[cat] || [];
-    const chosen = state.sections[section].ticks;
-
-    $("#s_list").innerHTML = items.length
-      ? items.map(it=>{
-          const id = `s_${section}_${it.code}`;
-          const checked = chosen.has(semi(it.code,it.text)) ? 'checked' : '';
-          return `<label class="item"><input type="checkbox" id="${id}" data-code="${it.code}" data-text="${it.text}" ${checked}> ${it.code} — ${it.text}</label>`;
-        }).join('')
-      : `<div class="muted" style="padding:.5rem">No items in <strong>${cat}</strong>. Use “Attach”.</div>`;
-
-    // Bind ticks
-    $("#s_list").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+    // bind checkboxes
+    $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
       chk.addEventListener('change', e=>{
-        const {code, text} = e.target.dataset;
-        const line = semi(code, text);
-        if(e.target.checked) chosen.add(line); else chosen.delete(line);
-        updateCounts(); buildOut();
+        const line = semi(e.target.dataset.code, e.target.dataset.text);
+        if(e.target.checked) state.staged.add(line); else state.staged.delete(line);
+        reflectSelCount();
       });
     });
-    updateCounts();
+  }
+  function reflectSelCount(){ $("#selCount").textContent = `${state.staged.size} selected`; }
+  function flashSend(msg){ const n=$("#sendStatus"); n.textContent=msg; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 2000); }
+
+  /* ------------ RIGHT: ALL DEPOT SECTIONS STACK ------------ */
+  function renderSectionsStack(){
+    const host = $("#sectionsStack");
+    host.innerHTML = CONFIG.DEPOT_SECTIONS.map(section => sectionCardMarkup(section)).join('');
+    // bind per-section controls
+    CONFIG.DEPOT_SECTIONS.forEach(section => bindSectionCard(section));
+    // initial fill
+    CONFIG.DEPOT_SECTIONS.forEach(section => updateSectionCard(section));
   }
 
-  function reflectNote(){ $("#s_note").value = state.sections[state.active]?.note ?? ''; }
+  function sectionCardMarkup(section){
+    const key = sectionKey(section);
+    return `
+      <div class="sectionCard" id="${key}">
+        <h3>${section}</h3>
+        <div class="grid2">
+          <label>Notes (optional, appears first as <code>NOTE;</code>)
+            <textarea data-note="${section}" rows="2" placeholder="One-liner notes for ${section}"></textarea>
+          </label>
+          <div class="actions" style="align-items:flex-end">
+            <button data-copy="${section}" class="primary">Copy</button>
+            <button data-clear="${section}">Clear items</button>
+            <label class="muted"><input data-includehdr="${section}" type="checkbox" checked> Include header</label>
+          </div>
+        </div>
+        <textarea data-out="${section}" rows="7" readonly></textarea>
+      </div>
+    `;
+  }
 
-  function updateCounts(){ $("#s_count").textContent = `${state.sections[state.active].ticks.size} selected`; }
+  function bindSectionCard(section){
+    const card = $("#"+sectionKey(section));
+    card.querySelector(`[data-note="${section}"]`).addEventListener('input', e=>{
+      ensure(section); state.sections[section].note = e.target.value.trim(); updateSectionCard(section);
+    });
+    card.querySelector(`[data-copy="${section}"]`).addEventListener('click', ()=>{
+      const ta = card.querySelector(`[data-out="${section}"]`); ta.select(); document.execCommand('copy');
+    });
+    card.querySelector(`[data-clear="${section}"]`).addEventListener('click', ()=>{
+      ensure(section); state.sections[section].ticks.clear(); updateSectionCard(section);
+    });
+    // include header checkbox affects only this card’s render
+    card.querySelector(`[data-includehdr="${section}"]`).addEventListener('change', ()=>updateSectionCard(section));
+  }
 
-  /* ------------ COPY OUTPUT ------------ */
-  function buildOut(){
-    const s = state.active; ensure(s);
+  function updateSectionCard(section){
+    ensure(section);
+    const card = $("#"+sectionKey(section));
+    const ta = card.querySelector(`[data-out="${section}"]`);
+    const includeHeader = card.querySelector(`[data-includehdr="${section}"]`).checked;
     const lines = [];
-    if($("#s_headers").checked) lines.push(`[${s}]`);
-    if(state.sections[s].note) lines.push(`NOTE; ${state.sections[s].note}`);
-    const arr = [...state.sections[s].ticks];
-    if($("#s_sort").checked) arr.sort((a,b)=>a.localeCompare(b));
+    if(includeHeader) lines.push(`[${section}]`);
+    if(state.sections[section].note) lines.push(`NOTE; ${state.sections[section].note}`);
+    const arr = [...state.sections[section].ticks];
+    if($("#sortLines").checked) arr.sort((a,b)=>a.localeCompare(b));
     lines.push(...arr);
-    $("#s_out").value = lines.join('\n');
+    ta.value = lines.join('\n');
   }
 
-  /* ------------ SUMMARIES (optional CF Worker) ------------ */
-  function buildPairs(){ return Object.entries(state.sections).filter(([,v])=>v.note || v.ticks.size); }
-  function customerPrompt(pairs){
-    return [
-      `SYSTEM: You are a UK heating adviser writing a short, clear customer summary.`,
-      `TONE: Friendly, factual, avoid jargon.`,
-      `LENGTH: 6–10 concise bullets.`,
-      `INCLUDE: boiler type/location, flue works, controls, water/pressure caveats, best-advice notes, access/WAH, making-good.`,
-      `EXCLUDE: internal codes; no prices.`,
-      `INPUT (semicolon items):`,
-      pairs.map(([id,d])=>{
-        const note = d.note ? `NOTE; ${d.note}\n` : '';
-        return `[# ${id}]\n${note}${[...d.ticks].join('\n')}`;
-      }).join('\n\n')
-    ].join('\n');
-  }
-  function depotPrompt(pairs){
-    return [
-      `SYSTEM: Generate DEPOT-READY notes (British Gas style) in terse semicolon lines.`,
-      `FORMAT: Keep semicolon items; group by [Section]; include engineer-critical caveats; no pricing.`,
-      `INPUT:`,
-      pairs.map(([id,d])=>{
-        const note = d.note ? `NOTE; ${d.note}\n` : '';
-        return `[# ${id}]\n${note}${[...d.ticks].join('\n')}`;
-      }).join('\n\n'),
-      `OUTPUT: Return only final notes, grouped by [Section], ready to paste.`
-    ].join('\n');
-  }
-
-  async function summarise(customer){
-    const pairs = buildPairs();
-    if(!pairs.length){ setStatus('Nothing selected yet'); return; }
-    const url = ($("#cf_url").value || '').trim();
-    const prompt = customer ? customerPrompt(pairs) : depotPrompt(pairs);
-
-    if(!url){
-      $("#s_out").value = `# ${customer ? 'Customer Summary' : 'Depot Summary'}\n\n${prompt}`;
-      setStatus('No CF URL set — showing prompt'); return;
-    }
-    try{
-      const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prompt }) });
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json().catch(()=>({}));
-      const text = data.text || data.output || data.result || (data.choices?.[0]?.message?.content) || '';
-      $("#s_out").value = (text || `# Summary\n\n${prompt}`).trim();
-      setStatus(text ? 'Summary ready' : 'Empty response — prompt shown');
-    }catch(err){
-      $("#s_out").value = `# ${customer ? 'Customer Summary' : 'Depot Summary'}\n\n${prompt}`;
-      setStatus(`CF error — prompt shown (${err.message})`);
-    }
-  }
-
-  function setStatus(msg){ const n=$("#s_status"); n.textContent=msg; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 2500); }
+  function sectionKey(s){ return 'sec_' + s.toLowerCase().replace(/[^a-z0-9]+/g,'_'); }
 })();
