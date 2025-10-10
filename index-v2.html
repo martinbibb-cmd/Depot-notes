@@ -1,129 +1,110 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Depot Notes v2 — Simple / Pro + GPT</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<title>Depot Notes v2 — Simple + Pro (Original)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  /* Scoped to #depotV2 so v1 is untouched */
-  #depotV2 { --gap:.75rem; --pad:.75rem; --br:8px; --muted:#667085; background:#f7f7f9; color:#111; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; }
-  #depotV2 header { background:#0e1217; color:#fff; padding:1rem 1.25rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
-  #depotV2 header h1 { font-size:1.05rem; margin:0; white-space:nowrap; }
-  #depotV2 .tag { background:#212632; color:#b6c0d1; padding:.15rem .5rem; border-radius:999px; font-size:.8rem; }
-  #depotV2 .wrap { padding:1rem; max-width:1100px; margin:0 auto; }
-  #depotV2 .toolbar { display:flex; gap:.75rem; align-items:center; background:#fff; border:1px solid #e6e7eb; padding:.5rem; border-radius:var(--br); }
-  #depotV2 .toolbar .spacer { flex:1; }
-  #depotV2 .toolbar label { display:inline-flex; align-items:center; gap:.35rem; font-weight:600; }
-  #depotV2 .small { font-size:.85rem; color:var(--muted); }
-  #depotV2 .row { display:flex; gap:1rem; margin-top:1rem; }
-  #depotV2 .col { background:#fff; border:1px solid #e6e7eb; border-radius:var(--br); padding:var(--pad); flex:1; min-width:0; }
-  #depotV2 .col.narrow { flex:0 0 300px; }
-  #depotV2 select, #depotV2 input[type="text"], #depotV2 textarea { width:100%; padding:.5rem .6rem; border:1px solid #d6d7db; border-radius:6px; font:inherit; }
-  #depotV2 button { padding:.55rem .75rem; border:1px solid #d6d7db; border-radius:6px; background:#fff; cursor:pointer; }
-  #depotV2 button.primary { background:#0e1217; color:#fff; border-color:#0e1217; }
-  #depotV2 button:disabled { opacity:.5; cursor:not-allowed; }
-  #depotV2 .section-head { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; }
-  #depotV2 .grid { display:grid; gap:.5rem; }
-  #depotV2 .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
-  #depotV2 .list { border:1px solid #e6e7eb; border-radius:6px; max-height:340px; overflow:auto; padding:.25rem; }
-  #depotV2 .item { display:flex; align-items:center; gap:.5rem; padding:.3rem .4rem; border-radius:6px; }
-  #depotV2 .item:hover { background:#f2f3f7; }
-  #depotV2 .muted { color:var(--muted); font-size:.9rem; }
-  #depotV2 .section-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem; }
-  #depotV2 .pill { font-size:.75rem; padding:.15rem .5rem; border:1px solid #d6d7db; border-radius:999px; background:#fafafe; }
-  #depotV2 .hidden { display:none !important; }
-  #depotV2 .note { color:#b54708; font-weight:600; }
-  #depotV2 .ok { color:#067647; font-weight:600; }
-  #depotV2 .danger { color:#b42318; font-weight:600; }
-  #depotV2 .hr { height:1px; background:#ececf1; margin:.5rem 0; }
+  /* Scoped wrapper so nothing leaks into your original app */
+  #depotV2 { --gap:.75rem; --pad:.75rem; --br:10px; --muted:#667085; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; background:#f7f7f9; color:#111; }
+  #depotV2 header{background:#0e1217;color:#fff;padding:1rem 1.25rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+  #depotV2 h1{margin:0;font-size:1.05rem}
+  #depotV2 .tag{background:#212632;color:#b6c0d1;padding:.2rem .55rem;border-radius:999px;font-size:.8rem}
+  #depotV2 .wrap{max-width:1100px;margin:0 auto;padding:1rem}
+  #depotV2 .tabs{display:flex;gap:.5rem;margin:.5rem 0 1rem}
+  #depotV2 .tab{border:1px solid #d9dbe1;background:#fff;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
+  #depotV2 .tab.active{background:#0e1217;color:#fff;border-color:#0e1217}
+  #depotV2 .pane{display:none}
+  #depotV2 .pane.active{display:block}
+  #depotV2 .row{display:flex;gap:1rem}
+  #depotV2 .col{background:#fff;border:1px solid #e6e7eb;border-radius:10px;padding:.8rem;flex:1;min-width:0}
+  #depotV2 .col.narrow{flex:0 0 320px}
+  #depotV2 select,#depotV2 input,#depotV2 textarea{width:100%;padding:.5rem .6rem;border:1px solid #d6d7db;border-radius:8px;font:inherit}
+  #depotV2 .list{border:1px solid #e6e7eb;border-radius:8px;max-height:360px;overflow:auto;padding:.3rem;background:#fff}
+  #depotV2 .item{display:flex;gap:.5rem;align-items:center;padding:.28rem .4rem;border-radius:6px}
+  #depotV2 .item:hover{background:#f2f3f7}
+  #depotV2 .muted{color:#667085}
+  #depotV2 .grid{display:grid;gap:.5rem}
+  #depotV2 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  #depotV2 .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+  #depotV2 button{padding:.55rem .75rem;border:1px solid #d6d7db;border-radius:8px;background:#fff;cursor:pointer}
+  #depotV2 button.primary{background:#0e1217;color:#fff;border-color:#0e1217}
+  #depotV2 .pill{font-size:.78rem;padding:.15rem .55rem;border:1px solid #d6d7db;border-radius:999px;background:#fafafe}
+  #depotV2 .status{font-size:.85rem}
+  #depotV2 iframe{width:100%;height:85vh;border:1px solid #e6e7eb;border-radius:10px;background:#fff}
 </style>
 </head>
 <body>
 <div id="depotV2">
   <header>
     <h1>Depot Notes v2</h1>
-    <span class="tag">Simple / Pro</span>
-    <span class="small">Sandboxed build — your original stays intact.</span>
+    <span class="tag">Simple picker + Pro (Original)</span>
+    <span class="muted">Pro shows your current app untouched. Simple is the tiny quote-tool style picker.</span>
   </header>
 
   <div class="wrap">
-    <div class="toolbar" role="region" aria-label="Toolbar">
-      <label><input type="radio" name="viewMode" value="simple" checked> Simple</label>
-      <label><input type="radio" name="viewMode" value="pro"> Pro</label>
-      <div class="spacer"></div>
-      <label class="small">CF Worker URL</label>
-      <input id="gptUrl" type="text" placeholder="https://YOUR.worker.dev/api/gpt" style="max-width:460px">
-      <button id="btnSummariseDepot" class="primary" title="Depot semicolon notes">Summarise (Depot)</button>
-      <button id="btnSummariseCustomer" title="Customer bullets">Summarise (Customer)</button>
+    <div class="tabs">
+      <button class="tab active" data-tab="simple">Simple</button>
+      <button class="tab" data-tab="pro">Pro (Original)</button>
     </div>
 
-    <div class="row">
-      <div class="col narrow">
-        <div class="section-head"><strong>Section</strong><span class="muted">Choose a Depot section</span></div>
-        <select id="sectionSelect"></select>
+    <!-- SIMPLE PANE -->
+    <section class="pane active" id="pane-simple">
+      <div class="row">
+        <div class="col narrow">
+          <div class="grid">
+            <label><strong>Section</strong>
+              <select id="s_section"></select>
+            </label>
 
-        <!-- SIMPLE -->
-        <div id="simplePane" class="grid" style="margin-top:.75rem">
-          <div class="muted">Tick items; add a note; attach from any category.</div>
-          <div id="simpleList" class="list" role="listbox"></div>
+            <div class="muted">Tick items from this section. You can also attach from any other category.</div>
 
-          <label><strong>Notes (one-liner optional)</strong></label>
-          <textarea id="simpleNote" rows="3" placeholder="e.g., Raise boiler 60mm for clearance; paint flue plate."></textarea>
+            <div id="s_list" class="list"></div>
 
-          <div class="grid2">
-            <select id="attachFromCategorySimple">
-              <option value="">+ Attach items from another category…</option>
-            </select>
-            <button id="btnAttachSimple" disabled>Attach</button>
-          </div>
+            <label><strong>Quick note (one line)</strong>
+              <textarea id="s_note" rows="3" placeholder="e.g., Raise boiler 60mm for clearance"></textarea>
+            </label>
 
-          <div class="section-actions">
-            <button id="btnCopySection" class="primary">Copy Section</button>
-            <button id="btnSummariseSection">Summarise Section</button>
-            <span id="simpleCount" class="pill">0 selected</span>
+            <div class="grid2">
+              <select id="s_attach">
+                <option value="">+ Attach items from another category…</option>
+              </select>
+              <button id="s_attach_btn" disabled>Attach</button>
+            </div>
+
+            <div class="actions">
+              <button id="s_copy" class="primary">Copy Section</button>
+              <span id="s_count" class="pill">0 selected</span>
+            </div>
           </div>
         </div>
 
-        <!-- PRO -->
-        <div id="proPane" class="grid hidden" style="margin-top:.75rem">
-          <div class="muted">Search + add from any category; same copy logic.</div>
-          <input id="proSearch" type="text" placeholder="Search code/text/category">
+        <div class="col">
           <div class="grid2">
-            <select id="proCategory"><option value="">All categories</option></select>
-            <button id="btnAddVisible">Add visible</button>
+            <label class="muted"><input type="checkbox" id="s_headers" checked> Include section header</label>
+            <label class="muted"><input type="checkbox" id="s_sort" checked> Sort lines</label>
           </div>
-          <div id="proList" class="list" role="listbox"></div>
-          <div class="section-actions">
-            <button id="btnCopySectionPro" class="primary">Copy Section</button>
-            <button id="btnSummariseSectionPro">Summarise Section</button>
-            <span id="proCount" class="pill">0 selected</span>
+          <textarea id="s_out" rows="16" readonly></textarea>
+
+          <div class="actions">
+            <input id="cf_url" type="text" placeholder="Cloudflare Worker URL (optional for summaries)">
+            <button id="sum_depot">Summarise (Depot)</button>
+            <button id="sum_customer">Summarise (Customer)</button>
+            <button id="copy_clip" class="primary">Copy</button>
+            <span id="s_status" class="status muted"></span>
           </div>
         </div>
       </div>
+    </section>
 
-      <!-- OUTPUT -->
-      <div class="col">
-        <div class="section-head"><strong>Copy Box Output</strong><span class="muted">Semicolon lines; optional headers</span></div>
-        <div class="grid2">
-          <label class="small"><input id="includeHeaders" type="checkbox" checked> Include section headers</label>
-          <label class="small"><input id="sortLines" type="checkbox" checked> Sort lines</label>
-        </div>
-        <textarea id="copyOutput" rows="16" readonly></textarea>
-        <div class="section-actions">
-          <button id="btnCopyToClipboard" class="primary">Copy</button>
-          <span id="status" class="small muted"></span>
-        </div>
-
-        <div class="hr"></div>
-        <details>
-          <summary><strong>What gets copied?</strong></summary>
-          <p class="small">We copy an optional <span class="pill">NOTE; …</span> then all selected <span class="pill">CODE; text</span> lines. “Attach” pulls items from any category into the active section.</p>
-        </details>
-      </div>
-    </div>
+    <!-- PRO PANE = ORIGINAL APP -->
+    <section class="pane" id="pane-pro">
+      <p class="muted" style="margin:.25rem 0 .75rem">This loads your current <code>index.html</code> unchanged inside an iframe.</p>
+      <iframe src="./" title="Original Depot Notes"></iframe>
+    </section>
   </div>
 </div>
 
-<script defer src="update-v2.js?v=1"></script>
+<script defer src="update-v2.js?v=3"></script>
 </body>
 </html>
