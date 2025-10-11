@@ -35,6 +35,22 @@
   .footrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .muted{color:var(--muted)}
   a.link{color:#b8d7ff;text-decoration:none}
+  /* Let child flex items actually shrink inside grid/flex parents */
+main, .card, .pad { min-height: 0; }
+
+/* Make “split” columns stack and allow the list to take remaining height */
+.split { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+/* The checkbox list becomes a flex-grow area with its own scrollbar */
+.list {
+  flex: 1;                /* take remaining space */
+  min-height: 0;          /* allow shrinking */
+  overflow: auto;         /* enable scrolling */
+  -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+}
+
+/* Optional: tiny right padding so the scrollbar doesn’t cover labels */
+ul.checks { padding-right: 6px; }
 </style>
 </head>
 <body>
