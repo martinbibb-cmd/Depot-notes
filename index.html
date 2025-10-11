@@ -29,7 +29,7 @@
   .out header{display:flex;justify-content:space-between;align-items:center;background:transparent;border:0;padding:0}
   .out textarea{width:100%;min-height:120px;resize:vertical;background:#0a0f14;border:1px solid #1d2834;border-radius:8px;padding:8px;color:var(--ink);white-space:pre-wrap}
   .grid2{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
-  .pill{padding:4px 8px;border:1px solid #2d3a49;border-radius:999px;background:#0c1117;color:var(--muted);font-size:12px}
+  .pill{padding:4px 8px;border:1px solid #2d3a49;border-radius:999px;background:#0c1117;color:#var(--muted);font-size:12px}
   .sticky{position:sticky;top:0;background:var(--panel);z-index:1}
   a.link{color:#b8d7ff;text-decoration:none}
 </style>
@@ -92,72 +92,66 @@
 </main>
 
 <script>
-/* -------------------- Data & loading -------------------- */
-const DEFAULT_SECTIONS = [
-  "Overview of proposed work",
-  "Boiler and controls",
-  "Flue",
-  "Gas and water",
-  "Electrical",
-  "Disruption",
-  "Agreed customer actions",
-  "Notes"
-];
+/* -------------------- Driven by Options.txt -------------------- */
+// Sections come directly from Options.txt (same names, same order)
+let OPTIONS = {};        // { sectionTitle: [{code, text, line}] }
+let SECTION_ORDER = [];  // preserves the order sections appear in Options.txt
 
-// Options file format expected:
-// [section]
-// CODE | Category | Specific (free text)
-// or plain lines "CODE | Phrase"
-// or just "Phrase"
-let OPTIONS = {}; // { section: [{code, text, line}] }
+/* -------------------- UI refs -------------------- */
+const els = {
+  srcSection: document.getElementById('srcSection'),
+  destSection: document.getElementById('destSection'),
+  items: document.getElementById('items'),
+  filter: document.getElementById('filter'),
+  send: document.getElementById('send'),
+  outputs: document.getElementById('outputs'),
+  reloadBtn: document.getElementById('reloadBtn'),
+  selectAll: document.getElementById('selectAll'),
+  clearAll: document.getElementById('clearAll'),
+  addNote: document.getElementById('addNote'),
+  removeDupes: document.getElementById('removeDupes'),
+  loadStatus: document.getElementById('loadStatus'),
+};
+function setStatus(s){ els.loadStatus.textContent = s; }
 
+/* -------------------- Load & parse Options.txt -------------------- */
 async function loadOptionsTxt() {
   setStatus("Loading Options.txt…");
-  OPTIONS = {};
+  OPTIONS = {}; SECTION_ORDER = [];
   try {
-    // Same-folder Options.txt (best for GitHub Pages)
-    const res = await fetch('Options.txt', { cache: "no-store" });
+    const res = await fetch('./Options.txt', { cache: "no-store" });
     if (!res.ok) throw new Error("Options.txt not found");
     const txt = await res.text();
     parseOptions(txt);
     setStatus("Loaded Options.txt");
   } catch (err) {
-    console.warn("Failed loading Options.txt, using fallback", err);
-    // Minimal fallback so app still works
+    console.warn("Failed loading Options.txt — using minimal fallback", err);
     const fallback = `
-[needs]
-NE01 | Need | Better water pressure
-NE02 | Need | Faster hot water delivery
-[disruption]
-DIS01 | Disruption | Primaries filtration
-DIS02 | Disruption | Powerflush required
-DIS03 | Disruption | Chemical clean and inhibit
-DIS04 | Disruption | Magnetic (TF1) filter
-[flue]
-FL01 | Old flue
-FL02 | Old fanned flue
-FL03 | New flue | Use same hole – minor change
-FL04 | New flue | Minimum 300mm to openings
+[Overview of proposed work]
+OV01 | Overview | Example item
+[Boiler and controls]
+BL01 | Boiler | Example boiler item
+[Notes]
+NOTE | Example free text
 `;
     parseOptions(fallback);
     setStatus("Fallback loaded (Options.txt missing)");
   }
-  populateSourceControls();
+  populateFromOptions(); // now that OPTIONS + SECTION_ORDER are ready
 }
 
 function parseOptions(text) {
   let current = "General";
-  OPTIONS[current] = OPTIONS[current] || [];
+  ensureSection(current);
   text.split(/\r?\n/).forEach(raw => {
     const line = raw.trim();
     if (!line) return;
     const sectMatch = line.match(/^\[(.+)\]$/i);
     if (sectMatch) {
       current = sectMatch[1].trim();
-      OPTIONS[current] = OPTIONS[current] || [];
+      ensureSection(current);
       return;
     }
-    // Parse "CODE | …" formats
     let code="", body="";
     if (line.includes("|")) {
       const parts = line.split("|").map(s => s.trim());
@@ -175,42 +169,35 @@ function parseOptions(text) {
   });
 }
 
-/* -------------------- UI wiring -------------------- */
-const els = {
-  srcSection: document.getElementById('srcSection'),
-  destSection: document.getElementById('destSection'),
-  items: document.getElementById('items'),
-  filter: document.getElementById('filter'),
-  send: document.getElementById('send'),
-  outputs: document.getElementById('outputs'),
-  reloadBtn: document.getElementById('reloadBtn'),
-  selectAll: document.getElementById('selectAll'),
-  clearAll: document.getElementById('clearAll'),
-  addNote: document.getElementById('addNote'),
-  removeDupes: document.getElementById('removeDupes'),
-  loadStatus: document.getElementById('loadStatus'),
-};
+function ensureSection(title){
+  if (!(title in OPTIONS)) {
+    OPTIONS[title] = [];
+    SECTION_ORDER.push(title);   // preserve first-seen order
+  } else if (!SECTION_ORDER.includes(title)) {
+    SECTION_ORDER.push(title);
+  }
+}
 
-function setStatus(s){ els.loadStatus.textContent = s; }
-
-function populateSourceControls() {
-  // Source section dropdown
+/* -------------------- Build UI from OPTIONS -------------------- */
+function populateFromOptions() {
+  // Source section dropdown (same order as file)
   els.srcSection.innerHTML = "";
-  Object.keys(OPTIONS).sort().forEach(s => {
-    const opt = new Option(s, s);
-    els.srcSection.add(opt);
-  });
-  // Dest (Depot) sections list
+  SECTION_ORDER.forEach(s => els.srcSection.add(new Option(s, s)));
+
+  // Destination sections = same set/order as Options.txt
   els.destSection.innerHTML = "";
-  DEFAULT_SECTIONS.forEach(s => els.destSection.add(new Option(s, s)));
-  // Render initial list and outputs
-  renderItemList();
+  SECTION_ORDER.forEach(s => els.destSection.add(new Option(s, s)));
+
+  // Build outputs panel to match exactly
   renderOutputs();
+
+  // And the left list
+  renderItemList();
 }
 
 function renderItemList() {
-  const sect = els.srcSection.value || Object.keys(OPTIONS)[0];
-  const query = els.filter.value.toLowerCase();
+  const sect = els.srcSection.value || SECTION_ORDER[0];
+  const query = (els.filter.value || '').toLowerCase();
   const list = OPTIONS[sect] || [];
   const filtered = list.filter(x => x.text.toLowerCase().includes(query));
   els.items.innerHTML = filtered.map((x, i) => `
@@ -222,7 +209,7 @@ function renderItemList() {
 }
 
 function renderOutputs() {
-  els.outputs.innerHTML = DEFAULT_SECTIONS.map(name => outTemplate(name)).join("");
+  els.outputs.innerHTML = SECTION_ORDER.map(name => outTemplate(name)).join("");
 }
 
 function outTemplate(name){
@@ -248,7 +235,6 @@ els.reloadBtn.addEventListener('click', loadOptionsTxt);
 els.selectAll.addEventListener('click', () => {
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = true);
 });
-
 els.clearAll.addEventListener('click', () => {
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = false);
 });
@@ -260,11 +246,9 @@ els.send.addEventListener('click', () => {
   const selected = Array.from(els.items.querySelectorAll('input[type=checkbox]:checked'))
     .map(chk => chk.dataset.text);
   if (selected.length === 0) { alert('Select at least one item.'); return; }
-  // Compose lines with ↘️ prefix and newline
   const lines = selected.map(t => formatLine(t));
   const existing = normalizeNewlines(out.value).trim();
   out.value = [existing, ...lines].filter(Boolean).join('\n');
-  // Clear selection
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = false);
   out.focus();
 });
@@ -285,51 +269,28 @@ els.removeDupes.addEventListener('click', () => {
   const out = document.getElementById('out_' + idify(dest));
   const seen = new Set();
   const cleaned = normalizeNewlines(out.value)
-    .split('\n')
-    .map(s => s.trim())
-    .filter(s => s.length)
+    .split('\n').map(s => s.trim()).filter(Boolean)
     .filter(s => {
       const key = s.replace(/^↘️\s*/, '');
       if (seen.has(key)) return false;
       seen.add(key); return true;
-    })
-    .join('\n');
+    }).join('\n');
   out.value = cleaned;
   out.focus();
 });
 
 /* -------------------- Copy logic (NO %20 EVER) -------------------- */
-// - Keeps plain text (no URI encoding)
-// - Normalizes line breaks to \n
-// - Ensures every non-empty line begins with ↘️ (safety)
-// - Writes to clipboard using navigator.clipboard
-
 function copyOut(id){
   const ta = document.getElementById('out_' + id);
   if (!ta) return;
-  // Build clean text
   let text = normalizeNewlines(ta.value)
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean)
+    .split('\n').map(s => s.trim()).filter(Boolean)
     .map(s => s.startsWith('↘️') ? s : '↘️ ' + s)
     .join('\n');
-
-  // HARD GUARANTEE: remove any accidental encodings
-  text = text
-    .replace(/%20/g, ' ')
-    .replace(/%0A/gi, '\n')
-    .replace(/\r\n/g, '\n');
-
+  text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
   navigator.clipboard.writeText(text)
     .then(() => flash(ta, 'Copied ✓'))
-    .catch(() => {
-      // fallback: select & execCommand for older iOS Safari
-      ta.value = text;
-      ta.focus(); ta.select();
-      const ok = document.execCommand('copy');
-      flash(ta, ok ? 'Copied ✓' : 'Copy failed');
-    });
+    .catch(() => { ta.value = text; ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
 }
 
 function clearOut(id){
@@ -343,15 +304,10 @@ function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt
 function htmlAttr(s){ return s.replace(/"/g,'&quot;'); }
 function normalizeNewlines(s){ return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n'); }
 function formatLine(s){ s = String(s || '').trim().replace(/\s+/g,' '); return s ? `↘️ ${s}` : ''; }
-function flash(el, msg){
-  const was = el.placeholder;
-  el.placeholder = msg;
-  setTimeout(()=>{ el.placeholder = was; }, 1200);
-}
+function flash(el, msg){ const was = el.placeholder; el.placeholder = msg; setTimeout(()=>{ el.placeholder = was; }, 1200); }
 
 /* -------------------- Kickoff -------------------- */
-renderOutputs();
-loadOptionsTxt();
+loadOptionsTxt();  // builds everything from Options.txt
 </script>
 </body>
 </html>
