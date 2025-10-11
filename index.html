@@ -1,125 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Depot Notes – Plain Text</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:16px}
-    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-    textarea{width:100%;min-height:96px;margin-top:8px}
-    .btn{padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:#fff;cursor:pointer}
-    .btn:active{transform:translateY(1px)}
-    .muted{opacity:.7}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Depot Notes – Picker (Plain Text)</title>
+<style>
+  :root { --b:#ececec; --t:#222; --p:10px; }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--t);margin:16px}
+  .wrap{display:grid;gap:14px;max-width:980px}
+  .card{border:1px solid var(--b);border-radius:12px;padding:var(--p)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .btn{padding:8px 12px;border:1px solid #aaa;border-radius:10px;background:#fff;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  select,textarea,input{border:1px solid var(--b);border-radius:10px;padding:8px}
+  textarea{width:100%;min-height:88px}
+  .list{display:grid;gap:8px}
+  .pill{display:inline-block;border:1px solid var(--b);border-radius:999px;padding:6px 10px;cursor:pointer}
+  .pill input{margin-right:6px}
+  .muted{opacity:.7}
+</style>
 </head>
 <body>
-  <h1>Depot Notes Picker (Plain Text Export)</h1>
+<div class="wrap">
+  <header class="card">
+    <h1 style="margin:0 0 6px">Depot Notes Picker</h1>
+    <div class="row">
+      <label>Section</label>
+      <select id="section_select"></select>
+      <button class="btn" id="btn_copy_section">Copy section</button>
+      <button class="btn" id="btn_clear_section">Clear section</button>
+    </div>
+  </header>
 
-  <div id="app" class="muted">UI loads via JS…</div>
+  <section class="card">
+    <h2 style="margin:0 0 6px">Options</h2>
+    <div id="options_list" class="list"></div>
+    <div class="row" style="margin-top:8px">
+      <label>Route selected to:</label>
+      <select id="route_target"></select>
+      <button class="btn" id="btn_route_add">Add to target section</button>
+    </div>
+  </section>
 
-  <!-- All sections combined -->
-  <h2>All sections (paste straight into Depot)</h2>
-  <div class="row">
-    <button class="btn" onclick="copyAllCompletedSections()">Copy ALL completed</button>
-  </div>
-  <textarea id="copy_box_all" spellcheck="false" placeholder="All sections will appear here as plain text…"></textarea>
+  <section class="card">
+    <h2 style="margin:0 0 6px">Manual notes (this section)</h2>
+    <textarea id="manual_box" spellcheck="false" placeholder="Free-typed lines; one per line…"></textarea>
+  </section>
 
-  <script>
-    // Minimal demo STATE so this page works standalone; your build can override/extend this
-    const SECTION_TITLES = {
-      needs: 'Needs',
-      safety: 'Safety & Compliance',
-      system_characteristics: 'System Characteristics'
-    };
-    const ORDERED_SECTIONS = Object.keys(SECTION_TITLES);
+  <section class="card">
+    <h2 style="margin:0 6px 6px 0;display:inline-block">Copy box (this section)</h2>
+    <textarea id="copy_box_section" spellcheck="false" placeholder="Section output appears here as plain text…" ></textarea>
+  </section>
 
-    // STATE.selected[sectionKey] -> array of strings
-    // STATE.manualNotes[sectionKey] -> free text
-    const STATE = {
-      selected: {
-        needs: [
-          'Better water pressure',
-          'Faster hot water delivery',
-          'Lower running costs'
-        ],
-        safety: [],
-        system_characteristics: []
-      },
-      manualNotes: {
-        needs: '',
-        safety: '',
-        system_characteristics: ''
-      }
-    };
+  <section class="card">
+    <div class="row">
+      <h2 style="margin:0 6px 0 0">All sections</h2>
+      <button class="btn" id="btn_copy_all">Copy ALL completed</button>
+      <button class="btn" id="btn_clear_all">Clear ALL</button>
+    </div>
+    <textarea id="copy_box_all" spellcheck="false" placeholder="All sections output…"></textarea>
+  </section>
+</div>
 
-    // --- PLAIN TEXT EXPORT (no URI encoding) ---
-    function buildSectionPlainText(sectionKey) {
-      const picks = (STATE.selected[sectionKey] ?? []).slice();
-      const manual = (STATE.manualNotes?.[sectionKey] ?? '').trim();
+<script src="./update.js"></script>
+<script>
+  // Minimal boot to render the UI
+  const sel = id => document.getElementById(id);
+  const sectionSelect = sel('section_select');
+  const routeTarget = sel('route_target');
+  const optionsList = sel('options_list');
+  const manualBox = sel('manual_box');
+  const copyBoxSection = sel('copy_box_section');
 
-      if (manual) {
-        manual.split('\n').map(s => s.trim()).filter(Boolean).forEach(s => picks.push(s));
-      }
+  function renderSectionSelects(){
+    sectionSelect.innerHTML = ORDERED_SECTIONS.map(k=>`<option value="${k}">${SECTION_TITLES[k]}</option>`).join('');
+    routeTarget.innerHTML   = sectionSelect.innerHTML;
+  }
 
-      // decode any accidental %XX, collapse whitespace, dedupe, and join with "; "
-      const out = Array.from(new Set(
-        picks.map(s =>
-          s.replace(/\s+/g,' ')
-           .replace(/%([0-9A-F]{2})/gi, (_,h)=>String.fromCharCode(parseInt(h,16)))
-           .trim()
-        ).filter(Boolean)
-      )).join('; ');
+  function renderOptionsFor(sectionKey){
+    const opts = OPTIONS[sectionKey] || [];
+    optionsList.innerHTML = opts.map((txt,i)=>`
+      <label class="pill"><input type="checkbox" data-idx="${i}" ${ (STATE.selected[sectionKey]||[]).includes(txt) ? 'checked':'' } />
+        ${txt}
+      </label>
+    `).join('');
+  }
 
-      return out; // plain text
-    }
+  function currentKey(){ return sectionSelect.value; }
 
-    async function copySectionToClipboard(sectionKey) {
-      const text = buildSectionPlainText(sectionKey);
-      const ta = document.getElementById('copy_box_'+sectionKey);
-      if (ta) ta.value = text;
-      try { await navigator.clipboard.writeText(text); } catch {}
-    }
+  sectionSelect.addEventListener('change', () => {
+    manualBox.value = STATE.manualNotes[currentKey()] || '';
+    renderOptionsFor(currentKey());
+    copyBoxSection.value = buildSectionPlainText(currentKey());
+  });
 
-    function copyAllCompletedSections() {
-      const keys = ORDERED_SECTIONS.filter(k => (STATE.selected[k]?.length || (STATE.manualNotes?.[k]||'').trim()));
-      const block = keys.map(k => `${SECTION_TITLES[k]}: ${buildSectionPlainText(k)}`).join('\n');
-      const ta = document.getElementById('copy_box_all');
-      if (ta) ta.value = block;
-      navigator.clipboard.writeText(block).catch(()=>{});
-    }
+  optionsList.addEventListener('change', e=>{
+    const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
+    const idx = Number(cb.dataset.idx);
+    const line = (OPTIONS[currentKey()]||[])[idx];
+    togglePick(currentKey(), line, cb.checked);
+    copyBoxSection.value = buildSectionPlainText(currentKey());
+  });
 
-    // helper so options can be routed to any target section
-    function addLineToSection(lineText, targetSectionKey) {
-      if (!STATE.selected[targetSectionKey]) STATE.selected[targetSectionKey] = [];
-      STATE.selected[targetSectionKey].push(lineText);
-    }
+  manualBox.addEventListener('input', ()=>{
+    STATE.manualNotes[currentKey()] = manualBox.value;
+    copyBoxSection.value = buildSectionPlainText(currentKey());
+  });
 
-    // Very light UI so you can test immediately
-    function mountDemoUI(){
-      const el = document.getElementById('app');
-      el.classList.remove('muted');
-      el.innerHTML = ORDERED_SECTIONS.map(k => `
-        <section style="margin:16px 0;padding:12px;border:1px solid #ddd;border-radius:10px">
-          <h2 style="margin:0 0 8px">${SECTION_TITLES[k]}</h2>
-          <div class="row">
-            <button class="btn" onclick="copySectionToClipboard('${k}')">Copy section</button>
-          </div>
-          <textarea id="copy_box_${k}" spellcheck="false" placeholder="Section output will appear here as plain text…"></textarea>
-          <div style="margin-top:8px">
-            <label><b>Manual notes</b></label>
-            <textarea spellcheck="false"
-              oninput="STATE.manualNotes['${k}']=this.value"
-              placeholder="Free-typed notes for this section…"></textarea>
-          </div>
-        </section>
-      `).join('');
-    }
+  sel('btn_copy_section').onclick = ()=> copySectionToClipboard(currentKey());
+  sel('btn_clear_section').onclick = ()=>{
+    STATE.selected[currentKey()] = [];
+    STATE.manualNotes[currentKey()] = '';
+    manualBox.value = '';
+    renderOptionsFor(currentKey());
+    copyBoxSection.value = '';
+  };
+  sel('btn_route_add').onclick = ()=>{
+    const picks = (STATE.selected[currentKey()]||[]).slice();
+    picks.forEach(p => addLineToSection(p, routeTarget.value));
+  };
+  sel('btn_copy_all').onclick = copyAllCompletedSections;
+  sel('btn_clear_all').onclick = ()=>{
+    ORDERED_SECTIONS.forEach(k=>{ STATE.selected[k]=[]; STATE.manualNotes[k]=''; });
+    manualBox.value=''; copyBoxSection.value=''; sel('copy_box_all').value='';
+    renderOptionsFor(currentKey());
+  };
 
-    document.addEventListener('DOMContentLoaded', mountDemoUI);
-  </script>
-
-  <!-- If you prefer to keep logic in a separate file, swap to update.js below -->
-  <!-- <script src="./update.js"></script> -->
+  // Init
+  renderSectionSelects();
+  sectionSelect.value = ORDERED_SECTIONS[0];
+  manualBox.value = STATE.manualNotes[currentKey()]||'';
+  renderOptionsFor(currentKey());
+  copyBoxSection.value = buildSectionPlainText(currentKey());
+</script>
 </body>
 </html>
