@@ -10,7 +10,7 @@
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
   header{padding:14px 16px;border-bottom:1px solid #1f2630;background:#0e1318;display:flex;gap:12px;align-items:center}
   h1{font-size:16px;margin:0 8px 0 0;font-weight:600}
-  main{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px;height:calc(100% - 58px)}
+  main{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px;height:calc(100% - 58px);grid-auto-rows:minmax(0,auto)}
   .card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;display:flex;flex-direction:column;min-height:0}
   .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2630;font-size:14px;font-weight:600}
   .pad{padding:12px 14px}
@@ -31,6 +31,9 @@
   .grid2{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
   .pill{padding:4px 8px;border:1px solid #2d3a49;border-radius:999px;background:#0c1117;color:#var(--muted);font-size:12px}
   .sticky{position:sticky;top:0;background:var(--panel);z-index:1}
+  .full{grid-column:1 / -1} /* full-width card spanning all columns */
+  .footrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--muted)}
   a.link{color:#b8d7ff;text-decoration:none}
 </style>
 </head>
@@ -89,13 +92,37 @@
     <h2 class="sticky">Depot Sections — Copy as Plain Text</h2>
     <div class="pad outbox" id="outputs"></div>
   </section>
+
+  <!-- FULL-WIDTH: Customer Summary via GPT -->
+  <section class="card full">
+    <h2 class="sticky">Customer Summary (GPT)</h2>
+    <div class="pad" style="display:flex;flex-direction:column;gap:10px">
+      <div class="footrow">
+        <div class="row" style="gap:8px">
+          <button class="accent" id="genSummary">✨ Generate summary with GPT</button>
+          <button id="copySummary">Copy (plain text)</button>
+        </div>
+        <small class="muted" id="summaryStatus">Ready</small>
+      </div>
+      <textarea id="summaryBox" placeholder="Click “Generate summary with GPT” to create a clean, customer-friendly summary."></textarea>
+    </div>
+  </section>
 </main>
 
 <script>
+/* -------------------- Config for GPT summary call --------------------
+   Point this to your Cloudflare Worker / API that wraps OpenAI.
+   Expected response: JSON containing { summary: "..." } or { text: "..." }.
+   If the call fails, we fall back to a basic local stitch.
+--------------------------------------------------------------------- */
+const CONFIG = {
+  SUMMARY_URL: 'https://survey-brain-api.martinbibb.workers.dev/api/recommend', // ← adjust if needed
+  MAX_WORDS: 220
+};
+
 /* -------------------- Driven by Options.txt -------------------- */
-// Sections come directly from Options.txt (same names, same order)
 let OPTIONS = {};        // { sectionTitle: [{code, text, line}] }
-let SECTION_ORDER = [];  // preserves the order sections appear in Options.txt
+let SECTION_ORDER = [];  // preserves order seen in Options.txt
 
 /* -------------------- UI refs -------------------- */
 const els = {
@@ -111,8 +138,14 @@ const els = {
   addNote: document.getElementById('addNote'),
   removeDupes: document.getElementById('removeDupes'),
   loadStatus: document.getElementById('loadStatus'),
+  // summary
+  genSummary: document.getElementById('genSummary'),
+  copySummary: document.getElementById('copySummary'),
+  summaryBox: document.getElementById('summaryBox'),
+  summaryStatus: document.getElementById('summaryStatus'),
 };
 function setStatus(s){ els.loadStatus.textContent = s; }
+function setSummaryStatus(s){ els.summaryStatus.textContent = s; }
 
 /* -------------------- Load & parse Options.txt -------------------- */
 async function loadOptionsTxt() {
@@ -137,7 +170,7 @@ NOTE | Example free text
     parseOptions(fallback);
     setStatus("Fallback loaded (Options.txt missing)");
   }
-  populateFromOptions(); // now that OPTIONS + SECTION_ORDER are ready
+  populateFromOptions();
 }
 
 function parseOptions(text) {
@@ -172,7 +205,7 @@ function parseOptions(text) {
 function ensureSection(title){
   if (!(title in OPTIONS)) {
     OPTIONS[title] = [];
-    SECTION_ORDER.push(title);   // preserve first-seen order
+    SECTION_ORDER.push(title);
   } else if (!SECTION_ORDER.includes(title)) {
     SECTION_ORDER.push(title);
   }
@@ -180,18 +213,11 @@ function ensureSection(title){
 
 /* -------------------- Build UI from OPTIONS -------------------- */
 function populateFromOptions() {
-  // Source section dropdown (same order as file)
   els.srcSection.innerHTML = "";
   SECTION_ORDER.forEach(s => els.srcSection.add(new Option(s, s)));
-
-  // Destination sections = same set/order as Options.txt
   els.destSection.innerHTML = "";
   SECTION_ORDER.forEach(s => els.destSection.add(new Option(s, s)));
-
-  // Build outputs panel to match exactly
   renderOutputs();
-
-  // And the left list
   renderItemList();
 }
 
@@ -279,7 +305,7 @@ els.removeDupes.addEventListener('click', () => {
   out.focus();
 });
 
-/* -------------------- Copy logic (NO %20 EVER) -------------------- */
+/* -------------------- COPY (plain text, no %20) -------------------- */
 function copyOut(id){
   const ta = document.getElementById('out_' + id);
   if (!ta) return;
@@ -298,6 +324,121 @@ function clearOut(id){
   if (ta) ta.value = '';
 }
 
+/* -------------------- GPT SUMMARY -------------------- */
+/* Collects all right-hand boxes as { Section: "text\n..." }, with ↘️ removed */
+function collectDepotSections(stripArrows=true){
+  const sections = {};
+  SECTION_ORDER.forEach(name => {
+    const id = 'out_' + idify(name);
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    const raw = normalizeNewlines(ta.value).trim();
+    if (!raw) return;
+    const lines = raw.split('\n').map(s => s.trim()).filter(Boolean)
+      .map(s => stripArrows ? s.replace(/^↘️\s*/, '') : s);
+    if (lines.length) sections[name] = lines.join('\n');
+  });
+  return sections;
+}
+
+async function generateSummary(){
+  const btn = els.genSummary;
+  const box = els.summaryBox;
+  const sections = collectDepotSections(true);
+  if (Object.keys(sections).length === 0) {
+    alert('Add some notes to the depot sections first.');
+    return;
+  }
+
+  btn.disabled = true; setSummaryStatus('Summarising…'); box.placeholder = 'Generating summary…';
+
+  // Build a concise instruction payload — tweak as you like
+  const payload = {
+    task: 'customer_summary',
+    style: 'plain_english, concise, friendly, no jargon, UK spelling',
+    max_words: CONFIG.MAX_WORDS,
+    sections, // raw content per section, arrows stripped
+    // Optional hint to your Worker if it supports modes
+    mode: 'summary'
+  };
+
+  try {
+    const res = await fetch(CONFIG.SUMMARY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Bad response: ' + res.status);
+    const data = await res.json();
+
+    // Try common fields
+    const summary = String(
+      data.summary ?? data.text ?? data.result ?? data.output ?? ''
+    ).trim();
+
+    if (summary) {
+      box.value = normalizeNewlines(summary);
+      setSummaryStatus('Done ✓');
+    } else {
+      // Fallback: local stitch if API returned empty
+      box.value = localFallbackSummary(sections);
+      setSummaryStatus('Done (fallback) ✓');
+    }
+  } catch (err) {
+    console.warn('Summary generation failed:', err);
+    box.value = localFallbackSummary(sections);
+    setSummaryStatus('Offline fallback used');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Simple offline fallback so the button still does something usable */
+function localFallbackSummary(sections){
+  const order = [
+    'Overview of proposed work','Needs','Boiler and controls','Flue','Pipe',
+    'System characteristics','Restrictions','Hazards','Delivery','Office','Notes'
+  ];
+  const lines = [];
+  const seen = new Set();
+
+  const pushLines = (label, text) => {
+    const bits = text.split('\n').map(s => s.replace(/^[-•↘️]\s*/, '').trim()).filter(Boolean);
+    if (!bits.length) return;
+    lines.push(`${label}:`);
+    bits.slice(0,6).forEach(b => {
+      const k = b.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      lines.push(`- ${b}`);
+    });
+    lines.push('');
+  };
+
+  const keys = Object.keys(sections);
+  order.concat(keys.filter(k => !order.includes(k))).forEach(k => {
+    if (sections[k]) pushLines(k, sections[k]);
+  });
+
+  // Collapse to a readable paragraph-ish block
+  return lines.join('\n').trim();
+}
+
+/* Copy summary as plain text (no ↘️ injected here) */
+function copySummary(){
+  const ta = els.summaryBox;
+  let text = normalizeNewlines(ta.value).trim();
+  text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
+  navigator.clipboard.writeText(text)
+    .then(() => flash(ta, 'Copied ✓'))
+    .catch(() => { ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
+}
+
+/* Wire up summary buttons */
+els.genSummary.addEventListener('click', generateSummary);
+els.copySummary.addEventListener('click', copySummary);
+
 /* -------------------- Helpers -------------------- */
 function idify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
 function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -307,7 +448,7 @@ function formatLine(s){ s = String(s || '').trim().replace(/\s+/g,' '); return s
 function flash(el, msg){ const was = el.placeholder; el.placeholder = msg; setTimeout(()=>{ el.placeholder = was; }, 1200); }
 
 /* -------------------- Kickoff -------------------- */
-loadOptionsTxt();  // builds everything from Options.txt
+loadOptionsTxt();
 </script>
 </body>
 </html>
