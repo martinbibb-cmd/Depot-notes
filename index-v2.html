@@ -4,20 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Depot Notes Picker – Clean Copy</title>
-
 <style>
-  /* ---------- THEME & LAYOUT ----------
-     Edit colours/spacing/fonts here. Nothing below relies on specific colours.
-  */
   :root { --bg:#0b0d10; --panel:#151a1f; --ink:#e9eef5; --muted:#98a5b3; --accent:#4aa3ff; }
   html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
   header{padding:14px 16px;border-bottom:1px solid #1f2630;background:#0e1318;display:flex;gap:12px;align-items:center}
   h1{font-size:16px;margin:0 8px 0 0;font-weight:600}
-  /* Grid: LEFT (source & filters) | MIDDLE (send) | RIGHT (outputs) */
-  main{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px;height:calc(100% - 58px)}
-
-  /* Cards & common UI */
+  main{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px;height:calc(100% - 58px);grid-auto-rows:minmax(0,auto)}
   .card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;display:flex;flex-direction:column;min-height:0}
   .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2630;font-size:14px;font-weight:600}
   .pad{padding:12px 14px}
@@ -30,60 +23,62 @@
   .list{overflow:auto}
   ul.checks{list-style:none;margin:0;padding:0}
   ul.checks li{padding:8px 10px;border-bottom:1px solid #1f2630;display:flex;gap:8px}
-
   .split{display:grid;grid-template-columns: 1fr;gap:10px}
   .outbox{display:flex;flex-direction:column;gap:8px;height:100%;overflow:auto}
-
-  /* Output blocks (one per depot section) */
   .out{display:flex;flex-direction:column;gap:6px;border:1px solid #243041;border-radius:12px;padding:10px;background:#0e141a}
   .out header{display:flex;justify-content:space-between;align-items:center;background:transparent;border:0;padding:0}
   .out textarea{width:100%;min-height:120px;resize:vertical;background:#0a0f14;border:1px solid #1d2834;border-radius:8px;padding:8px;color:var(--ink);white-space:pre-wrap}
-
   .grid2{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
   .pill{padding:4px 8px;border:1px solid #2d3a49;border-radius:999px;background:#0c1117;color:#var(--muted);font-size:12px}
-  .sticky{position:sticky;top:0;background:var(--panel);z-index:1} /* keeps section headers visible on scroll */
+  .sticky{position:sticky;top:0;background:var(--panel);z-index:1}
+  .full{grid-column:1 / -1} /* full-width card spanning all columns */
+  .footrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .muted{color:var(--muted)}
   a.link{color:#b8d7ff;text-decoration:none}
+  /* Let child flex items actually shrink inside grid/flex parents */
+  main, .card, .pad { min-height: 0; }
+
+  /* Make “split” columns stack and allow the list to take remaining height */
+  .split { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+  /* The checkbox list becomes a flex-grow area with its own scrollbar */
+  .list {
+    flex: 1;                /* take remaining space */
+    min-height: 0;          /* allow shrinking */
+    overflow: auto;         /* enable scrolling */
+    -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+  }
+
+  /* Optional: tiny right padding so the scrollbar doesn’t cover labels */
+  ul.checks { padding-right: 6px; }
 </style>
 </head>
 <body>
 <header>
   <h1>Depot Notes Picker — Clean Copy</h1>
-  <!-- FYI: This label is just a reminder of the copy format -->
   <span class="pill">Spaces/newlines are copied as plain text (no %20)</span>
 </header>
 
 <main>
-  <!-- ========== LEFT: SOURCE & FILTERS ==========
-       Populated from Options.txt. You pick a section, optionally search,
-       and tick items to “stage” them for sending to a depot section.
-  -->
+  <!-- LEFT: Source & Filters -->
   <section class="card">
     <h2 class="sticky">Source & Filters</h2>
     <div class="pad split">
       <div class="row">
-        <!-- Re-reads Options.txt from disk (no caching) -->
         <button id="reloadBtn">Reload Options.txt</button>
         <small id="loadStatus">Waiting to load…</small>
       </div>
-
-      <!-- Source section (names come directly from [Section] headers in Options.txt) -->
       <label class="row" style="align-items:stretch;gap:8px">
         <span class="pill">Section</span>
         <select id="srcSection" style="flex:1"></select>
       </label>
-
-      <!-- Text filter: matches anywhere within each item’s text -->
       <label class="row" style="align-items:stretch;gap:8px">
         <span class="pill">Search</span>
         <input id="filter" placeholder="Type to filter…" />
       </label>
-
-      <!-- Checklist of items from the chosen source section -->
       <div class="list">
         <ul id="items" class="checks"></ul>
       </div>
-
-      <!-- Bulk select/clear for currently visible (filtered) items -->
       <div class="row">
         <button id="selectAll">Select visible</button>
         <button id="clearAll">Clear</button>
@@ -91,23 +86,16 @@
     </div>
   </section>
 
-  <!-- ========== MIDDLE: SEND ==========
-       Choose destination depot section (right-hand textareas) and push selected items.
-       Lines are auto-prefixed with ✅ (change in formatLine() if needed).
-  -->
+  <!-- MIDDLE: Send selections -->
   <section class="card">
     <h2 class="sticky">Send selection to Depot section</h2>
     <div class="pad">
       <div class="row">
-        <!-- Destination section list mirrors Options.txt sections -->
         <select id="destSection"></select>
         <button class="accent" id="send">➕ Add selected to section</button>
       </div>
-      <small>Tip: You can add to any section. Each line will be prefixed with <strong>✅</strong> automatically.</small>
-
+      <small>Tip: You can add to any section. Each line will be prefixed with <strong>✅</strong> and end with a <strong>;</strong> automatically.</small>
       <hr style="border:0;border-top:1px solid #1f2630;margin:12px 0">
-
-      <!-- Quick tools for the chosen destination section -->
       <div class="grid2">
         <button id="addNote">Add manual note to chosen section</button>
         <button id="removeDupes">Clean duplicates in chosen section</button>
@@ -115,60 +103,71 @@
     </div>
   </section>
 
-  <!-- ========== RIGHT: OUTPUTS ==========
-       One textarea per depot section. “Copy” normalises newlines, ensures ✅ prefix,
-       and writes to clipboard as true plain text.
-  -->
+  <!-- RIGHT: Outputs -->
   <section class="card">
     <h2 class="sticky">Depot Sections — Copy as Plain Text</h2>
     <div class="pad outbox" id="outputs"></div>
   </section>
+
+  <!-- FULL-WIDTH: Customer Summary via GPT -->
+  <section class="card full">
+    <h2 class="sticky">Customer Summary (GPT)</h2>
+    <div class="pad" style="display:flex;flex-direction:column;gap:10px">
+      <div class="footrow">
+        <div class="row" style="gap:8px">
+          <button class="accent" id="genSummary">✨ Generate summary with GPT</button>
+          <button id="copySummary">Copy (plain text)</button>
+        </div>
+        <small class="muted" id="summaryStatus">Ready</small>
+      </div>
+      <textarea id="summaryBox" placeholder="Click “Generate summary with GPT” to create a clean, customer-friendly summary."></textarea>
+    </div>
+  </section>
 </main>
 
 <script>
-/* ================================================================
-   DATA MODEL (populated from Options.txt)
-   - OPTIONS: { "Section Name": [{ code, text, line }, ... ], ... }
-   - SECTION_ORDER: preserves section order as they appear in Options.txt
-   ================================================================= */
-let OPTIONS = {};
-let SECTION_ORDER = [];
+/* -------------------- Config for GPT summary call --------------------
+   Point this to your Cloudflare Worker / API that wraps OpenAI.
+   Expected response: JSON containing { summary: "..." } or { text: "..." }.
+   If the call fails, we fall back to a basic local stitch.
+--------------------------------------------------------------------- */
+const CONFIG = {
+  SUMMARY_URL: 'https://survey-brain-api.martinbibb.workers.dev/api/recommend', // ← adjust if needed
+  MAX_WORDS: 220
+};
 
-/* ---------- UI ELEMENT REFERENCES (keep IDs in sync with HTML) ---------- */
+/* -------------------- Driven by Options.txt -------------------- */
+let OPTIONS = {};        // { sectionTitle: [{code, text, line}] }
+let SECTION_ORDER = [];  // preserves order seen in Options.txt
+
+/* -------------------- UI refs -------------------- */
 const els = {
-  srcSection: document.getElementById('srcSection'),   // source dropdown (left)
-  destSection: document.getElementById('destSection'), // destination dropdown (middle)
-  items: document.getElementById('items'),             // checklist container (left)
-  filter: document.getElementById('filter'),           // search input (left)
-  send: document.getElementById('send'),               // add selected → dest
-  outputs: document.getElementById('outputs'),         // right-hand outputs wrapper
-  reloadBtn: document.getElementById('reloadBtn'),     // re-read Options.txt
-  selectAll: document.getElementById('selectAll'),     // select all visible items
-  clearAll: document.getElementById('clearAll'),       // clear all visible items
-  addNote: document.getElementById('addNote'),         // manual line entry
-  removeDupes: document.getElementById('removeDupes'), // remove duplicates in chosen dest
-  loadStatus: document.getElementById('loadStatus'),   // feedback on Options.txt load
+  srcSection: document.getElementById('srcSection'),
+  destSection: document.getElementById('destSection'),
+  items: document.getElementById('items'),
+  filter: document.getElementById('filter'),
+  send: document.getElementById('send'),
+  outputs: document.getElementById('outputs'),
+  reloadBtn: document.getElementById('reloadBtn'),
+  selectAll: document.getElementById('selectAll'),
+  clearAll: document.getElementById('clearAll'),
+  addNote: document.getElementById('addNote'),
+  removeDupes: document.getElementById('removeDupes'),
+  loadStatus: document.getElementById('loadStatus'),
+  // summary
+  genSummary: document.getElementById('genSummary'),
+  copySummary: document.getElementById('copySummary'),
+  summaryBox: document.getElementById('summaryBox'),
+  summaryStatus: document.getElementById('summaryStatus'),
 };
 function setStatus(s){ els.loadStatus.textContent = s; }
+function setSummaryStatus(s){ els.summaryStatus.textContent = s; }
 
-/* ================================================================
-   LOADING & PARSING Options.txt
-   - FILE LOCATION: './Options.txt' (relative to this HTML file)
-   - FORMAT:
-       [Section Name]
-       CODE | Category | Specific text...
-       CODE2 | ...
-       Plain lines without "|" also allowed; CODE is optional.
-   - WHAT TO EDIT:
-       • Add/rename [Section] headers to control sections
-       • Add/modify lines under each [Section]
-       • Codes are optional; they’re shown as "CODE — rest"
-   ================================================================= */
+/* -------------------- Load & parse Options.txt -------------------- */
 async function loadOptionsTxt() {
   setStatus("Loading Options.txt…");
   OPTIONS = {}; SECTION_ORDER = [];
   try {
-    // IMPORTANT: cache:"no-store" ensures fresh reads (no stale cache)
     const res = await fetch('./Options.txt', { cache: "no-store" });
     if (!res.ok) throw new Error("Options.txt not found");
     const txt = await res.text();
@@ -176,7 +175,6 @@ async function loadOptionsTxt() {
     setStatus("Loaded Options.txt");
   } catch (err) {
     console.warn("Failed loading Options.txt — using minimal fallback", err);
-    // Fallback allows the UI to remain usable if Options.txt is missing
     const fallback = `
 [Overview of proposed work]
 OV01 | Overview | Example item
@@ -188,31 +186,23 @@ NOTE | Example free text
     parseOptions(fallback);
     setStatus("Fallback loaded (Options.txt missing)");
   }
-  // Build dropdowns, outputs, and list now that data is ready
   populateFromOptions();
 }
 
-/* Parse Options.txt into OPTIONS + SECTION_ORDER */
 function parseOptions(text) {
-  let current = "General";   // default bucket if file starts with loose lines
+  let current = "General";
   ensureSection(current);
-
   text.split(/\r?\n/).forEach(raw => {
     const line = raw.trim();
-    if (!line) return; // skip blanks
-
-    // Section header like: [Boiler and controls]
+    if (!line) return;
     const sectMatch = line.match(/^\[(.+)\]$/i);
     if (sectMatch) {
       current = sectMatch[1].trim();
       ensureSection(current);
       return;
     }
-
-    // Item line: with or without pipes
     let code="", body="";
     if (line.includes("|")) {
-      // You can have N pipes; everything after the first is kept (joined by " | ")
       const parts = line.split("|").map(s => s.trim());
       if (parts.length >= 2) {
         code = parts[0];
@@ -223,18 +213,11 @@ function parseOptions(text) {
     } else {
       body = line;
     }
-
-    // Display text in the picker (what the user sees & sends)
-    const textOut = (code ? `${code} — ${body}` : body)
-      .replace(/\s+/g, " ") // normalise internal spacing
-      .trim();
-
-    // Keep original raw line too (if you ever want to change formatting later)
+    const textOut = (code ? `${code} — ${body}` : body).replace(/\s+/g, " ").trim();
     OPTIONS[current].push({ code, text: textOut, line });
   });
 }
 
-/* Create the section key if it doesn't exist and record display order */
 function ensureSection(title){
   if (!(title in OPTIONS)) {
     OPTIONS[title] = [];
@@ -244,34 +227,21 @@ function ensureSection(title){
   }
 }
 
-/* ================================================================
-   BUILDING THE UI FROM OPTIONS
-   - Source & Destination dropdowns mirror section names/order
-   - Outputs panel: one textarea per section (copy/clear controls)
-   ================================================================= */
+/* -------------------- Build UI from OPTIONS -------------------- */
 function populateFromOptions() {
-  // Source section dropdown (left)
   els.srcSection.innerHTML = "";
   SECTION_ORDER.forEach(s => els.srcSection.add(new Option(s, s)));
-
-  // Destination section dropdown (middle)
   els.destSection.innerHTML = "";
   SECTION_ORDER.forEach(s => els.destSection.add(new Option(s, s)));
-
-  // Right-hand outputs panel (one 'out' block per section)
   renderOutputs();
-
-  // Populate the left list for the initially selected source section
   renderItemList();
 }
 
-/* Render the checklist for the current source section, respecting the filter */
 function renderItemList() {
   const sect = els.srcSection.value || SECTION_ORDER[0];
   const query = (els.filter.value || '').toLowerCase();
   const list = OPTIONS[sect] || [];
   const filtered = list.filter(x => x.text.toLowerCase().includes(query));
-  // Each checkbox carries the final text we'll insert when “Send” is clicked
   els.items.innerHTML = filtered.map((x, i) => `
     <li>
       <input type="checkbox" id="chk_${i}" data-text="${htmlAttr(x.text)}" />
@@ -280,15 +250,10 @@ function renderItemList() {
   `).join("");
 }
 
-/* Build all output sections on the right */
 function renderOutputs() {
   els.outputs.innerHTML = SECTION_ORDER.map(name => outTemplate(name)).join("");
 }
 
-/* Output block template:
-   - “Copy” enforces plain text, ✅ prefixes, and normalised newlines
-   - “Clear” wipes only that section
-*/
 function outTemplate(name){
   const id = idify(name);
   return `
@@ -304,61 +269,43 @@ function outTemplate(name){
   </div>`;
 }
 
-/* ================================================================
-   INTERACTIONS (buttons, selects, tools)
-   ================================================================= */
+/* -------------------- Actions -------------------- */
 els.srcSection.addEventListener('change', renderItemList);
 els.filter.addEventListener('input', renderItemList);
 els.reloadBtn.addEventListener('click', loadOptionsTxt);
 
 els.selectAll.addEventListener('click', () => {
-  // Only checks currently rendered (filtered) items
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = true);
 });
 els.clearAll.addEventListener('click', () => {
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = false);
 });
 
-/* Send selected left-hand items to the chosen right-hand output section */
 els.send.addEventListener('click', () => {
   const dest = els.destSection.value;
   const out = document.getElementById('out_' + idify(dest));
   if (!out) return;
-
-  // Collect the staged items (their display text)
   const selected = Array.from(els.items.querySelectorAll('input[type=checkbox]:checked'))
     .map(chk => chk.dataset.text);
-
   if (selected.length === 0) { alert('Select at least one item.'); return; }
-
-  // formatLine() adds ✅ and normalises spacing; change there to tweak prefix
   const lines = selected.map(t => formatLine(t));
-
-  // Append to existing content with clean newlines
   const existing = normalizeNewlines(out.value).trim();
   out.value = [existing, ...lines].filter(Boolean).join('\n');
-
-  // Clear selection for convenience
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = false);
   out.focus();
 });
 
-/* Add a one-off custom line directly into the chosen destination section */
 els.addNote.addEventListener('click', async () => {
   const dest = els.destSection.value;
   const out = document.getElementById('out_' + idify(dest));
   const note = prompt("Manual note to add to “" + dest + "”:");
   if (!note) return;
-  const line = formatLine(note); // applies 
+  const line = formatLine(note);
   const existing = normalizeNewlines(out.value).trim();
   out.value = [existing, line].filter(Boolean).join('\n');
   out.focus();
 });
 
-/* De-duplicate lines in the chosen destination section
-   - Deduping ignores the ✅ prefix, so the same sentence won’t repeat.
-   - To change dedupe behaviour (e.g. case-insensitive), adjust the 'key'.
-*/
 els.removeDupes.addEventListener('click', () => {
   const dest = els.destSection.value;
   const out = document.getElementById('out_' + idify(dest));
@@ -366,7 +313,7 @@ els.removeDupes.addEventListener('click', () => {
   const cleaned = normalizeNewlines(out.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
     .filter(s => {
-      const key = s.replace(/^✅\s*/, ''); // <- change here if you also want to strip codes, etc.
+      const key = stripIconAndSemicolon(s).toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key); return true;
     }).join('\n');
@@ -374,78 +321,159 @@ els.removeDupes.addEventListener('click', () => {
   out.focus();
 });
 
-/* ================================================================
-   COPY LOGIC (guarantees plain text, no %20 encoding issues)
-   - Ensures every line starts with ✅ (set in formatLine/copyOut)
-   - Normalises CRLF/CR to LF and decodes accidental %20/%0A
-   - If Clipboard API fails (older iOS), falls back to select+execCommand
-   ================================================================= */
+/* -------------------- COPY (plain text, no %20) -------------------- */
 function copyOut(id){
   const ta = document.getElementById('out_' + id);
   if (!ta) return;
-
   let text = normalizeNewlines(ta.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
-    .map(s => s.startsWith('✅') ? s : '✅ ' + s)  // safety: force prefix on copy
+    // normalise any legacy lines (↘️, missing ;) to the new format
+    .map(s => `✅ ${stripIconAndSemicolon(s)};`)
     .join('\n');
-
-  // Safety: replace encoded space/newline artifacts if they appear
   text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
-
   navigator.clipboard.writeText(text)
     .then(() => flash(ta, 'Copied ✓'))
-    .catch(() => {
-      // Old browsers/iOS fallback
-      ta.value = text;
-      ta.focus();
-      ta.select();
-      document.execCommand('copy');
-      flash(ta,'Copied ✓');
-    });
+    .catch(() => { ta.value = text; ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
 }
 
-/* Clear only a single output section */
 function clearOut(id){
   const ta = document.getElementById('out_' + id);
   if (ta) ta.value = '';
 }
 
-/* ================================================================
-   HELPERS (edit here to change formatting rules)
-   ================================================================= */
-/* Turn section names into safe IDs (used to link dropdown ↔ textarea) */
-function idify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
-
-/* Escape for HTML text content */
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* -------------------- GPT SUMMARY -------------------- */
+/* Collects all right-hand boxes as { Section: "text\n..." }, with ✅ removed */
+function collectDepotSections(stripIcons=true){
+  const sections = {};
+  SECTION_ORDER.forEach(name => {
+    const id = 'out_' + idify(name);
+    const ta = document.getElementById(id);
+    if (!ta) return;
+    const raw = normalizeNewlines(ta.value).trim();
+    if (!raw) return;
+    const lines = raw.split('\n').map(s => s.trim()).filter(Boolean)
+      .map(s => stripIcons ? stripIconAndSemicolon(s) : s);
+    if (lines.length) sections[name] = lines.join('\n');
+  });
+  return sections;
 }
 
-/* Escape for HTML attribute values (we only need quotes here) */
-function htmlAttr(s){ return s.replace(/"/g,'&quot;'); }
+async function generateSummary(){
+  const btn = els.genSummary;
+  const box = els.summaryBox;
+  const sections = collectDepotSections(true);
+  if (Object.keys(sections).length === 0) {
+    alert('Add some notes to the depot sections first.');
+    return;
+  }
 
-/* Normalise all newline types to LF */
+  btn.disabled = true; setSummaryStatus('Summarising…'); box.placeholder = 'Generating summary…';
+
+  const payload = {
+    task: 'customer_summary',
+    style: 'plain_english, concise, friendly, no jargon, UK spelling',
+    max_words: CONFIG.MAX_WORDS,
+    sections,
+    mode: 'summary'
+  };
+
+  try {
+    const res = await fetch(CONFIG.SUMMARY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Bad response: ' + res.status);
+    const data = await res.json();
+
+    const summary = String(
+      data.summary ?? data.text ?? data.result ?? data.output ?? ''
+    ).trim();
+
+    if (summary) {
+      box.value = normalizeNewlines(summary);
+      setSummaryStatus('Done ✓');
+    } else {
+      box.value = localFallbackSummary(sections);
+      setSummaryStatus('Done (fallback) ✓');
+    }
+  } catch (err) {
+    console.warn('Summary generation failed:', err);
+    box.value = localFallbackSummary(sections);
+    setSummaryStatus('Offline fallback used');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Simple offline fallback so the button still does something usable */
+function localFallbackSummary(sections){
+  const order = [
+    'Overview of proposed work','Needs','Boiler and controls','Flue','Pipe',
+    'System characteristics','Restrictions','Hazards','Delivery','Office','Notes'
+  ];
+  const lines = [];
+  const seen = new Set();
+
+  const pushLines = (label, text) => {
+    const bits = text.split('\n').map(s => s.replace(/^[-•✅↘️]\s*/, '').replace(/;$/, '').trim()).filter(Boolean);
+    if (!bits.length) return;
+    lines.push(`${label}:`);
+    bits.slice(0,6).forEach(b => {
+      const k = b.toLowerCase();
+      if (seen.has(k)) return;
+      seen.add(k);
+      lines.push(`- ${b}`);
+    });
+    lines.push('');
+  };
+
+  const keys = Object.keys(sections);
+  order.concat(keys.filter(k => !order.includes(k))).forEach(k => {
+    if (sections[k]) pushLines(k, sections[k]);
+  });
+
+  return lines.join('\n').trim();
+}
+
+/* Copy summary as plain text */
+function copySummary(){
+  const ta = els.summaryBox;
+  let text = normalizeNewlines(ta.value).trim();
+  text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
+  navigator.clipboard.writeText(text)
+    .then(() => flash(ta, 'Copied ✓'))
+    .catch(() => { ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
+}
+
+/* Wire up summary buttons */
+els.genSummary.addEventListener('click', generateSummary);
+els.copySummary.addEventListener('click', copySummary);
+
+/* -------------------- Helpers -------------------- */
+function idify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function htmlAttr(s){ return s.replace(/"/g,'&quot;'); }
 function normalizeNewlines(s){ return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n'); }
 
-/* HOW A LINE IS FORMATTED WHEN ADDED
-   - Change the prefix/spacing here if you ever want bullets, codes, etc.
-   - Current: ensures single spaces, adds "✅ " prefix if content exists.
-*/
+/* Normalise content by stripping any leading icon (✅ or legacy ↘️) and any trailing semicolon */
+function stripIconAndSemicolon(s){
+  return String(s || '')
+    .replace(/^\s*(?:✅|↘️)?\s*/,'') // remove either icon if present
+    .replace(/\s*;?\s*$/,'')        // remove any trailing semicolon and surrounding space
+    .trim();
+}
+
+/* Always format to: "✅ <text>;" */
 function formatLine(s){
-  s = String(s || '').trim().replace(/\s+/g,' ');
-  return s ? `✅ ${s}` : '';
+  const clean = stripIconAndSemicolon(String(s || '').replace(/\s+/g,' '));
+  return clean ? `✅ ${clean};` : '';
 }
 
-/* Little UX cue after actions like Copy */
-function flash(el, msg){
-  const was = el.placeholder;
-  el.placeholder = msg;
-  setTimeout(()=>{ el.placeholder = was; }, 1200);
-}
+function flash(el, msg){ const was = el.placeholder; el.placeholder = msg; setTimeout(()=>{ el.placeholder = was; }, 1200); }
 
-/* ================================================================
-   BOOT: initial load (also rebuilt by the “Reload Options.txt” button)
-   ================================================================= */
+/* -------------------- Kickoff -------------------- */
 loadOptionsTxt();
 </script>
 </body>
