@@ -5,17 +5,17 @@
   const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_');
   const pretty = c => c.replace(/_/g,' ').replace(/\b[a-z]/g, m=>m.toUpperCase());
 
-  // ==== HARD-CODED Worker endpoint (confirmed) ====
+  // Cloudflare Worker endpoint
   const RECOMMEND_URL = 'https://survey-brain-api.martinbibb.workers.dev/api/recommend';
 
-  // ==== Depot sections (order exact) ====
+  // Sections (exact order)
   const DEPOT_SECTIONS = [
     'Needs','Working at heights','System characteristics','Components that require assistance',
     'Restrictions','Hazards','Delivery','Office','Boiler and controls','Flue',
     'Pipe work','Disruption','Customer actions','Special'
   ];
 
-  // Map Options.txt categories -> default Depot section (aliases included)
+  // Category → Section (includes aliases)
   const MAP_CATEGORY_TO_SECTION = {
     needs:'Needs', working_at_heights:'Working at heights', system_characteristics:'System characteristics',
     components_that_require_assistance:'Components that require assistance', restrictions:'Restrictions', hazards:'Hazards',
@@ -25,48 +25,73 @@
     special:'Special', wah:'Working at heights', making_good:'Special'
   };
 
-  // ==== STATE ====
+  // State
   const state = { options:{}, staged:new Set(), currentDept:null, sections:{} };
   const ensure = s => (state.sections[s] ??= { ticks:new Set(), note:'' });
 
-  // ==== Tabs ====
+  // Tabs
   $$(".tab").forEach(btn=>{
     btn.addEventListener('click', ()=>{
       $$(".tab").forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      const tab=btn.dataset.tab; $$(".pane").forEach(p=>p.classList.remove('active')); $("#pane-"+tab).classList.add('active');
+      const tab=btn.dataset.tab;
+      $$(".pane").forEach(p=>p.classList.remove('active'));
+      $("#pane-"+tab).classList.add('active');
     });
   });
 
-  // ==== Boot ====
+  // Boot
   window.addEventListener('DOMContentLoaded', async ()=>{
+    // ensure summary cards start hidden (no reserved height)
+    const sc = $("#summaryCard"); if(sc) sc.style.display = 'none';
+    const psc = $("#proSummaryCard"); if(psc) psc.style.display = 'none';
+
     $("#tgtSection").innerHTML = DEPOT_SECTIONS.map(s=>`<option>${s}</option>`).join('');
     DEPOT_SECTIONS.forEach(s=>ensure(s));
     renderSectionsStack();
 
-    // Simple left
+    // Simple left controls
     $("#srcDept").addEventListener('change', onDeptChange);
     $("#srcFilter").addEventListener('input', ()=>{ renderSrcList(); reflectSelCount(); });
-    $("#btnSelectAll").addEventListener('click', ()=>{ $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{ const line=semi(chk.dataset.code,chk.dataset.text); chk.checked=true; state.staged.add(line); }); reflectSelCount(); });
-    $("#btnClearVisible").addEventListener('click', ()=>{ $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{ const line=semi(chk.dataset.code,chk.dataset.text); chk.checked=false; state.staged.delete(line); }); reflectSelCount(); });
-    $("#btnSend").addEventListener('click', ()=>{ const tgt=$("#tgtSection").value; if(!tgt || state.staged.size===0){ flashSend('Nothing to send'); return; } ensure(tgt); state.staged.forEach(l=>state.sections[tgt].ticks.add(l)); state.staged.clear(); renderSrcList(); reflectSelCount(); updateSectionCard(tgt); flashSend(`Sent to [${tgt}]`); });
+    $("#btnSelectAll").addEventListener('click', ()=>{
+      $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{
+        const line=semi(chk.dataset.code,chk.dataset.text);
+        chk.checked=true; state.staged.add(line);
+      });
+      reflectSelCount();
+    });
+    $("#btnClearVisible").addEventListener('click', ()=>{
+      $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{
+        const line=semi(chk.dataset.code,chk.dataset.text);
+        chk.checked=false; state.staged.delete(line);
+      });
+      reflectSelCount();
+    });
+    $("#btnSend").addEventListener('click', ()=>{
+      const tgt=$("#tgtSection").value;
+      if(!tgt || state.staged.size===0){ flashSend('Nothing to send'); return; }
+      ensure(tgt);
+      state.staged.forEach(l=>state.sections[tgt].ticks.add(l));
+      state.staged.clear();
+      renderSrcList(); reflectSelCount(); updateSectionCard(tgt);
+      flashSend(`Sent to [${tgt}]`);
+    });
 
-    // GPT buttons (Simple + Pro)
+    // GPT (Simple + Pro)
     $("#btnCustomerSummary").addEventListener('click', ()=>runSummary(false, true));
     $("#btnDepotSummary").addEventListener('click', ()=>runSummary(true,  true));
     $("#copySummary").addEventListener('click', ()=>{ $("#summaryOut").select(); document.execCommand('copy'); setSummaryStatus('Copied'); });
-
     $("#btnProCustomerSummary").addEventListener('click', ()=>runSummary(false, false));
     $("#btnProDepotSummary").addEventListener('click', ()=>runSummary(true,  false));
     $("#copyProSummary").addEventListener('click', ()=>{ $("#proSummaryOut").select(); document.execCommand('copy'); setProSummaryStatus('Copied'); });
 
-    // Load options
+    // Load options + depts
     await loadOptions();
     hydrateDeptDropdown();
     if($("#srcDept").options.length){ $("#srcDept").selectedIndex=0; onDeptChange(); }
   });
 
-  // ==== Options loader ====
+  // Options loader
   async function loadOptions(){
     const txt = await fetch('Options.txt',{cache:'no-store'}).then(r=>r.text());
     let cat=null;
@@ -76,26 +101,33 @@
       if(hdr){ cat=norm(hdr[1].trim()); state.options[cat] ??= []; return; }
       if(!cat) return;
       const parts=s.split('|').map(x=>x.trim());
-      if(parts.length>=3){ const [code,,specific]=parts; if(code && specific) state.options[cat].push({code,text:specific}); }
+      if(parts.length>=3){
+        const [code,,specific]=parts;
+        if(code && specific) state.options[cat].push({code,text:specific});
+      }
     });
   }
   function hydrateDeptDropdown(){
     const cats=Object.keys(state.options);
     const mapped=[], unmapped=[];
     const secIndex=new Map(DEPOT_SECTIONS.map((s,i)=>[s,i]));
-    for(const c of cats){ const sec=MAP_CATEGORY_TO_SECTION[c]; if(sec) mapped.push([c,sec]); else unmapped.push(c); }
+    for(const c of cats){
+      const sec=MAP_CATEGORY_TO_SECTION[c];
+      if(sec) mapped.push([c,sec]); else unmapped.push(c);
+    }
     mapped.sort((a,b)=> (secIndex.get(a[1]) - secIndex.get(b[1])) || a[0].localeCompare(b[0]));
     unmapped.sort((a,b)=>a.localeCompare(b));
     const ordered=[...mapped.map(([c])=>c), ...unmapped];
     $("#srcDept").innerHTML = ordered.map(c=>`<option value="${c}">${pretty(c)}</option>`).join('');
   }
 
-  // ==== Source list ====
+  // Source list
   function onDeptChange(){
     state.currentDept = $("#srcDept").value;
     state.staged.clear(); $("#srcFilter").value='';
     const mapped = MAP_CATEGORY_TO_SECTION[state.currentDept];
-    if(mapped && DEPOT_SECTIONS.includes(mapped)) $("#tgtSection").value = mapped; else $("#tgtSection").selectedIndex=0;
+    if(mapped && DEPOT_SECTIONS.includes(mapped)) $("#tgtSection").value = mapped;
+    else $("#tgtSection").selectedIndex=0;
     renderSrcList(); reflectSelCount();
   }
   function renderSrcList(){
@@ -117,7 +149,7 @@
   function reflectSelCount(){ $("#selCount").textContent = `${state.staged.size} selected`; }
   function flashSend(msg){ const n=$("#sendStatus"); n.textContent=msg; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 1600); }
 
-  // ==== Sections stack ====
+  // Sections stack
   function renderSectionsStack(){
     const host=$("#sectionsStack");
     host.innerHTML = DEPOT_SECTIONS.map(s=>sectionCardMarkup(s)).join('');
@@ -145,15 +177,20 @@
   function bindSectionCard(section){
     const card=$("#"+keyOf(section));
     card.querySelector(`[data-note="${section}"]`).addEventListener('input', e=>{
-      ensure(section); state.sections[section].note = e.target.value.trim(); updateSectionCard(section);
+      ensure(section); state.sections[section].note = e.target.value.trim();
+      updateSectionCard(section);
     });
     card.querySelector(`[data-copy="${section}"]`).addEventListener('click', ()=>{
-      const ta = card.querySelector(`[data-out="${section}"]`); ta.select(); document.execCommand('copy');
+      const ta = card.querySelector(`[data-out="${section}"]`);
+      ta.select(); document.execCommand('copy');
     });
     card.querySelector(`[data-clear="${section}"]`).addEventListener('click', ()=>{
-      ensure(section); state.sections[section].ticks.clear(); updateSectionCard(section);
+      ensure(section); state.sections[section].ticks.clear();
+      updateSectionCard(section);
     });
-    card.querySelector(`[data-includehdr="${section}"]`).addEventListener('change', ()=>updateSectionCard(section));
+    card.querySelector(`[data-includehdr="${section}"]`).addEventListener('change', ()=>{
+      updateSectionCard(section);
+    });
   }
   function updateSectionCard(section){
     ensure(section);
@@ -169,7 +206,7 @@
   }
   const keyOf = s => 'sec_' + s.toLowerCase().replace(/[^a-z0-9]+/g,'_');
 
-  // ==== GPT: prompt builders + call ====
+  // GPT
   function buildPairs(){ return Object.entries(state.sections).filter(([,v])=>v.note || v.ticks.size); }
   function promptCustomer(pairs){
     return [
@@ -198,27 +235,31 @@
     ].join('\n');
   }
 
-  // Try window connector first (if your recs app injects one), then Worker URL
+  // Prefer in-page connector, else Cloudflare Worker
   async function recommend(prompt, mode='summary'){
     try{
       if (window.Recommendations?.request) {
-        const t = await window.Recommendations.request(prompt); if(t) return String(t).trim();
+        const t=await window.Recommendations.request(prompt);
+        if(t) return String(t).trim();
       }
-      if (window.Recommendations?.generate) {
-        const r = await window.Recommendations.generate({ prompt, mode }); const t=r?.text||r?.output||r?.result; if(t) return String(t).trim();
+      if (window.Recommendations?.generate){
+        const r=await window.Recommendations.generate({prompt,mode});
+        const t=r?.text||r?.output||r?.result;
+        if(t) return String(t).trim();
       }
-      if (window.RecsConnector?.request) {
-        const r = await window.RecsConnector.request({ prompt, mode }); const t=r?.text||r?.output||r?.result; if(t) return String(t).trim();
+      if (window.RecsConnector?.request){
+        const r=await window.RecsConnector.request({prompt,mode});
+        const t=r?.text||r?.output||r?.result;
+        if(t) return String(t).trim();
       }
     }catch(_){/* fall through */}
-    // Cloudflare Worker
-    const variants = [
-      { body:{notes:prompt, mode} },
-      { body:{prompt, mode} }
-    ];
-    for(const v of variants){
+
+    for(const body of [{notes:prompt,mode},{prompt,mode}]){
       try{
-        const res = await fetch(RECOMMEND_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(v.body) });
+        const res = await fetch(RECOMMEND_URL, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(body)
+        });
         const data = res.ok ? await res.json().catch(()=> ({})) : {};
         const text = data.text || data.output || data.result || (data.choices?.[0]?.message?.content);
         if(text) return String(text).trim();
