@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Depot Notes v2 — Simple (department→section) + Pro (Original)</title>
+<title>Notes v2 — Simple + Pro + GPT</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  /* Scoped to #depotV2 so v1 stays untouched */
-  #depotV2 { --gap:.75rem; --pad:.75rem; --br:10px; --muted:#667085; font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif; background:#f7f7f9; color:#111; }
+  #depotV2{--gap:.75rem;--pad:.75rem;--br:10px;--muted:#667085;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#f7f7f9;color:#111}
   #depotV2 header{background:#0e1217;color:#fff;padding:1rem 1.25rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
   #depotV2 h1{margin:0;font-size:1.05rem}
   #depotV2 .tag{background:#212632;color:#b6c0d1;padding:.2rem .55rem;border-radius:999px;font-size:.8rem}
@@ -16,17 +15,17 @@
   #depotV2 .tab.active{background:#0e1217;color:#fff;border-color:#0e1217}
   #depotV2 .pane{display:none}
   #depotV2 .pane.active{display:block}
-  #depotV2 .row{display:flex;gap:1rem;align-items:flex-start}
+  #depotV2 .row{display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap}
   #depotV2 .col{background:#fff;border:1px solid #e6e7eb;border-radius:10px;padding:.8rem;flex:1;min-width:0}
-  #depotV2 .col.narrow{flex:0 0 380px}
+  #depotV2 .col.narrow{flex:1 1 340px;max-width:420px}
   #depotV2 select,#depotV2 input,#depotV2 textarea{width:100%;padding:.5rem .6rem;border:1px solid #d6d7db;border-radius:8px;font:inherit}
+  #depotV2 textarea,#depotV2 input[type="text"]{font-size:16px}
   #depotV2 .list{border:1px solid #e6e7eb;border-radius:8px;max-height:420px;overflow:auto;padding:.3rem;background:#fff}
   #depotV2 .item{display:flex;gap:.5rem;align-items:center;padding:.28rem .5rem;border-radius:6px}
   #depotV2 .item:hover{background:#f2f3f7}
   #depotV2 .muted{color:#667085}
   #depotV2 .grid{display:grid;gap:.5rem}
   #depotV2 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-  #depotV2 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem}
   #depotV2 .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
   #depotV2 button{padding:.55rem .75rem;border:1px solid #d6d7db;border-radius:8px;background:#fff;cursor:pointer}
   #depotV2 button.primary{background:#0e1217;color:#fff;border-color:#0e1217}
@@ -34,15 +33,16 @@
   #depotV2 .status{font-size:.85rem}
   #depotV2 .sectionCard{border:1px solid #eceef3;border-radius:10px;padding:.75rem;margin:.75rem 0;background:#fff}
   #depotV2 .sectionCard h3{margin:.1rem 0 .4rem;font-size:1rem}
-  #depotV2 iframe{width:100%;height:85vh;border:1px solid #e6e7eb;border-radius:10px;background:#fff}
+  #depotV2 .proHead{display:flex;justify-content:space-between;align-items:center;margin:.25rem 0 .75rem;gap:.5rem;flex-wrap:wrap}
+  #depotV2 .proHead a{font-size:.9rem}
+  #depotV2 iframe{display:block;width:100%;height:calc(100vh - 260px);border:none;border-radius:10px;background:#fff}
 </style>
 </head>
 <body>
 <div id="depotV2">
   <header>
     <h1>Depot Notes v2</h1>
-    <span class="tag">Simple: Department → Depot Section</span>
-    <span class="tag">Pro: Original (iframe)</span>
+    <span class="tag">Simple</span><span class="tag">Pro (Original)</span><span class="tag">GPT</span>
   </header>
 
   <div class="wrap">
@@ -51,10 +51,10 @@
       <button class="tab" data-tab="pro">Pro (Original)</button>
     </div>
 
-    <!-- SIMPLE PANE -->
+    <!-- SIMPLE -->
     <section class="pane active" id="pane-simple">
       <div class="row">
-        <!-- LEFT: Source Department + staging -->
+        <!-- LEFT: source dept -->
         <div class="col narrow">
           <div class="grid">
             <div class="grid2">
@@ -67,7 +67,6 @@
             </div>
 
             <input id="srcFilter" type="text" placeholder="Filter by code or text (optional)">
-
             <div id="srcList" class="list"></div>
 
             <div class="actions">
@@ -83,13 +82,26 @@
           </div>
         </div>
 
-        <!-- RIGHT: All depot sections, live-populated -->
+        <!-- RIGHT: sections + GPT summary -->
         <div class="col">
+          <div class="actions" style="justify-content:flex-end">
+            <button id="btnCustomerSummary" title="Customer-friendly bullets">Customer Summary (GPT)</button>
+            <button id="btnDepotSummary" class="primary" title="Depot semicolon output">Depot Summary (GPT)</button>
+          </div>
+
+          <div class="sectionCard" id="summaryCard" style="display:none">
+            <h3>Summary</h3>
+            <textarea id="summaryOut" rows="6" readonly></textarea>
+            <div class="actions">
+              <button id="copySummary" class="primary">Copy</button>
+              <span id="summaryStatus" class="status muted"></span>
+            </div>
+          </div>
+
           <div class="actions" style="justify-content:space-between">
-            <span class="muted">Scroll to copy any section directly into Depot.</span>
+            <span class="muted">Section outputs</span>
             <div>
-              <label class="muted"><input id="includeHeaders" type="checkbox" checked> Include section headers</label>
-              <label class="muted" style="margin-left:.75rem"><input id="sortLines" type="checkbox" checked> Sort lines</label>
+              <label class="muted"><input id="sortLines" type="checkbox" checked> Sort lines</label>
             </div>
           </div>
 
@@ -98,14 +110,36 @@
       </div>
     </section>
 
-    <!-- PRO PANE: Original app untouched -->
+    <!-- PRO (original) -->
     <section class="pane" id="pane-pro">
-      <p class="muted" style="margin:.25rem 0 .75rem">This loads your current <code>index.html</code> unchanged inside an iframe.</p>
+      <div class="proHead">
+        <div class="actions" style="margin:0">
+          <button id="btnProCustomerSummary">Customer Summary (GPT)</button>
+          <button id="btnProDepotSummary" class="primary">Depot Summary (GPT)</button>
+        </div>
+        <a href="./" target="_blank" rel="noopener">Open Pro full screen ↗</a>
+      </div>
+
+      <!-- Small pad to paste Pro text for GPT -->
+      <div class="sectionCard">
+        <h3>Paste text from Pro (optional)</h3>
+        <textarea id="proPaste" rows="5" placeholder="Paste compiled Depot text from the Pro app here (or leave blank and use Simple)."></textarea>
+      </div>
+
+      <div class="sectionCard" id="proSummaryCard" style="display:none">
+        <h3>Summary (Pro)</h3>
+        <textarea id="proSummaryOut" rows="6" readonly></textarea>
+        <div class="actions">
+          <button id="copyProSummary" class="primary">Copy</button>
+          <span id="proSummaryStatus" class="status muted"></span>
+        </div>
+      </div>
+
       <iframe src="./" title="Original Depot Notes"></iframe>
     </section>
   </div>
 </div>
 
-<script defer src="update-v2.js?v=4"></script>
+<script defer src="update-v2.js?v=7"></script>
 </body>
 </html>
