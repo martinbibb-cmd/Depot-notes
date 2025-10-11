@@ -1,137 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Depot Notes – Picker (Plain Text)</title>
-<style>
-  :root { --b:#ececec; --t:#222; --p:10px; }
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--t);margin:16px}
-  .wrap{display:grid;gap:14px;max-width:980px}
-  .card{border:1px solid var(--b);border-radius:12px;padding:var(--p)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .btn{padding:8px 12px;border:1px solid #aaa;border-radius:10px;background:#fff;cursor:pointer}
-  .btn:active{transform:translateY(1px)}
-  select,textarea,input{border:1px solid var(--b);border-radius:10px;padding:8px}
-  textarea{width:100%;min-height:88px}
-  .list{display:grid;gap:8px}
-  .pill{display:inline-block;border:1px solid var(--b);border-radius:999px;padding:6px 10px;cursor:pointer}
-  .pill input{margin-right:6px}
-  .muted{opacity:.7}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes Picker — Targets + Cross‑Category + Clean Copy</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--muted:#111827;--fg:#e5e7eb;--fg-dim:#9ca3af;--accent:#22d3ee;--ok:#10b981;--warn:#f59e0b;--danger:#ef4444;--radius:14px}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,#0b1022,#0a0d18 20%,#0f172a 80%);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Apple Color Emoji,Segoe UI Emoji}
+    .wrap{max-width:1240px;margin:24px auto;padding:0 16px 48px}
+    header{display:grid;gap:10px;grid-template-columns:1fr auto;align-items:end;margin-bottom:16px}
+    h1{font-weight:700;margin:0;font-size:24px;letter-spacing:.2px}
+    .sub{color:var(--fg-dim);font-size:13px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .chip{background:var(--muted);border:1px solid #273244;padding:8px 10px;border-radius:999px;display:inline-flex;gap:8px;align-items:center}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+    .section{grid-column:span 12;background:rgba(17,24,39,.75);border:1px solid #20314a;border-radius:var(--radius);overflow:hidden}
+    .sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px;background:linear-gradient(180deg,#0e1628,#0b1322);border-bottom:1px solid #1e2a43}
+    .sec-title{font-weight:700;letter-spacing:.3px}
+    .sec-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{appearance:none;border:1px solid #243044;background:#111827;color:var(--fg);font-weight:600;letter-spacing:.2px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:transform .04s ease,border-color .15s ease,box-shadow .15s ease,background .15s ease}
+    .btn:hover{border-color:#2f415e;box-shadow:0 0 0 2px rgba(34,211,238,.12) inset}
+    .btn:active{transform:translateY(1px)}
+    .btn.ok{border-color:#1e6b54;box-shadow:0 0 0 2px rgba(16,185,129,.12) inset}
+    .btn.warn{border-color:#6b4e1e;box-shadow:0 0 0 2px rgba(245,158,11,.12) inset}
+    .search{min-width:220px}
+    .input{width:100%;background:#0b1220;border:1px solid #213049;color:var(--fg);padding:9px 11px;border-radius:10px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+    .input::placeholder{color:#6b7280}
+    .input:focus{border-color:#33557a;box-shadow:0 0 0 2px rgba(34,211,238,.1)}
+    .cols{display:grid;grid-template-columns:1fr;gap:12px;padding:12px 14px 16px}
+    @media(min-width:1000px){.cols{grid-template-columns:1.2fr 1fr}}
+    .panel{background:var(--panel);border:1px solid #20314a;border-radius:var(--radius);padding:12px;display:grid;gap:10px}
+    .list{max-height:280px;overflow:auto;display:grid;gap:6px}
+    .row{display:flex;gap:10px;align-items:center;background:#0a0f1d;border:1px solid #1a2740;padding:8px 10px;border-radius:10px}
+    .code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent);font-size:12px}
+    .text{flex:1}
+    .pill{padding:3px 8px;border:1px solid #2a3a56;border-radius:999px;font-size:12px;color:var(--fg-dim)}
+    .copyta{width:100%;min-height:96px;background:#07101f;border:1px solid #1d2b45;color:var(--fg);padding:10px;border-radius:10px;resize:vertical}
+    .muted{color:var(--fg-dim);font-size:12px}
+    .targets{margin-top:22px}
+    .target{background:rgba(17,24,39,.75);border:1px solid #20314a;border-radius:var(--radius);padding:12px;display:grid;gap:8px}
+    .target h3{margin:0 0 6px 0;font-size:15px}
+    .badge{border:1px solid #2a3a56;border-radius:999px;padding:2px 6px;font-size:11px;color:#a5b4fc}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="card">
-    <h1 style="margin:0 0 6px">Depot Notes Picker</h1>
-    <div class="row">
-      <label>Section</label>
-      <select id="section_select"></select>
-      <button class="btn" id="btn_copy_section">Copy section</button>
-      <button class="btn" id="btn_clear_section">Clear section</button>
-    </div>
-  </header>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Depot Notes Picker (Targets + Cross‑Category + Clean Copy)</h1>
+        <div class="sub">Tick from any category → build section text → append to a Depot window with the same name → copy plain text (no %20). Loads from Options.txt or options.json.</div>
+      </div>
+      <div class="toolbar">
+        <label class="chip"><input id="includeHeaders" type="checkbox" checked> <span>Include section headers</span></label>
+        <label class="chip"><input id="semicolonLines" type="checkbox" checked> <span>Use “;” line breaks</span></label>
+        <div class="chip">Default target:
+          <select id="globalTarget" class="input" style="min-width:220px"></select>
+        </div>
+      </div>
+    </header>
 
-  <section class="card">
-    <h2 style="margin:0 0 6px">Options</h2>
-    <div id="options_list" class="list"></div>
-    <div class="row" style="margin-top:8px">
-      <label>Route selected to:</label>
-      <select id="route_target"></select>
-      <button class="btn" id="btn_route_add">Add to target section</button>
-    </div>
-  </section>
+    <div id="grid" class="grid" aria-live="polite"></div>
 
-  <section class="card">
-    <h2 style="margin:0 0 6px">Manual notes (this section)</h2>
-    <textarea id="manual_box" spellcheck="false" placeholder="Free-typed lines; one per line…"></textarea>
-  </section>
+    <div class="targets" id="targets"></div>
+  </div>
 
-  <section class="card">
-    <h2 style="margin:0 6px 6px 0;display:inline-block">Copy box (this section)</h2>
-    <textarea id="copy_box_section" spellcheck="false" placeholder="Section output appears here as plain text…" ></textarea>
-  </section>
+  <script>
+  const CONFIG = { GPT_URL: '' };
 
-  <section class="card">
-    <div class="row">
-      <h2 style="margin:0 6px 0 0">All sections</h2>
-      <button class="btn" id="btn_copy_all">Copy ALL completed</button>
-      <button class="btn" id="btn_clear_all">Clear ALL</button>
-    </div>
-    <textarea id="copy_box_all" spellcheck="false" placeholder="All sections output…"></textarea>
-  </section>
-</div>
-
-<script src="./update.js"></script>
-<script>
-  // Minimal boot to render the UI
-  const sel = id => document.getElementById(id);
-  const sectionSelect = sel('section_select');
-  const routeTarget = sel('route_target');
-  const optionsList = sel('options_list');
-  const manualBox = sel('manual_box');
-  const copyBoxSection = sel('copy_box_section');
-
-  function renderSectionSelects(){
-    sectionSelect.innerHTML = ORDERED_SECTIONS.map(k=>`<option value="${k}">${SECTION_TITLES[k]}</option>`).join('');
-    routeTarget.innerHTML   = sectionSelect.innerHTML;
+  // ---------- Loading ----------
+  async function loadOptions(){
+    try{ const r=await fetch('./options.json',{cache:'no-store'}); if(r.ok){const j=await r.json(); return j.sections??j;} }catch(e){}
+    try{ const r=await fetch('./Options.txt',{cache:'no-store'}); if(r.ok){ const t=await r.text(); const p=parseOptionsTxt(t); if(Object.keys(p).length) return p; } }catch(e){}
+    return { 'Needs': { items:[{code:'NE01',text:'Better water pressure'}] } };
   }
 
-  function renderOptionsFor(sectionKey){
-    const opts = OPTIONS[sectionKey] || [];
-    optionsList.innerHTML = opts.map((txt,i)=>`
-      <label class="pill"><input type="checkbox" data-idx="${i}" ${ (STATE.selected[sectionKey]||[]).includes(txt) ? 'checked':'' } />
-        ${txt}
-      </label>
-    `).join('');
+  // ---------- State ----------
+  const state={ sections:{}, targets:{}, includeHeaders:true, semicolonLines:true };
+
+  // ---------- Helpers ----------
+  const el=(s,r=document)=>r.querySelector(s);
+  const escapeHtml=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // iOS‑safe plain text copy (prevents %20 etc.)
+  async function copyPlain(text){
+    try{
+      if(navigator.clipboard && window.ClipboardItem){
+        const item=new ClipboardItem({ 'text/plain': new Blob([text],{type:'text/plain'}) });
+        await navigator.clipboard.write([item]);
+        return;
+      }
+    }catch(e){}
+    const ta=document.createElement('textarea');
+    ta.style.position='fixed'; ta.style.opacity='0';
+    ta.value=text.replace(/\u2013|\u2014/g,'-').replace(/[\u2018\u2019]/g,"'").replace(/[\u201c\u201d]/g,'"');
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
   }
 
-  function currentKey(){ return sectionSelect.value; }
+  function hasAnyFieldValue(s){ return (s.fields||[]).some(f => (s.fieldValues[f.key]??'').toString().trim()); }
+  function visibleItems(s){ if(!s.filter) return s.items; const q=s.filter.toLowerCase(); return s.items.filter(it=>(it.text||'').toLowerCase().includes(q) || (it.code||'').toLowerCase().includes(q)); }
 
-  sectionSelect.addEventListener('change', () => {
-    manualBox.value = STATE.manualNotes[currentKey()] || '';
-    renderOptionsFor(currentKey());
-    copyBoxSection.value = buildSectionPlainText(currentKey());
-  });
+  function linesForSection(name){
+    const s=state.sections[name]; const items=s.items.filter(it=>s.selected.has(it.id)); const out=[];
+    if(state.includeHeaders && (items.length || hasAnyFieldValue(s) || (s.notes||'').trim())) out.push(name+':');
+    for(const it of items) out.push(it.text);
+    if(s.fields && s.fields.length){ for(const f of s.fields){ const v=(s.fieldValues[f.key]??'').toString().trim(); if(v) out.push(`${f.label||f.key}: ${v}`); } }
+    if((s.notes||'').trim()) out.push('Notes: '+s.notes.trim());
+    return state.semicolonLines? out.join('; ') : out.join('\n');
+  }
 
-  optionsList.addEventListener('change', e=>{
-    const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
-    const idx = Number(cb.dataset.idx);
-    const line = (OPTIONS[currentKey()]||[])[idx];
-    togglePick(currentKey(), line, cb.checked);
-    copyBoxSection.value = buildSectionPlainText(currentKey());
-  });
+  // Parse Options.txt with extras
+  // Supported lines:
+  // [section_key]
+  // CODE | Category | Specific   OR   CODE | Text   OR   Text
+  // FIELD | key | label | type | optionsCSV | placeholder
+  function parseOptionsTxt(src){
+    const lines=src.split(/\r?\n/g); const sections={}; let current=null;
+    const toTitle=s=>s.replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+    for(const raw of lines){
+      const line=raw.trim(); if(!line||/^#|\/\//.test(line)) continue;
+      const mh=line.match(/^\[(.+?)\]$/); if(mh){ current=toTitle(mh[1]); sections[current] ||= {items:[],fields:[]}; continue; }
+      if(!current) continue;
+      const parts=line.split('|').map(s=>s.trim()); if(!parts.length) continue;
+      if((parts[0]||'').toUpperCase()==='FIELD'){ const [_,key,label,type='text',optCsv='',placeholder='']=parts; const options=optCsv?optCsv.split(',').map(s=>s.trim()).filter(Boolean):undefined; sections[current].fields.push({key,label:label||key,type:type.toLowerCase(),...(options?{options}:{}),...(placeholder?{placeholder}:{})}); continue; }
+      if(parts.length>=3){ sections[current].items.push({code:parts[0], text:parts[2]}); }
+      else if(parts.length===2){ sections[current].items.push({code:parts[0], text:parts[1]}); }
+      else { const text=parts[0]; const code='X'+(sections[current].items.length+1).toString().padStart(3,'0'); sections[current].items.push({code,text}); }
+    }
+    return sections;
+  }
 
-  manualBox.addEventListener('input', ()=>{
-    STATE.manualNotes[currentKey()] = manualBox.value;
-    copyBoxSection.value = buildSectionPlainText(currentKey());
-  });
+  // ---------- Render Section Cards ----------
+  function renderSection(name){ const s=state.sections[name]; const grid=el('#grid');
+    const sec=document.createElement('section'); sec.className='section';
+    const head=document.createElement('div'); head.className='sec-head';
+    const title=document.createElement('div'); title.className='sec-title'; const count=document.createElement('span'); count.className='pill'; count.id=`count-${name}`; title.innerHTML=`${escapeHtml(name)} `; title.appendChild(count);
+    const actions=document.createElement('div'); actions.className='sec-actions';
 
-  sel('btn_copy_section').onclick = ()=> copySectionToClipboard(currentKey());
-  sel('btn_clear_section').onclick = ()=>{
-    STATE.selected[currentKey()] = [];
-    STATE.manualNotes[currentKey()] = '';
-    manualBox.value = '';
-    renderOptionsFor(currentKey());
-    copyBoxSection.value = '';
-  };
-  sel('btn_route_add').onclick = ()=>{
-    const picks = (STATE.selected[currentKey()]||[]).slice();
-    picks.forEach(p => addLineToSection(p, routeTarget.value));
-  };
-  sel('btn_copy_all').onclick = copyAllCompletedSections;
-  sel('btn_clear_all').onclick = ()=>{
-    ORDERED_SECTIONS.forEach(k=>{ STATE.selected[k]=[]; STATE.manualNotes[k]=''; });
-    manualBox.value=''; copyBoxSection.value=''; sel('copy_box_all').value='';
-    renderOptionsFor(currentKey());
-  };
+    // Cross-category: choose what list to browse
+    const catSel=document.createElement('select'); catSel.className='input';
+    for(const n of Object.keys(state.sections)){ const o=document.createElement('option'); o.value=n; o.textContent=n; catSel.appendChild(o); }
+    catSel.value=name; catSel.addEventListener('change',()=>{ renderList(catSel.value); });
 
-  // Init
-  renderSectionSelects();
-  sectionSelect.value = ORDERED_SECTIONS[0];
-  manualBox.value = STATE.manualNotes[currentKey()]||'';
-  renderOptionsFor(currentKey());
-  copyBoxSection.value = buildSectionPlainText(currentKey());
-</script>
+    const searchWrap=document.createElement('div'); searchWrap.className='search'; const search=document.createElement('input'); search.className='input'; search.type='search'; search.placeholder='Filter items…'; search.addEventListener('input',()=>{ state.sections[catSel.value].filter=search.value; renderList(catSel.value); }); searchWrap.appendChild(search);
+
+    const btnAll=document.createElement('button'); btnAll.className='btn'; btnAll.textContent='Select All (visible)'; btnAll.addEventListener('click',()=>{ visibleItems(state.sections[catSel.value]).forEach(it=>state.sections[catSel.value].selected.add(it.id)); renderList(catSel.value); });
+
+    const tgtSel=document.createElement('select'); tgtSel.className='input'; tgtSel.style.minWidth='200px';
+    function syncTargets(){ tgtSel.innerHTML=''; for(const k of Object.keys(state.targets)){ const o=document.createElement('option'); o.value=k; o.textContent=k; tgtSel.appendChild(o);} tgtSel.value=name; }
+    syncTargets();
+
+    const btnStage=document.createElement('button'); btnStage.className='btn ok'; btnStage.textContent='Send to Target'; btnStage.title='Build text and append to target (bottom)';
+    btnStage.addEventListener('click',async()=>{ const built=linesForSection(catSel.value); await copyPlain(built); state.targets[tgtSel.value] = [state.targets[tgtSel.value], built].filter(Boolean).join(state.semicolonLines?'; ':"\n\n"); renderTargets(); });
+
+    actions.append(catSel, searchWrap, btnAll, tgtSel, btnStage);
+    head.append(title, actions);
+
+    const cols=document.createElement('div'); cols.className='cols';
+    const left=document.createElement('div'); left.className='panel'; const list=document.createElement('div'); list.className='list'; left.append(list);
+    const right=document.createElement('div'); right.className='panel';
+    const notesLabel=document.createElement('div'); notesLabel.innerHTML='<strong>Manual notes</strong> <span class="muted">(included)</span>';
+    const notes=document.createElement('textarea'); notes.className='copyta'; notes.placeholder='Free-typed notes…'; notes.value=s.notes||''; notes.addEventListener('input',()=>{ s.notes=notes.value; });
+    const stagedLabel=document.createElement('div'); stagedLabel.innerHTML='<strong>Preview (this section name)</strong> <span class="muted">for quick copy</span>';
+    const staged=document.createElement('textarea'); staged.className='copyta'; staged.readOnly=true; staged.value='';
+    const act2=document.createElement('div'); act2.style.display='flex'; act2.style.gap='8px';
+    const bCopy=document.createElement('button'); bCopy.className='btn ok'; bCopy.textContent='Copy Preview'; bCopy.addEventListener('click',()=>copyPlain(staged.value));
+    const bRebuild=document.createElement('button'); bRebuild.className='btn'; bRebuild.textContent='Rebuild Preview'; bRebuild.addEventListener('click',()=>{ staged.value=linesForSection(name); });
+    right.append(notesLabel,notes,stagedLabel,staged,act2); act2.append(bCopy,bRebuild);
+
+    sec.append(head,(function(){ cols.append(left,right); return cols; })()); grid.appendChild(sec);
+
+    function renderCounts(cat){ el(`#count-${CSS.escape(name)}`).textContent=`${state.sections[cat].selected.size} selected`; }
+    function renderList(cat=catSel.value){ const sec=state.sections[cat]; renderCounts(cat); list.innerHTML=''; search.value=sec.filter||''; for(const it of visibleItems(sec)){ const row=document.createElement('label'); row.className='row'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=sec.selected.has(it.id); cb.addEventListener('change',()=>{ cb.checked?sec.selected.add(it.id):sec.selected.delete(it.id); renderCounts(cat); }); const code=document.createElement('span'); code.className='code'; code.textContent=it.code; const text=document.createElement('span'); text.className='text'; text.textContent=it.text; const tag=document.createElement('span'); tag.className='badge'; tag.textContent=cat; row.append(cb,code,text,tag); list.appendChild(row);} staged.value=linesForSection(name); }
+
+    renderList(name);
+  }
+
+  // ---------- Targets panel ----------
+  function renderTargets(){ const wrap=el('#targets'); wrap.innerHTML=''; const h=document.createElement('h2'); h.textContent='Depot Windows (targets)'; wrap.appendChild(h);
+    for(const [key,val] of Object.entries(state.targets)){
+      const card=document.createElement('div'); card.className='target';
+      const title=document.createElement('h3'); title.textContent=key; card.appendChild(title);
+      const ta=document.createElement('textarea'); ta.className='copyta'; ta.value=val||''; ta.addEventListener('input',()=>{ state.targets[key]=ta.value; }); card.appendChild(ta);
+      const row=document.createElement('div'); row.style.display='flex'; row.style.gap='8px';
+      const bCopy=document.createElement('button'); bCopy.className='btn ok'; bCopy.textContent='Copy '+key; bCopy.addEventListener('click',()=>copyPlain(ta.value));
+      const bClear=document.createElement('button'); bClear.className='btn warn'; bClear.textContent='Clear'; bClear.addEventListener('click',()=>{ state.targets[key]=''; ta.value=''; });
+      row.append(bCopy,bClear); card.appendChild(row); wrap.appendChild(card);
+    }
+  }
+
+  // ---------- Init ----------
+  (async function init(){
+    const sections=await loadOptions();
+    // normalize
+    for(const [name, raw] of Object.entries(sections)){
+      const arr=Array.isArray(raw)?raw:(raw.items||[]);
+      const fields=Array.isArray(raw)?[]:(raw.fields||[]);
+      const items=(arr||[]).map((x,i)=>({code:x.code??x.CODE??`X${i+1}`, text:x.text??x.Specific??x.specific??x.desc??x.description??String(x), id:`${name}::${x.code??x.CODE??i}`}));
+      const fieldValues=Object.fromEntries((fields||[]).map(f=>[f.key,'']));
+      state.sections[name]={ items, fields, fieldValues, selected:new Set(), filter:'', notes:'', staged:'' };
+    }
+
+    // Build default targets == section names (Depot windows have same names)
+    state.targets = Object.keys(state.sections).reduce((acc,k)=>{ acc[k]=''; return acc; }, {});
+
+    // render global target list
+    const sel=el('#globalTarget'); sel.innerHTML=''; for(const k of Object.keys(state.targets)){ const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o); }
+
+    // render UI
+    el('#grid').innerHTML=''; for(const name of Object.keys(state.sections)) renderSection(name);
+    renderTargets();
+
+    // Settings
+    el('#includeHeaders').addEventListener('change',e=>{ state.includeHeaders=e.target.checked; });
+    el('#semicolonLines').addEventListener('change',e=>{ state.semicolonLines=e.target.checked; });
+  })();
+  </script>
 </body>
 </html>
