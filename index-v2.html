@@ -1,183 +1,43 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<title>Notes v2 — Simple + Pro + GPT</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  /* ---- reset / sizing ---- */
-  html, body { height: 100%; }
-  *, *::before, *::after { box-sizing: border-box; }
-
-  /* ---- layout ---- */
-  #depotV2{--gap:.75rem;--pad:.75rem;--br:10px;--muted:#667085;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#f7f7f9;color:#111;min-height:100%}
-  #depotV2 header{background:#0e1217;color:#fff;padding:1rem 1.25rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
-  #depotV2 h1{margin:0;font-size:1.05rem}
-  #depotV2 .tag{background:#212632;color:#b6c0d1;padding:.2rem .55rem;border-radius:999px;font-size:.8rem}
-  #depotV2 .wrap{max-width:1200px;margin:0 auto;padding:1rem}
-  #depotV2 .tabs{display:flex;gap:.5rem;margin:.5rem 0 1rem}
-  #depotV2 .tab{border:1px solid #d9dbe1;background:#fff;padding:.4rem .7rem;border-radius:8px;cursor:pointer}
-  #depotV2 .tab.active{background:#0e1217;color:#fff;border-color:#0e1217}
-  #depotV2 .pane{display:none}
-  #depotV2 .pane.active{display:block}
-  #depotV2 .row{display:flex;gap:1rem;align-items:flex-start;flex-wrap:wrap}
-  #depotV2 .col{background:#fff;border:1px solid #e6e7eb;border-radius:10px;padding:.8rem;flex:1;min-width:0}
-  #depotV2 .col.narrow{flex:1 1 360px;max-width:460px}
-
-  /* ---- form / lists ---- */
-  #depotV2 select,#depotV2 input,#depotV2 textarea{width:100%;padding:.5rem .6rem;border:1px solid #d6d7db;border-radius:8px;font:inherit}
-  #depotV2 textarea,#depotV2 input[type="text"]{font-size:16px}
-  #depotV2 .list{border:1px solid #e6e7eb;border-radius:8px;max-height:420px;overflow:auto;padding:.3rem;background:#fff}
-  #depotV2 .item{display:flex;gap:.5rem;align-items:center;padding:.28rem .5rem;border-radius:6px}
-  #depotV2 .item:hover{background:#f2f3f7}
-  #depotV2 .muted{color:#667085}
-  #depotV2 .grid{display:grid;gap:.5rem}
-  #depotV2 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
-  #depotV2 .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
-  #depotV2 button{padding:.55rem .75rem;border:1px solid #d6d7db;border-radius:8px;background:#fff;cursor:pointer}
-  #depotV2 button.primary{background:#0e1217;color:#fff;border-color:#0e1217}
-  #depotV2 .pill{font-size:.78rem;padding:.15rem .55rem;border:1px solid #d6d7db;border-radius:999px;background:#fafafe}
-  #depotV2 .status{font-size:.85rem}
-
-  /* ---- section output cards ---- */
-  #depotV2 .sectionCard{border:1px solid #eceef3;border-radius:10px;padding:.75rem;margin:.75rem 0;background:#fff}
-  #depotV2 .sectionCard h3{margin:.1rem 0 .4rem;font-size:1rem}
-  /* readable copy boxes */
-  #depotV2 textarea[data-out], #depotV2 #summaryOut, #depotV2 #proSummaryOut {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    white-space: pre; line-height:1.35;
-  }
-
-  /* ---- Pro iframe: borderless, fills viewport height ---- */
-  #depotV2 .proHead{display:flex;justify-content:space-between;align-items:center;margin:.25rem 0 .75rem;gap:.5rem;flex-wrap:wrap}
-  #depotV2 .proHead a{font-size:.9rem}
-  #depotV2 iframe{
-    display:block;width:100%;
-    height:calc(100vh - 210px); /* header + tabs + padding */
-    min-height:620px;
-    border:none;border-radius:10px;background:#fff;overflow:auto;
-  }
-
-  /* --- Simple layout compact fixes (removes big top gap) --- */
-  #depotV2 #pane-simple .col { align-self: stretch; }
-  #depotV2 #sectionsStack { margin-top: 0; }
-  #depotV2 .sectionCard { margin: .4rem 0; }
-  #depotV2 .sectionCard:first-child { margin-top: 0; }
-  #depotV2 .sectionCard:last-child { margin-bottom: .4rem; }
-  #depotV2 .sectionCard h3 { margin: 0 0 .35rem; }
-  #depotV2 .actions { margin-top: .5rem; }
-  #depotV2 #pane-simple #srcList { max-height: calc(100vh - 330px); min-height: 180px; }
-
-  /* ---- mobile tweaks ---- */
-  @media (max-width:900px){
-    #depotV2 .col, #depotV2 .col.narrow { flex:1 1 100%; max-width:100%; }
-    #depotV2 iframe{ height:70vh; min-height:520px; }
-    #depotV2 .row { gap:.75rem; }
-    #depotV2 .sectionCard { margin:.35rem 0; }
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Depot Notes v2 – Plain Text</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:16px}
+    textarea{width:100%;min-height:96px;margin-top:8px}
+    .btn{padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:#fff;cursor:pointer}
+  </style>
 </head>
 <body>
-<div id="depotV2">
-  <header>
-    <h1>Depot Notes v2</h1>
-    <span class="tag">Simple</span><span class="tag">Pro (Original)</span><span class="tag">GPT</span>
-  </header>
+  <h1>Depot Notes v2 (Plain Text)</h1>
 
-  <div class="wrap">
-    <div class="tabs">
-      <button class="tab active" data-tab="simple">Simple</button>
-      <button class="tab" data-tab="pro">Pro (Original)</button>
-    </div>
+  <div id="v2-ui"></div>
 
-    <!-- SIMPLE -->
-    <section class="pane active" id="pane-simple">
-      <div class="row">
-        <!-- LEFT: source dept -->
-        <div class="col narrow">
-          <div class="grid">
-            <div class="grid2">
-              <label><strong>Source Department</strong>
-                <select id="srcDept"></select>
-              </label>
-              <label><strong>Target Depot Section</strong>
-                <select id="tgtSection"></select>
-              </label>
-            </div>
+  <h2>All sections</h2>
+  <button class="btn" onclick="copyAllCompletedSections()">Copy ALL completed</button>
+  <textarea id="copy_box_all" spellcheck="false"></textarea>
 
-            <input id="srcFilter" type="text" placeholder="Filter by code or text (optional)">
-            <div id="srcList" class="list"></div>
-
-            <div class="actions">
-              <button id="btnSelectAll">Select all (visible)</button>
-              <button id="btnClearVisible">Clear visible</button>
-              <span id="selCount" class="pill">0 selected</span>
-            </div>
-
-            <div class="actions">
-              <button id="btnSend" class="primary">Send to section</button>
-              <span id="sendStatus" class="status muted"></span>
-            </div>
+  <script src="./update-v2.js"></script>
+  <script>
+    // Basic mount (relies on update-v2.js providing STATE, SECTION_TITLES, ORDERED_SECTIONS, and functions)
+    document.addEventListener('DOMContentLoaded', () => {
+      const root = document.getElementById('v2-ui');
+      root.innerHTML = ORDERED_SECTIONS.map(k => `
+        <section style="margin:16px 0;padding:12px;border:1px solid #ddd;border-radius:10px">
+          <h2 style="margin:0 0 8px">${SECTION_TITLES[k]}</h2>
+          <button class="btn" onclick="copySectionToClipboard('${k}')">Copy section</button>
+          <textarea id="copy_box_${k}" spellcheck="false"></textarea>
+          <div style="margin-top:8px">
+            <label><b>Manual notes</b></label>
+            <textarea spellcheck="false"
+              oninput="STATE.manualNotes['${k}']=this.value"
+              placeholder="Free-typed notes for this section…"></textarea>
           </div>
-        </div>
-
-        <!-- RIGHT: sections + GPT summary -->
-        <div class="col">
-          <div class="actions" style="justify-content:flex-end">
-            <button id="btnCustomerSummary" title="Customer-friendly bullets">Customer Summary (GPT)</button>
-            <button id="btnDepotSummary" class="primary" title="Depot semicolon output">Depot Summary (GPT)</button>
-          </div>
-
-          <div class="sectionCard" id="summaryCard" style="display:none">
-            <h3>Summary</h3>
-            <textarea id="summaryOut" rows="6" readonly></textarea>
-            <div class="actions">
-              <button id="copySummary" class="primary">Copy</button>
-              <span id="summaryStatus" class="status muted"></span>
-            </div>
-          </div>
-
-          <div class="actions" style="justify-content:space-between">
-            <span class="muted">Section outputs</span>
-            <div>
-              <label class="muted"><input id="sortLines" type="checkbox" checked> Sort lines</label>
-            </div>
-          </div>
-
-          <div id="sectionsStack"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PRO (original) -->
-    <section class="pane" id="pane-pro">
-      <div class="proHead">
-        <div class="actions" style="margin:0">
-          <button id="btnProCustomerSummary">Customer Summary (GPT)</button>
-          <button id="btnProDepotSummary" class="primary">Depot Summary (GPT)</button>
-        </div>
-        <a href="./" target="_blank" rel="noopener">Open Pro full screen ↗</a>
-      </div>
-
-      <div class="sectionCard">
-        <h3>Paste text from Pro (optional)</h3>
-        <textarea id="proPaste" rows="5" placeholder="Paste compiled Depot text from Pro here (or leave blank and use Simple data)."></textarea>
-      </div>
-
-      <div class="sectionCard" id="proSummaryCard" style="display:none">
-        <h3>Summary (Pro)</h3>
-        <textarea id="proSummaryOut" rows="6" readonly></textarea>
-        <div class="actions">
-          <button id="copyProSummary" class="primary">Copy</button>
-          <span id="proSummaryStatus" class="status muted"></span>
-        </div>
-      </div>
-
-      <iframe src="./" title="Original Depot Notes"></iframe>
-    </section>
-  </div>
-</div>
-
-<script defer src="update-v2.js?v=9"></script>
+        </section>
+      `).join('');
+    });
+  </script>
 </body>
 </html>
