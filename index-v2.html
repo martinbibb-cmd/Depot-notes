@@ -1,43 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Depot Notes v2 – Plain Text</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:16px}
-    textarea{width:100%;min-height:96px;margin-top:8px}
-    .btn{padding:8px 12px;border:1px solid #aaa;border-radius:8px;background:#fff;cursor:pointer}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Depot Notes v2 – Plain Text</title>
+<link rel="preload" href="./update-v2.js" as="script" />
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:16px}
+  textarea{width:100%;min-height:90px;border:1px solid #e0e0e0;border-radius:10px;padding:8px}
+  .btn{padding:8px 12px;border:1px solid #aaa;border-radius:10px;background:#fff;cursor:pointer}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .box{border:1px solid #e0e0e0;border-radius:12px;padding:10px;margin:10px 0}
+</style>
 </head>
 <body>
-  <h1>Depot Notes v2 (Plain Text)</h1>
+<h1>Depot Notes v2</h1>
 
-  <div id="v2-ui"></div>
+<div class="row">
+  <label>Section</label>
+  <select id="sec"></select>
+  <button class="btn" onclick="copySectionToClipboard(currentKey())">Copy section</button>
+</div>
 
-  <h2>All sections</h2>
-  <button class="btn" onclick="copyAllCompletedSections()">Copy ALL completed</button>
+<div class="box" id="optBox"></div>
+
+<div class="box">
+  <h3>Manual notes</h3>
+  <textarea id="man" spellcheck="false"></textarea>
+</div>
+
+<div class="box">
+  <h3>Section copy box</h3>
+  <textarea id="copy_box_section" spellcheck="false"></textarea>
+</div>
+
+<div class="box">
+  <div class="row">
+    <h3 style="margin:0">All sections</h3>
+    <button class="btn" onclick="copyAllCompletedSections()">Copy ALL completed</button>
+  </div>
   <textarea id="copy_box_all" spellcheck="false"></textarea>
+</div>
 
-  <script src="./update-v2.js"></script>
-  <script>
-    // Basic mount (relies on update-v2.js providing STATE, SECTION_TITLES, ORDERED_SECTIONS, and functions)
-    document.addEventListener('DOMContentLoaded', () => {
-      const root = document.getElementById('v2-ui');
-      root.innerHTML = ORDERED_SECTIONS.map(k => `
-        <section style="margin:16px 0;padding:12px;border:1px solid #ddd;border-radius:10px">
-          <h2 style="margin:0 0 8px">${SECTION_TITLES[k]}</h2>
-          <button class="btn" onclick="copySectionToClipboard('${k}')">Copy section</button>
-          <textarea id="copy_box_${k}" spellcheck="false"></textarea>
-          <div style="margin-top:8px">
-            <label><b>Manual notes</b></label>
-            <textarea spellcheck="false"
-              oninput="STATE.manualNotes['${k}']=this.value"
-              placeholder="Free-typed notes for this section…"></textarea>
-          </div>
-        </section>
-      `).join('');
-    });
-  </script>
+<script src="./update-v2.js"></script>
+<script>
+  const sel = id=>document.getElementById(id);
+
+  function mount(){
+    sel('sec').innerHTML = ORDERED_SECTIONS.map(k=>`<option value="${k}">${SECTION_TITLES[k]}</option>`).join('');
+    sel('sec').onchange = () => { render(); };
+    sel('man').oninput = e => { STATE.manualNotes[currentKey()] = e.target.value; sel('copy_box_section').value = buildSectionPlainText(currentKey()); };
+    render();
+  }
+
+  function render(){
+    const k = currentKey();
+    sel('man').value = STATE.manualNotes[k]||'';
+    const opts = OPTIONS[k]||[];
+    sel('optBox').innerHTML = opts.map((t,i)=>`
+      <label style="display:inline-block;border:1px solid #e0e0e0;border-radius:999px;padding:6px 10px;margin:6px 8px 0 0">
+        <input type="checkbox" data-i="${i}" ${ (STATE.selected[k]||[]).includes(t)?'checked':'' } /> ${t}
+      </label>
+    `).join('');
+    sel('optBox').onchange = e=>{
+      const cb = e.target.closest('input[type="checkbox"]'); if(!cb) return;
+      const txt = opts[Number(cb.dataset.i)];
+      togglePick(k, txt, cb.checked);
+      sel('copy_box_section').value = buildSectionPlainText(k);
+    };
+    sel('copy_box_section').value = buildSectionPlainText(k);
+  }
+
+  window.currentKey = ()=> sel('sec').value || ORDERED_SECTIONS[0];
+  document.addEventListener('DOMContentLoaded', mount);
+</script>
 </body>
 </html>
