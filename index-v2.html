@@ -93,7 +93,7 @@
 
   <!-- ========== MIDDLE: SEND ==========
        Choose destination depot section (right-hand textareas) and push selected items.
-       Lines are auto-prefixed with ↘️ (change in formatLine() if needed).
+       Lines are auto-prefixed with ✅ (change in formatLine() if needed).
   -->
   <section class="card">
     <h2 class="sticky">Send selection to Depot section</h2>
@@ -103,7 +103,7 @@
         <select id="destSection"></select>
         <button class="accent" id="send">➕ Add selected to section</button>
       </div>
-      <small>Tip: You can add to any section. Each line will be prefixed with <strong>↘️</strong> automatically.</small>
+      <small>Tip: You can add to any section. Each line will be prefixed with <strong>✅</strong> automatically.</small>
 
       <hr style="border:0;border-top:1px solid #1f2630;margin:12px 0">
 
@@ -116,7 +116,7 @@
   </section>
 
   <!-- ========== RIGHT: OUTPUTS ==========
-       One textarea per depot section. “Copy” normalises newlines, ensures ↘️ prefix,
+       One textarea per depot section. “Copy” normalises newlines, ensures ✅ prefix,
        and writes to clipboard as true plain text.
   -->
   <section class="card">
@@ -286,7 +286,7 @@ function renderOutputs() {
 }
 
 /* Output block template:
-   - “Copy” enforces plain text, ↘️ prefixes, and normalised newlines
+   - “Copy” enforces plain text, ✅ prefixes, and normalised newlines
    - “Clear” wipes only that section
 */
 function outTemplate(name){
@@ -331,7 +331,7 @@ els.send.addEventListener('click', () => {
 
   if (selected.length === 0) { alert('Select at least one item.'); return; }
 
-  // formatLine() adds ↘️ and normalises spacing; change there to tweak prefix
+  // formatLine() adds ✅ and normalises spacing; change there to tweak prefix
   const lines = selected.map(t => formatLine(t));
 
   // Append to existing content with clean newlines
@@ -356,7 +356,7 @@ els.addNote.addEventListener('click', async () => {
 });
 
 /* De-duplicate lines in the chosen destination section
-   - Deduping ignores the ↘️ prefix, so the same sentence won’t repeat.
+   - Deduping ignores the ✅ prefix, so the same sentence won’t repeat.
    - To change dedupe behaviour (e.g. case-insensitive), adjust the 'key'.
 */
 els.removeDupes.addEventListener('click', () => {
@@ -366,7 +366,7 @@ els.removeDupes.addEventListener('click', () => {
   const cleaned = normalizeNewlines(out.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
     .filter(s => {
-      const key = s.replace(/^↘️\s*/, ''); // <- change here if you also want to strip codes, etc.
+      const key = s.replace(/^✅\s*/, ''); // <- change here if you also want to strip codes, etc.
       if (seen.has(key)) return false;
       seen.add(key); return true;
     }).join('\n');
@@ -376,7 +376,7 @@ els.removeDupes.addEventListener('click', () => {
 
 /* ================================================================
    COPY LOGIC (guarantees plain text, no %20 encoding issues)
-   - Ensures every line starts with ↘️ (set in formatLine/copyOut)
+   - Ensures every line starts with ✅ (set in formatLine/copyOut)
    - Normalises CRLF/CR to LF and decodes accidental %20/%0A
    - If Clipboard API fails (older iOS), falls back to select+execCommand
    ================================================================= */
@@ -386,7 +386,7 @@ function copyOut(id){
 
   let text = normalizeNewlines(ta.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
-    .map(s => s.startsWith('↘️') ? s : '↘️ ' + s)  // safety: force prefix on copy
+    .map(s => s.startsWith('✅') ? s : '✅ ' + s)  // safety: force prefix on copy
     .join('\n');
 
   // Safety: replace encoded space/newline artifacts if they appear
@@ -429,11 +429,11 @@ function normalizeNewlines(s){ return String(s || '').replace(/\r\n/g, '\n').rep
 
 /* HOW A LINE IS FORMATTED WHEN ADDED
    - Change the prefix/spacing here if you ever want bullets, codes, etc.
-   - Current: ensures single spaces, adds "↘️ " prefix if content exists.
+   - Current: ensures single spaces, adds "✅ " prefix if content exists.
 */
 function formatLine(s){
   s = String(s || '').trim().replace(/\s+/g,' ');
-  return s ? `↘️ ${s}` : '';
+  return s ? `✅ ${s}` : '';
 }
 
 /* Little UX cue after actions like Copy */
