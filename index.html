@@ -36,21 +36,21 @@
   .muted{color:var(--muted)}
   a.link{color:#b8d7ff;text-decoration:none}
   /* Let child flex items actually shrink inside grid/flex parents */
-main, .card, .pad { min-height: 0; }
+  main, .card, .pad { min-height: 0; }
 
-/* Make “split” columns stack and allow the list to take remaining height */
-.split { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  /* Make “split” columns stack and allow the list to take remaining height */
+  .split { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 
-/* The checkbox list becomes a flex-grow area with its own scrollbar */
-.list {
-  flex: 1;                /* take remaining space */
-  min-height: 0;          /* allow shrinking */
-  overflow: auto;         /* enable scrolling */
-  -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
-}
+  /* The checkbox list becomes a flex-grow area with its own scrollbar */
+  .list {
+    flex: 1;                /* take remaining space */
+    min-height: 0;          /* allow shrinking */
+    overflow: auto;         /* enable scrolling */
+    -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+  }
 
-/* Optional: tiny right padding so the scrollbar doesn’t cover labels */
-ul.checks { padding-right: 6px; }
+  /* Optional: tiny right padding so the scrollbar doesn’t cover labels */
+  ul.checks { padding-right: 6px; }
 </style>
 </head>
 <body>
@@ -94,7 +94,7 @@ ul.checks { padding-right: 6px; }
         <select id="destSection"></select>
         <button class="accent" id="send">➕ Add selected to section</button>
       </div>
-      <small>Tip: You can add to any section. Each line will be prefixed with <strong>↘️</strong> automatically.</small>
+      <small>Tip: You can add to any section. Each line will be prefixed with <strong>✅</strong> and end with a <strong>;</strong> automatically.</small>
       <hr style="border:0;border-top:1px solid #1f2630;margin:12px 0">
       <div class="grid2">
         <button id="addNote">Add manual note to chosen section</button>
@@ -313,7 +313,7 @@ els.removeDupes.addEventListener('click', () => {
   const cleaned = normalizeNewlines(out.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
     .filter(s => {
-      const key = s.replace(/^↘️\s*/, '');
+      const key = stripIconAndSemicolon(s).toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key); return true;
     }).join('\n');
@@ -327,7 +327,8 @@ function copyOut(id){
   if (!ta) return;
   let text = normalizeNewlines(ta.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
-    .map(s => s.startsWith('↘️') ? s : '↘️ ' + s)
+    // normalise any legacy lines (↘️, missing ;) to the new format
+    .map(s => `✅ ${stripIconAndSemicolon(s)};`)
     .join('\n');
   text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
   navigator.clipboard.writeText(text)
@@ -341,8 +342,8 @@ function clearOut(id){
 }
 
 /* -------------------- GPT SUMMARY -------------------- */
-/* Collects all right-hand boxes as { Section: "text\n..." }, with ↘️ removed */
-function collectDepotSections(stripArrows=true){
+/* Collects all right-hand boxes as { Section: "text\n..." }, with ✅ removed */
+function collectDepotSections(stripIcons=true){
   const sections = {};
   SECTION_ORDER.forEach(name => {
     const id = 'out_' + idify(name);
@@ -351,7 +352,7 @@ function collectDepotSections(stripArrows=true){
     const raw = normalizeNewlines(ta.value).trim();
     if (!raw) return;
     const lines = raw.split('\n').map(s => s.trim()).filter(Boolean)
-      .map(s => stripArrows ? s.replace(/^↘️\s*/, '') : s);
+      .map(s => stripIcons ? stripIconAndSemicolon(s) : s);
     if (lines.length) sections[name] = lines.join('\n');
   });
   return sections;
@@ -368,13 +369,11 @@ async function generateSummary(){
 
   btn.disabled = true; setSummaryStatus('Summarising…'); box.placeholder = 'Generating summary…';
 
-  // Build a concise instruction payload — tweak as you like
   const payload = {
     task: 'customer_summary',
     style: 'plain_english, concise, friendly, no jargon, UK spelling',
     max_words: CONFIG.MAX_WORDS,
-    sections, // raw content per section, arrows stripped
-    // Optional hint to your Worker if it supports modes
+    sections,
     mode: 'summary'
   };
 
@@ -388,7 +387,6 @@ async function generateSummary(){
     if (!res.ok) throw new Error('Bad response: ' + res.status);
     const data = await res.json();
 
-    // Try common fields
     const summary = String(
       data.summary ?? data.text ?? data.result ?? data.output ?? ''
     ).trim();
@@ -397,7 +395,6 @@ async function generateSummary(){
       box.value = normalizeNewlines(summary);
       setSummaryStatus('Done ✓');
     } else {
-      // Fallback: local stitch if API returned empty
       box.value = localFallbackSummary(sections);
       setSummaryStatus('Done (fallback) ✓');
     }
@@ -420,7 +417,7 @@ function localFallbackSummary(sections){
   const seen = new Set();
 
   const pushLines = (label, text) => {
-    const bits = text.split('\n').map(s => s.replace(/^[-•↘️]\s*/, '').trim()).filter(Boolean);
+    const bits = text.split('\n').map(s => s.replace(/^[-•✅↘️]\s*/, '').replace(/;$/, '').trim()).filter(Boolean);
     if (!bits.length) return;
     lines.push(`${label}:`);
     bits.slice(0,6).forEach(b => {
@@ -437,11 +434,10 @@ function localFallbackSummary(sections){
     if (sections[k]) pushLines(k, sections[k]);
   });
 
-  // Collapse to a readable paragraph-ish block
   return lines.join('\n').trim();
 }
 
-/* Copy summary as plain text (no ↘️ injected here) */
+/* Copy summary as plain text */
 function copySummary(){
   const ta = els.summaryBox;
   let text = normalizeNewlines(ta.value).trim();
@@ -460,7 +456,21 @@ function idify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^
 function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function htmlAttr(s){ return s.replace(/"/g,'&quot;'); }
 function normalizeNewlines(s){ return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n'); }
-function formatLine(s){ s = String(s || '').trim().replace(/\s+/g,' '); return s ? `↘️ ${s}` : ''; }
+
+/* Normalise content by stripping any leading icon (✅ or legacy ↘️) and any trailing semicolon */
+function stripIconAndSemicolon(s){
+  return String(s || '')
+    .replace(/^\s*(?:✅|↘️)?\s*/,'') // remove either icon if present
+    .replace(/\s*;?\s*$/,'')        // remove any trailing semicolon and surrounding space
+    .trim();
+}
+
+/* Always format to: "✅ <text>;" */
+function formatLine(s){
+  const clean = stripIconAndSemicolon(String(s || '').replace(/\s+/g,' '));
+  return clean ? `✅ ${clean};` : '';
+}
+
 function flash(el, msg){ const was = el.placeholder; el.placeholder = msg; setTimeout(()=>{ el.placeholder = was; }, 1200); }
 
 /* -------------------- Kickoff -------------------- */
