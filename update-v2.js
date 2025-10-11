@@ -2,220 +2,129 @@
   const ROOT = document.getElementById('depotV2'); if(!ROOT) return;
   const $ = s => ROOT.querySelector(s); const $$ = s => [...ROOT.querySelectorAll(s)];
   const semi = (c,t)=>`${c}; ${t}`;
+  const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_');
+  const pretty = c => c.replace(/_/g,' ').replace(/\b[a-z]/g, m=>m.toUpperCase());
 
-  /* ------------ CONFIG ------------ */
-  // Exact Depot section order (right-hand stack & target dropdown)
+  // ==== HARD-CODED Worker endpoint (confirmed) ====
+  const RECOMMEND_URL = 'https://survey-brain-api.martinbibb.workers.dev/api/recommend';
+
+  // ==== Depot sections (order exact) ====
   const DEPOT_SECTIONS = [
-    'Needs',
-    'Working at heights',
-    'System characteristics',
-    'Components that require assistance',
-    'Restrictions',
-    'Hazards',
-    'Delivery',
-    'Office',
-    'Boiler and controls',
-    'Flue',
-    'Pipe work',
-    'Disruption',
-    'Customer actions',
-    'Special'
+    'Needs','Working at heights','System characteristics','Components that require assistance',
+    'Restrictions','Hazards','Delivery','Office','Boiler and controls','Flue',
+    'Pipe work','Disruption','Customer actions','Special'
   ];
 
-  // Map Options.txt categories -> default Depot section
-  // (kept strict to your wording; add aliases if you have alternates in Options.txt)
+  // Map Options.txt categories -> default Depot section (aliases included)
   const MAP_CATEGORY_TO_SECTION = {
-    // core categories
-    needs: 'Needs',
-    working_at_heights: 'Working at heights',
-    system_characteristics: 'System characteristics',
-    components_that_require_assistance: 'Components that require assistance',
-    restrictions: 'Restrictions',
-    hazards: 'Hazards',
-    delivery: 'Delivery',
-    office: 'Office',
-    boiler_and_controls: 'Boiler and controls',
-    flue: 'Flue',
-    pipe_work: 'Pipe work',
-    disruption: 'Disruption',
-    customer_actions: 'Customer actions',
-    special: 'Special',
-
-    // common aliases (safe extras; remove if not needed)
-    boiler: 'Boiler and controls',
-    controls: 'Boiler and controls',
-    wah: 'Working at heights',
-    making_good: 'Special' // if you have a [making_good] bucket and want it in Special
+    needs:'Needs', working_at_heights:'Working at heights', system_characteristics:'System characteristics',
+    components_that_require_assistance:'Components that require assistance', restrictions:'Restrictions', hazards:'Hazards',
+    delivery:'Delivery', office:'Office', boiler_and_controls:'Boiler and controls',
+    boiler:'Boiler and controls', controls:'Boiler and controls',
+    flue:'Flue', pipe_work:'Pipe work', disruption:'Disruption', customer_actions:'Customer actions',
+    special:'Special', wah:'Working at heights', making_good:'Special'
   };
 
-  // Normalize a category token from Options.txt -> lookup key above
-  const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]+/g,'_');
-
-  /* ------------ STATE ------------ */
-  const state = {
-    options: {},             // { [category]: [{code,text}] }
-    staged: new Set(),       // selected items in current source list (strings "CODE; text")
-    currentDept: null,       // current Options.txt category
-    sections: {}             // { [section]: { ticks:Set<string>, note:string } }
-  };
+  // ==== STATE ====
+  const state = { options:{}, staged:new Set(), currentDept:null, sections:{} };
   const ensure = s => (state.sections[s] ??= { ticks:new Set(), note:'' });
 
-  /* ------------ TABS (Simple / Pro) ------------ */
+  // ==== Tabs ====
   $$(".tab").forEach(btn=>{
     btn.addEventListener('click', ()=>{
       $$(".tab").forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      const tab = btn.dataset.tab;
-      $$(".pane").forEach(p=>p.classList.remove('active'));
-      $("#pane-"+tab).classList.add('active');
+      const tab=btn.dataset.tab; $$(".pane").forEach(p=>p.classList.remove('active')); $("#pane-"+tab).classList.add('active');
     });
   });
 
-  /* ------------ BOOT ------------ */
+  // ==== Boot ====
   window.addEventListener('DOMContentLoaded', async ()=>{
-    // Target depot sections dropdown in your exact order
     $("#tgtSection").innerHTML = DEPOT_SECTIONS.map(s=>`<option>${s}</option>`).join('');
-    // Create section cards in your exact order
-    DEPOT_SECTIONS.forEach(s => ensure(s));
+    DEPOT_SECTIONS.forEach(s=>ensure(s));
     renderSectionsStack();
 
-    // Wire left-hand controls
+    // Simple left
     $("#srcDept").addEventListener('change', onDeptChange);
     $("#srcFilter").addEventListener('input', ()=>{ renderSrcList(); reflectSelCount(); });
+    $("#btnSelectAll").addEventListener('click', ()=>{ $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{ const line=semi(chk.dataset.code,chk.dataset.text); chk.checked=true; state.staged.add(line); }); reflectSelCount(); });
+    $("#btnClearVisible").addEventListener('click', ()=>{ $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{ const line=semi(chk.dataset.code,chk.dataset.text); chk.checked=false; state.staged.delete(line); }); reflectSelCount(); });
+    $("#btnSend").addEventListener('click', ()=>{ const tgt=$("#tgtSection").value; if(!tgt || state.staged.size===0){ flashSend('Nothing to send'); return; } ensure(tgt); state.staged.forEach(l=>state.sections[tgt].ticks.add(l)); state.staged.clear(); renderSrcList(); reflectSelCount(); updateSectionCard(tgt); flashSend(`Sent to [${tgt}]`); });
 
-    $("#btnSelectAll").addEventListener('click', ()=>{ // select all visible
-      $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
-        const line = semi(chk.dataset.code, chk.dataset.text);
-        chk.checked = true; state.staged.add(line);
-      });
-      reflectSelCount();
-    });
+    // GPT buttons (Simple + Pro)
+    $("#btnCustomerSummary").addEventListener('click', ()=>runSummary(false, true));
+    $("#btnDepotSummary").addEventListener('click', ()=>runSummary(true,  true));
+    $("#copySummary").addEventListener('click', ()=>{ $("#summaryOut").select(); document.execCommand('copy'); setSummaryStatus('Copied'); });
 
-    $("#btnClearVisible").addEventListener('click', ()=>{ // clear only visible
-      $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
-        const line = semi(chk.dataset.code, chk.dataset.text);
-        chk.checked = false; state.staged.delete(line);
-      });
-      reflectSelCount();
-    });
+    $("#btnProCustomerSummary").addEventListener('click', ()=>runSummary(false, false));
+    $("#btnProDepotSummary").addEventListener('click', ()=>runSummary(true,  false));
+    $("#copyProSummary").addEventListener('click', ()=>{ $("#proSummaryOut").select(); document.execCommand('copy'); setProSummaryStatus('Copied'); });
 
-    $("#btnSend").addEventListener('click', ()=>{
-      const tgt = $("#tgtSection").value;
-      if(!tgt || state.staged.size===0){ flashSend('Nothing to send'); return; }
-      ensure(tgt);
-      state.staged.forEach(line => state.sections[tgt].ticks.add(line));
-      state.staged.clear();
-      renderSrcList(); reflectSelCount();
-      updateSectionCard(tgt);
-      flashSend(`Sent to [${tgt}]`);
-    });
-
-    // Load Options.txt and hydrate departments in stable order
+    // Load options
     await loadOptions();
-    hydrateDeptDropdown();           // orders by DEPOT_SECTIONS via mapping, then anything unmapped alphabetically
-    // Set initial dept and default target based on mapping
-    if($("#srcDept").options.length){
-      $("#srcDept").selectedIndex = 0;
-      onDeptChange();
-    }
+    hydrateDeptDropdown();
+    if($("#srcDept").options.length){ $("#srcDept").selectedIndex=0; onDeptChange(); }
   });
 
-  /* ------------ OPTIONS LOADER (KISS flat) ------------ */
+  // ==== Options loader ====
   async function loadOptions(){
-    const txt = await fetch('Options.txt', {cache:'no-store'}).then(r=>r.text());
-    let cat = null;
+    const txt = await fetch('Options.txt',{cache:'no-store'}).then(r=>r.text());
+    let cat=null;
     txt.split(/\r?\n/).forEach(line=>{
-      const s = line.trim(); if(!s || s.startsWith('#')) return;
-      const hdr = s.match(/^\[([^\]]+)\]$/);
-      if(hdr){ cat = norm(hdr[1].trim()); state.options[cat] ??= []; return; }
+      const s=line.trim(); if(!s || s.startsWith('#')) return;
+      const hdr=s.match(/^\[([^\]]+)\]$/);
+      if(hdr){ cat=norm(hdr[1].trim()); state.options[cat] ??= []; return; }
       if(!cat) return;
-      const parts = s.split('|').map(x=>x.trim());
-      if(parts.length>=3){ const [code,,specific]=parts; if(code && specific) state.options[cat].push({code, text:specific}); }
+      const parts=s.split('|').map(x=>x.trim());
+      if(parts.length>=3){ const [code,,specific]=parts; if(code && specific) state.options[cat].push({code,text:specific}); }
     });
   }
-
-  /* ------------ LEFT: DEPT DROPDOWN + SOURCE LIST ------------ */
   function hydrateDeptDropdown(){
-    const cats = Object.keys(state.options);
-
-    // Group cats by mapped section to control order: all cats whose map exists follow the section order; unmapped go after (alpha)
-    const mapped = [];
-    const unmapped = [];
-    for(const c of cats){
-      const sec = MAP_CATEGORY_TO_SECTION[c];
-      if(sec) mapped.push([c, sec]);
-      else unmapped.push(c);
-    }
-
-    // Sort mapped by the section order index, then within each section keep original order
-    const secIndex = new Map(DEPOT_SECTIONS.map((s,i)=>[s,i]));
+    const cats=Object.keys(state.options);
+    const mapped=[], unmapped=[];
+    const secIndex=new Map(DEPOT_SECTIONS.map((s,i)=>[s,i]));
+    for(const c of cats){ const sec=MAP_CATEGORY_TO_SECTION[c]; if(sec) mapped.push([c,sec]); else unmapped.push(c); }
     mapped.sort((a,b)=> (secIndex.get(a[1]) - secIndex.get(b[1])) || a[0].localeCompare(b[0]));
-
-    // Sort unmapped alphabetically at the end
     unmapped.sort((a,b)=>a.localeCompare(b));
-
-    const orderedCats = [...mapped.map(([c])=>c), ...unmapped];
-
-    $("#srcDept").innerHTML = orderedCats.map(c=>{
-      const label = prettifyCat(c);
-      return `<option value="${c}">${label}</option>`;
-    }).join('');
+    const ordered=[...mapped.map(([c])=>c), ...unmapped];
+    $("#srcDept").innerHTML = ordered.map(c=>`<option value="${c}">${pretty(c)}</option>`).join('');
   }
 
-  function prettifyCat(c){
-    // convert snake_case to Title Case for display
-    return c.replace(/_/g,' ').replace(/\b[a-z]/g, ch=>ch.toUpperCase());
-  }
-
+  // ==== Source list ====
   function onDeptChange(){
     state.currentDept = $("#srcDept").value;
-    state.staged.clear();
-    $("#srcFilter").value = '';
-    // Auto-pick default target using the mapping (falls back to same as before)
+    state.staged.clear(); $("#srcFilter").value='';
     const mapped = MAP_CATEGORY_TO_SECTION[state.currentDept];
-    if(mapped && DEPOT_SECTIONS.includes(mapped)){
-      $("#tgtSection").value = mapped;
-    }else{
-      // default to first section if mapping is missing
-      $("#tgtSection").selectedIndex = 0;
-    }
+    if(mapped && DEPOT_SECTIONS.includes(mapped)) $("#tgtSection").value = mapped; else $("#tgtSection").selectedIndex=0;
     renderSrcList(); reflectSelCount();
   }
-
   function renderSrcList(){
-    const dept = state.currentDept; const q = ($("#srcFilter").value||'').toLowerCase();
-    const items = dept ? (state.options[dept] || []) : [];
-    const filtered = items.filter(it => !q || it.code.toLowerCase().includes(q) || it.text.toLowerCase().includes(q));
-
+    const dept=state.currentDept; const q=($("#srcFilter").value||'').toLowerCase();
+    const items = dept ? (state.options[dept]||[]) : [];
+    const filtered = items.filter(it=>!q || it.code.toLowerCase().includes(q) || it.text.toLowerCase().includes(q));
     $("#srcList").innerHTML = filtered.length ? filtered.map(it=>{
-      const line = semi(it.code, it.text);
-      const checked = state.staged.has(line) ? 'checked' : '';
+      const line=semi(it.code,it.text); const checked = state.staged.has(line)?'checked':'';
       return `<label class="item"><input type="checkbox" data-code="${it.code}" data-text="${it.text}" ${checked}> <strong>${it.code}</strong> — ${it.text}</label>`;
     }).join('') : `<div class="muted" style="padding:.5rem">No items match.</div>`;
-
-    // bind checkboxes
-    $("#srcList").querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+    $("#srcList").querySelectorAll('input[type=checkbox]').forEach(chk=>{
       chk.addEventListener('change', e=>{
-        const line = semi(e.target.dataset.code, e.target.dataset.text);
+        const line=semi(e.target.dataset.code,e.target.dataset.text);
         if(e.target.checked) state.staged.add(line); else state.staged.delete(line);
         reflectSelCount();
       });
     });
   }
-
   function reflectSelCount(){ $("#selCount").textContent = `${state.staged.size} selected`; }
   function flashSend(msg){ const n=$("#sendStatus"); n.textContent=msg; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 1600); }
 
-  /* ------------ RIGHT: ALL DEPOT SECTIONS STACK ------------ */
+  // ==== Sections stack ====
   function renderSectionsStack(){
-    const host = $("#sectionsStack");
-    host.innerHTML = DEPOT_SECTIONS.map(section => sectionCardMarkup(section)).join('');
-    // bind per-section controls + initial render
-    DEPOT_SECTIONS.forEach(section => { bindSectionCard(section); updateSectionCard(section); });
+    const host=$("#sectionsStack");
+    host.innerHTML = DEPOT_SECTIONS.map(s=>sectionCardMarkup(s)).join('');
+    DEPOT_SECTIONS.forEach(s=>{ bindSectionCard(s); updateSectionCard(s); });
   }
-
   function sectionCardMarkup(section){
-    const key = sectionKey(section);
+    const key = keyOf(section);
     return `
       <div class="sectionCard" id="${key}">
         <h3>${section}</h3>
@@ -233,9 +142,8 @@
       </div>
     `;
   }
-
   function bindSectionCard(section){
-    const card = $("#"+sectionKey(section));
+    const card=$("#"+keyOf(section));
     card.querySelector(`[data-note="${section}"]`).addEventListener('input', e=>{
       ensure(section); state.sections[section].note = e.target.value.trim(); updateSectionCard(section);
     });
@@ -247,21 +155,101 @@
     });
     card.querySelector(`[data-includehdr="${section}"]`).addEventListener('change', ()=>updateSectionCard(section));
   }
-
   function updateSectionCard(section){
     ensure(section);
-    const card = $("#"+sectionKey(section));
-    const ta = card.querySelector(`[data-out="${section}"]`);
+    const card=$("#"+keyOf(section)); const ta=card.querySelector(`[data-out="${section}"]`);
     const includeHeader = card.querySelector(`[data-includehdr="${section}"]`).checked;
-    const lines = [];
+    const lines=[];
     if(includeHeader) lines.push(`[${section}]`);
     const note = state.sections[section].note; if(note) lines.push(`NOTE; ${note}`);
-    const arr = [...state.sections[section].ticks];
-    // Sort globally if the top toggle is ticked
+    const arr=[...state.sections[section].ticks];
     if($("#sortLines")?.checked) arr.sort((a,b)=>a.localeCompare(b));
     lines.push(...arr);
     ta.value = lines.join('\n');
   }
+  const keyOf = s => 'sec_' + s.toLowerCase().replace(/[^a-z0-9]+/g,'_');
 
-  function sectionKey(s){ return 'sec_' + s.toLowerCase().replace(/[^a-z0-9]+/g,'_'); }
+  // ==== GPT: prompt builders + call ====
+  function buildPairs(){ return Object.entries(state.sections).filter(([,v])=>v.note || v.ticks.size); }
+  function promptCustomer(pairs){
+    return [
+      `SYSTEM: You are a UK heating adviser writing a short, clear customer summary.`,
+      `TONE: Friendly, factual, avoid jargon.`,
+      `LENGTH: 6–10 concise bullets.`,
+      `INCLUDE: boiler/controls, flue, water/pressure caveats, access/WAH, restrictions & hazards, delivery/office if relevant, customer actions, special notes.`,
+      `EXCLUDE: internal codes; no prices.`,
+      `INPUT (semicolon items):`,
+      pairs.map(([id,d])=>{
+        const note = d.note ? `NOTE; ${d.note}\n` : '';
+        return `[# ${id}]\n${note}${[...d.ticks].join('\n')}`;
+      }).join('\n\n')
+    ].join('\n');
+  }
+  function promptDepot(pairs){
+    return [
+      `SYSTEM: Generate DEPOT-READY notes (British Gas style) as terse semicolon lines.`,
+      `FORMAT: Keep semicolon items; group by [Section]; include engineer-critical caveats; no pricing.`,
+      `INPUT:`,
+      pairs.map(([id,d])=>{
+        const note = d.note ? `NOTE; ${d.note}\n` : '';
+        return `[# ${id}]\n${note}${[...d.ticks].join('\n')}`;
+      }).join('\n\n'),
+      `OUTPUT: Return only final notes, grouped by [Section], ready to paste.`
+    ].join('\n');
+  }
+
+  // Try window connector first (if your recs app injects one), then Worker URL
+  async function recommend(prompt, mode='summary'){
+    try{
+      if (window.Recommendations?.request) {
+        const t = await window.Recommendations.request(prompt); if(t) return String(t).trim();
+      }
+      if (window.Recommendations?.generate) {
+        const r = await window.Recommendations.generate({ prompt, mode }); const t=r?.text||r?.output||r?.result; if(t) return String(t).trim();
+      }
+      if (window.RecsConnector?.request) {
+        const r = await window.RecsConnector.request({ prompt, mode }); const t=r?.text||r?.output||r?.result; if(t) return String(t).trim();
+      }
+    }catch(_){/* fall through */}
+    // Cloudflare Worker
+    const variants = [
+      { body:{notes:prompt, mode} },
+      { body:{prompt, mode} }
+    ];
+    for(const v of variants){
+      try{
+        const res = await fetch(RECOMMEND_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(v.body) });
+        const data = res.ok ? await res.json().catch(()=> ({})) : {};
+        const text = data.text || data.output || data.result || (data.choices?.[0]?.message?.content);
+        if(text) return String(text).trim();
+      }catch(_){/* try next */}
+    }
+    return '';
+  }
+
+  async function runSummary(depotStyle, isSimplePane){
+    const pairs = buildPairs();
+    const out = isSimplePane ? $("#summaryOut") : $("#proSummaryOut");
+    const card = isSimplePane ? $("#summaryCard") : $("#proSummaryCard");
+    const setStatus = isSimplePane ? setSummaryStatus : setProSummaryStatus;
+
+    const pasted = (!isSimplePane && $("#proPaste").value.trim()) || '';
+    let prompt;
+    if(pasted){
+      prompt = depotStyle
+        ? `SYSTEM: Convert the input into DEPOT-READY semicolon lines grouped by [Section]. INPUT:\n${pasted}`
+        : `SYSTEM: Create a short, clear customer-friendly summary (6–10 bullets) from the input. INPUT:\n${pasted}`;
+    }else{
+      if(!pairs.length){ card.style.display='block'; out.value='(No items yet)'; setStatus(''); return; }
+      prompt = depotStyle ? promptDepot(pairs) : promptCustomer(pairs);
+    }
+
+    card.style.display='block';
+    const text = await recommend(prompt, depotStyle ? 'depot' : 'customer');
+    if(text){ out.value=text; setStatus('Summary ready'); }
+    else { out.value = `# ${depotStyle ? 'Depot' : 'Customer'} Summary (prompt)\n\n${prompt}`; setStatus('API returned no text — showing prompt.'); }
+  }
+
+  function setSummaryStatus(m){ const n=$("#summaryStatus"); n.textContent=m; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 2500); }
+  function setProSummaryStatus(m){ const n=$("#proSummaryStatus"); n.textContent=m; n.classList.remove('muted'); setTimeout(()=>{ n.textContent=''; n.classList.add('muted'); }, 2500); }
 })();
