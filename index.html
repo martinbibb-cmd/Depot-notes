@@ -1,349 +1,649 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Depot Notes – Stepper</title>
+  <title>Depot Notes – Stepper v3</title>
   <style>
-  :root{--bg:#0b0d10;--panel:#151a1f;--ink:#e9eef5;--muted:#9fb0c2;--accent:#4aa3ff}
-  *{box-sizing:border-box}html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
-  header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #1f2630;background:#0e1116}
-  h1{margin:0;font-size:18px}.tag{font-size:12px;color:var(--muted);margin-left:8px;border:1px solid #243041;padding:2px 6px;border-radius:8px}
-  nav#steps{display:flex;gap:8px;flex-wrap:wrap}
-  .step{padding:6px 10px;border-radius:10px;background:#0f141a;border:1px solid #202a36;color:var(--muted);cursor:pointer}
-  .step.active{color:var(--ink);border-color:#2a3b50;background:#121a22}
-  main#view{padding:16px}
-  .card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;padding:16px;margin-bottom:16px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  label{display:block;font-weight:600;margin-bottom:6px;color:#cfe0f3}
-  input,select,textarea{width:100%;background:#0f141a;border:1px solid #283241;color:var(--ink);padding:10px;border-radius:10px}
-  small.hint{color:var(--muted);display:block;margin-top:6px}
-  footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #1f2630;background:#0e1217;position:sticky;bottom:0}
-  button{background:var(--accent);border:none;color:#081018;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
-  button.ghost{background:transparent;color:var(--ink);border:1px solid #2a3b50}
-  .outputs{padding:16px;border-top:1px solid #1f2630}
-  .hidden{display:none}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .grid .full{grid-column:1/-1}
-  .list{display:grid;gap:8px}
-  .opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #253043;border-radius:10px;background:#0f141a;cursor:pointer}
-  .opt input{width:auto}
-  textarea.tall{min-height:160px}
-  .kv{display:grid;grid-template-columns:220px 1fr;gap:6px}
+    :root{
+      /* DARK THEME DEFAULTS */
+      --bg:#0b0d10;--panel:#151a1f;--ink:#e9eef5;--muted:#9fb0c2;--accent:#4aa3ff;--border:#1f2630;--banner:#0f3c80;--bannerText:#e9eef5;
+      --copyBtn:#4aa3ff;--copyInk:#081018;
+    }
+    html[data-theme="light"]{
+      --bg:#f6f9fc;--panel:#ffffff;--ink:#0b0d10;--muted:#5a6b7d;--accent:#246bff;--border:#dde6f0;--banner:#e8f1ff;--bannerText:#113366;
+      --copyBtn:#246bff;--copyInk:#ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:5}
+    h1{margin:0;font-size:18px}
+    .tag{font-size:12px;color:var(--muted);margin-left:8px;border:1px solid var(--border);padding:2px 6px;border-radius:8px}
+    .right{display:flex;align-items:center;gap:8px}
+    .btn{background:var(--accent);border:none;color:var(--copyInk);padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--border)}
+    .btn.small{padding:6px 10px;font-weight:600}
+    .switch{display:flex;align-items:center;gap:6px}
+    .switch input{accent-color:var(--accent)}
+
+    .banner{background:var(--banner);color:var(--bannerText);padding:10px 12px;border-radius:12px;border:1px solid var(--border)}
+
+    nav#steps{display:flex;gap:8px;flex-wrap:wrap;margin:12px 16px}
+    .step{padding:6px 10px;border-radius:10px;background:var(--panel);border:1px solid var(--border);color:var(--muted);cursor:pointer}
+    .step.active{color:var(--ink);border-color:#2a3b50;background:linear-gradient(0deg, rgba(74,163,255,.12), rgba(74,163,255,0))}
+
+    main#view{padding:16px}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .row thirds{grid-template-columns:1fr 1fr 1fr}
+    label{display:block;font-weight:600;margin-bottom:6px;color:var(--ink)}
+    input,select,textarea{width:100%;background:transparent;border:1px solid var(--border);color:var(--ink);padding:10px;border-radius:10px}
+    textarea.tall{min-height:120px}
+    .list{display:grid;gap:8px}
+    .opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:10px;background:transparent;cursor:pointer}
+    .opt input{width:auto}
+
+    footer.page{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border);background:var(--panel);position:sticky;bottom:0;z-index:5}
+
+    .outputs{padding:16px;border-top:1px solid var(--border)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .grid .full{grid-column:1/-1}
+    .copybox{display:flex;flex-direction:column;gap:8px}
+
+    .credit{color:var(--muted);font-size:12px;margin-left:auto}
   </style>
   <noscript><div style="background:#ffb4b4;color:#300;padding:12px">This page needs JavaScript. Open in a browser (not Files preview) and ensure JS is enabled.</div></noscript>
 </head>
 <body>
   <header>
-    <h1>Depot Notes <span class="tag" id="jsStatus">JS…</span></h1>
-    <nav id="steps"></nav>
+    <div style="display:flex;align-items:center;gap:8px">
+      <h1>Depot Notes</h1>
+      <span class="tag" id="jsStatus">JS…</span>
+    </div>
+    <div class="right">
+      <div class="switch"><input type="checkbox" id="themeToggle"><label for="themeToggle">Light mode</label></div>
+      <button id="prevBtn" class="btn ghost">◀ Back</button>
+      <button id="nextBtn" class="btn">Next ▶</button>
+    </div>
   </header>
 
-  <main id="view">
-    <!-- Progressive: render first step (Safety) without JS -->
-    <div class="card" id="safety-fallback">
-      <h2>Safety</h2>
-      <div class="row">
-        <div><label>Working at Height (WAH)</label>
-          <select>
-            <option></option><option>Ladder only</option><option>Tower scaffold</option><option>Bridging/cantilever</option><option>MEWP</option><option>None</option>
-          </select>
-        </div>
-        <div><label>Parking</label>
-          <select>
-            <option></option><option>On-road</option><option>Permit</option><option>Driveway</option><option>Pay & display</option><option>None</option>
-          </select>
-        </div>
-        <div class="full"><label>Other safety notes</label><textarea rows="3"></textarea></div>
-      </div>
-      <small class="hint">If you only see this card and no steps above, your browser blocked JavaScript.</small>
-    </div>
-  </main>
+  <div class="banner" style="margin:12px 16px">Quick stepper to fill your Depot sections. Use the blue buttons to copy each section when you’re done.</div>
 
-  <footer>
-    <button id="prevBtn" class="ghost">◀ Back</button>
-    <button id="nextBtn">Next ▶</button>
+  <nav id="steps"></nav>
+
+  <main id="view"></main>
+
+  <footer class="page">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <button id="genCustomer" class="btn small">Generate Customer Summary</button>
+      <button id="genEngineer" class="btn small ghost">Generate Engineer Summary</button>
+    </div>
+    <div class="credit">Depot Notes v3 — Form Logic Redesign by Martin Bibb 💡</div>
   </footer>
 
   <section id="outputs" class="outputs hidden">
-    <h2>Final Depot Notes</h2>
-    <div class="grid">
-      <div class="full">
-        <label>All Sections (semicolon lines)</label>
-        <textarea id="finalNotes" class="tall" rows="16"></textarea>
-        <button class="copy" data-copy="finalNotes">Copy</button>
+    <h2>Depot Copy Boxes (exact names)</h2>
+    <div class="grid" id="copyBoxes"></div>
+    <div class="grid" style="margin-top:12px">
+      <div class="copybox">
+        <label>Customer Summary</label>
+        <textarea id="customerSummary" class="tall" rows="8"></textarea>
+        <button class="btn small" data-copy="customerSummary">Copy Customer Summary</button>
+      </div>
+      <div class="copybox">
+        <label>Engineer Summary</label>
+        <textarea id="engineerSummary" class="tall" rows="8"></textarea>
+        <button class="btn small" data-copy="engineerSummary">Copy Engineer Summary</button>
       </div>
     </div>
   </section>
 
   <script>
-  document.addEventListener('DOMContentLoaded', function(){
-    // Mark JS as running
-    var jsTag = document.getElementById('jsStatus');
-    if(jsTag) jsTag.textContent = 'JS OK';
+    // THEME
+    const themeToggle = document.getElementById('themeToggle');
+    function applyTheme(){
+      const pref = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', pref);
+      themeToggle.checked = (pref==='light');
+    }
+    themeToggle.addEventListener('change',()=>{
+      const next = themeToggle.checked ? 'light' : 'dark';
+      localStorage.setItem('theme', next); applyTheme();
+    });
+    window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='l'){ themeToggle.checked=!themeToggle.checked; themeToggle.dispatchEvent(new Event('change')); }});
+    applyTheme();
 
-    const State = {
-      stepIndex: 0,
-      data: {
-        safety: { wah: "", parking: "", other: "" },
-        existing_boiler: "",
-        rooms: [],
-        needs: [],
-        new_boiler: "",
-        old_flue: "",
-        new_flue: "",
-        sealing_making_good: [],
-        disruption: [],
-        customer_actions: [],
-        advice: []
+    // STATUS
+    const jsTag = document.getElementById('jsStatus'); if(jsTag) jsTag.textContent='JS OK';
+
+    // Options (embedded from your Options.txt — codes omitted when outputting)
+    const RAW_OPTIONS = `
+[Needs]
+NE01 | Need | Better water pressure
+NE02 | Need | Faster hot water delivery
+NE03 | Need | More usable space
+NE04 | Need | Lower running costs
+NE05 | Need | Easier controls
+NE06 | Need | Quieter operation
+NE07 | Need | Future-ready system
+
+[Working at heights]
+WAH01 | Access | Ladder access required
+WAH02A | Scaffold | Tower – standard
+WAH02B | Scaffold | Tower – bridging
+WAH02C | Scaffold | Cantilever
+WAH03 | Roof access | Permit required
+WAH04A | Loft access | Boarded
+WAH04B | Loft access | Unboarded
+WAH05 | Access | MEWP required
+WAH06 | Flat roof | Specialist builder to make good
+WAH50 | Ladder | 1:4 angle (≈75°) – ~250 mm out per metre rise; secure footing
+WAH51 | Reach | Max practical ladder reach ≈6 m; >2 storeys or >45° roof = scaffold
+WAH52 | Roof | Flat roof work requires edge protection or 2 m exclusion from edge
+WAH53 | Loft | Boiler weight ≤≈35 kg for safe loft handling; use two-person lift if needed
+WAH54 | Access | Fixed loft ladder and permanent lighting required for service access
+
+[System characteristics]
+SE00 | Existing system
+SE01 | System type | Regular (open-vented with F&E tank)
+SE02 | System type | Regular (sealed system kit present)
+SE03 | Hot water | System boiler – open-vented
+SE04 | Hot water | System boiler – unvented
+SE05 | Configuration | Y-plan (3-port valve)
+SE06 | Configuration | S-plan (2-port valves)
+SE07 | Configuration | Gravity primaries
+SE08 | Legacy install | Combi present
+SE09 | Pipework | Microbore
+SE10 | System pressure | Low
+SE11 | Controls | Mechanical timer / room stat
+SE12 | Controls | Hard-wired only
+SN00 | New boiler
+SN01 | System type | Combi boiler
+SN02 | System type | System boiler with unvented cylinder
+SN03 | System type | System boiler with Mixergy cylinder
+SN04 | System type | Regular boiler with open-vented hot water
+SN05 | System type | Regular boiler with unvented hot water
+SN06 | Heating circuit | Open-vented
+SN07 | Heating circuit | Sealed / pressurised
+SN08 | Heating zones | TRVs on all radiators
+SN09 | Heating zones | Additional zone(s) via 2-port valves
+SN10 | Heating zones | Existing Y-plan retained
+SN11 | Controls compatibility | Hive
+SN12 | Controls compatibility | Hive Mini
+SN13 | Controls preference | Simple / manual
+SC50 | System Type | Combi – instantaneous DHW; no tanks
+SC51 | System Type | System – sealed with cylinder; built-in pump/expansion vessel
+SC52 | System Type | Regular – open-vented with F&E tank
+SC53 | System Pressure | Sealed system may expose latent leaks – advise & record disclaimer
+SC54 | Pipework | One-pipe system not suitable for modern boilers – recommend re-pipe
+SC55 | Pipework | Galvanised/steel pipework – replace rather than flush
+SC56 | Water Softeners | Worcester allows softened water through primary HX
+SC57 | Water Softeners | Vaillant/Ideal – bypass or hard-fill only (no softened water through HX)
+SC58 | Location | Loft installs require boarded area (≈1.5 m radius), fixed ladder & lighting
+SC60 | Condensate | External condensate must be insulated/frost-protected
+
+[Arse_cover_notes]
+ARS01 | System | Sealing an old system may expose hidden leaks
+ARS02 | System | Existing radiators and valves may leak once pressurised
+ARS03 | System | Old vented pipework and joints not designed for pressure
+ARS04 | System | System converted from open vent to sealed — pressure relief valve fitted for safety
+ARS05 | System | Pressure drops after installation may indicate existing weeps or hidden leaks
+ARS06 | System | Customer advised to monitor pressure during initial days of use
+ARS07 | System | No liability for existing system weaknesses or pre-existing faults
+ARS08 | Combi | Combination boilers supply one outlet at a time — flow reduces with multiple use
+ARS09 | Combi | Flow rate limited by mains water supply — cannot exceed incoming pressure or flow
+ARS10 | Combi | Large households or multiple bathrooms may experience reduced performance
+ARS11 | Combi | Cold mains restrictions may affect shower performance
+ARS12 | Combi | Hot water temperature varies slightly with flow rate
+ARS13 | Combi | Not suitable for power showers with pump — pump must be removed
+ARS14 | Combi | Shower performance dependent on incoming cold main flow and pressure
+ARS15 | Hot water | Stored cylinder water may take time to reheat
+ARS16 | Hot water | Mixergy or unvented cylinders require periodic servicing for safety
+ARS17 | Hot water | Unvented cylinder discharge tested and compliant at time of install only
+ARS18 | Hot water | Hot water recovery times vary depending on usage pattern
+ARS19 | Hot water | No liability for customer-supplied fixtures not designed for mains pressure
+ARS20 | Condensate | Condensate routes external — insulated to reduce freezing risk, not guaranteed
+ARS21 | Condensate | External soakaway provided only where suitable drainage available
+ARS22 | Condensate | Customer responsible for maintaining condensate route clear and free-flowing
+ARS23 | Condensate | No responsibility for freezing if installation complies with manufacturer MI
+ARS24 | Controls | Controls installed in accordance with manufacturer’s instructions
+ARS25 | Controls | Hive system can operate without Wi-Fi; only remote app access requires router connection and USB power
+ARS26 | Controls | Smart controls may require network access for optional app features
+ARS27 | Controls | No responsibility for internet connectivity or app integration issues
+ARS28 | Controls | Room stat location based on best judgement at time of survey
+ARS29 | Flue | Flue termination checked for clearance at time of install — future obstructions not covered
+ARS30 | Flue | Brickwork and render made good to reasonable standard, not decorative finish
+ARS31 | Flue | Flue sealing and flashings weatherproof only — not decorative
+ARS32 | Flue | Existing holes or redundant flues made safe and sealed where practical
+ARS33 | Access | Safe access provided for installation only — permanent access is customer responsibility
+ARS34 | Access | Loft must be boarded, lit, and safe before works commence
+ARS35 | Access | Working at height precautions apply — scaffold or tower may be required
+ARS36 | Access | No work above safe height without suitable equipment
+ARS37 | Customer | Customer to clear working area and ensure safe access
+ARS38 | Customer | Pets to be contained during works
+ARS39 | Customer | Noise, dust, and disruption unavoidable during installation
+ARS40 | Customer | Water and heating supply may be temporarily unavailable during works
+ARS41 | Customer | Customer responsible for redecorating or boxing in after completion
+ARS42 | General | All works carried out to Gas Safe and Building Regs at time of install
+ARS43 | General | Manufacturer warranty subject to annual service
+ARS44 | General | No liability for pre-existing faults or unrelated plumbing issues
+ARS45 | General | Installation performance depends on system design and existing pipework
+ARS46 | General | Recommendations given in good faith based on visible inspection
+
+[Components that require assistance]
+CS01 | Cylinder | Removal required
+CS02 | Cylinder | Replacement required
+CS03 | CWS tank | Removal required
+CS04 | Boiler | Double-handed lift required
+CS05 | heavy radiators 
+
+[Restrictions to work]
+SR01 | Access | No loft access
+SR02 | Clearance | Restricted clearance
+SR03 | Parking | Limited / permit required
+SR04 | Hours | Working hours restricted
+SR05 | Pets | On site
+SR06 | Occupant | Vulnerable person present
+SR07 | Noise | Restrictions in place
+SR08 | Drainage | Septic tank – not suitable for condensate
+SR09 | Building | Listed – consent required
+SR10 | Building | Listed – permission required
+SR11 | Property type | Flats – management permission required
+
+[External hazards]
+EH01 | Asbestos | Suspected
+EH02 | Roof | Fragile tiles / material
+EH03 | Environment | Flood risk / standing water
+EH04 | Insects | Wasps nesting
+EH05 | Insects | Bees nesting
+EH06 | Lighting | Poor / no power
+EH07 | Site | Pet mess present
+EH08 | Animals | Dog(s) present
+EH09 | Animals | Other potentially dangerous
+ASB50 | Asbestos | Visual check each visit; stop work if suspected ACM is damaged/friable
+ASB51 | Asbestos | Non-notifiable tasks only (e.g., cement flue, textured coatings) within limits
+ASB52 | Asbestos | Typical fixings limit: up to 5×20 mm or 4×28 mm holes if unavoidable – record
+HAZ50 | Electrical | Overhead cables within 3 m – escalate/liaise with DNO; control measures required
+HAZ51 | Site | Customer to clear working areas; protect fragile roofs/greenhouses
+
+[Delivery notes]
+DL01 | Slot | Preferred AM
+DL02 | Slot | Preferred PM
+DL03 | Access | Large vehicle suitable
+DL04 | Access | Large vehicle restricted
+DL05 | Delivery | To garage
+DL06 | Delivery | To room within property
+DL07 | Contact | Call ahead on arrival
+DL08 | Handling | Double-handed lift
+DL09 | Handling | Stairs / no lift
+
+[Office notes]
+OA01 | Labour | Direct labour required
+OA02 | Specialist works | Asbestos removal
+OA03 | Specialist works | Specialist builder
+OA04 | Specialist works | Scaffolding
+OA05 | Assistance | Double-handed required
+
+[New boiler and controls]
+BLC00 | location
+BLC01 | Location | Kitchen – not in cupboard
+BLC02 | Location | Kitchen – within cupboard
+BLC03 | Location | Kitchen – cupboard to be removed
+BLC04 | Location | Utility room
+BLC05 | Location | Loft
+BLC06 | Location | Garage
+BLC07 | Location | Bedroom
+BLC08 | Location | Airing cupboard
+BLC09 | Location | Other internal
+BLC10 | Location | See photos / floor plan
+BLC11 | Location | Adjacent wall
+BLC12 | Location | Minor move to gain clearances
+
+BT00 | boiler type
+BT01 | Boiler type | Regular / heat-only / conventional
+BT02 | Boiler type | System
+BT03 | Boiler type | Combi
+
+[Flue]
+|Old flue
+FMG01 | Make good | Old balanced flue
+FMG02 | Make good | Old fanned flue
+FMG03 | Make good | Old roof terminal
+FMG04 | Make good | Brick up old flue opening
+
+|flue_new
+FN01 | New flue | Use same hole – minor change
+FN02 | New flue | New hole – same wall
+FN03 | New flue | New hole – alternative wall
+FN04 | Orientation | Horizontal
+FN05 | Orientation | Vertical
+FN06 | Sealing | Seal brickwork to flue
+FN07 | Sealing | Vertical flashing kit
+FN08 | Sealing | Flat roof flashing by specialist builder
+FN09 | Add-on | Plume kit required
+FN10 | Add-on | Flue extension
+FN11 | Safety | Terminal guard required
+FN12 | Orientation | Front aspect
+FN13 | Orientation | Rear aspect
+FLU50 | Flue | Minimum 300 mm from any opening (window/door/vent)
+FLU51 | Flue | Minimum 150 mm from eaves/soffits/building fabric (site-dependent)
+FLU52 | Flue | ≥600 mm to a facing surface/boundary to avoid nuisance pluming
+FLU53 | Flue | Voids require inspection hatches at every joint/change of direction
+FLU54 | Flue | Maintain 26–50 mm per metre fall back to boiler on extended runs
+FLU55 | Flue | High-rise (≥18 m England/Wales; ≥11 m Scotland): fire-rated flue only
+FLU56 | Flue | Rear flue possible on many models – requires new hole (no reuse of old)
+FLU57 | Plume | Plume management 0.5–11.5 m typical; allow 0.5 m internal flue reduction per metre/plume elbow
+
+[Pipe work]
+|discharge
+DS01 | PRV discharge | Pipework to outside
+DS02 | Tundish | Visible and compliant
+DS03 | Route | Under floor to outside
+DS04 | Route | Direct to outside
+DS05 | Route | Behind cupboards
+DS06 | Route | Through cupboards
+
+|water_services
+WS01 | Mains | Increase pressure / flow
+WS02 | Valve | Pressure reducing valve required
+WS03 | Return | Secondary return present
+WS04 | Filter | Scale filter required
+WS05 | Isolation | Stop tap / service valve access
+WS06 | Route | To under-counter
+WS07 | Route | To airing cupboard
+
+[Disruption]
+primaries_filtration
+PF01 | Cleaning | Powerflush required
+PF02 | Cleaning | Chemical clean and inhibit
+PF03 | Filter | Magnetic – Fernox TF1 (brass)
+PF04 | Filter | Magnetic – other
+PF05 | Primaries | Pipework alterations required
+PF06 | Primaries | Pipe size upgrade required
+PF50 | Powerflush | Mandatory before fitting a new boiler to an old/dirty system
+PF51 | Powerflush | Do not powerflush galvanised/steel pipework – re-pipe recommended
+PF52 | Filter | Fit magnetic filter (e.g., Fernox TF1 Omega) to protect HX/rads
+PF53 | Inhibitor | Dose with corrosion inhibitor after flush/refill
+PF54 | Benefit | Improved circulation & faster warm-up; helps maintain efficiency
+CE50 | Combi DHW | Combi hot water is not truly “instant” – pre-heat & draw-off needed
+CE51 | Flow Limits | Performance depends on mains pressure & flow; demo with flow cup
+CE52 | Single Use | With combi, best to use one high-flow outlet at a time
+CE53 | Sealed Risk | Sealing an old system can expose weeps at valves/rads/pipe joints
+CE54 | Shared Mains | New combi installations not recommended on shared water mains
+CE55 | Frost | External condensate requires insulation & trace/frost protection where exposed
+CE56 | Access | Loft installs need safe access (fixed ladder, light, boarding) for warranty service
+
+|radiators
+RD01 | Radiators | Replace radiator(s)
+RD02 | Radiators | Install additional radiator(s)
+RD03 | Radiators | Fit TRVs / lockshields
+RD04 | Radiators | Balance system on completion
+RD05 | Radiators | Replace towel rail
+RD06 | Radiators | Cap redundant pipework
+RD07 | Radiators | Old / mixed condition
+RD08 | Constraint | Prevents flushing
+
+|disruption
+DI01 | Disruption | Minimal
+DI02 | Disruption | Moderate – carpets lifted
+DI03 | Disruption | High – floors lifted
+DI04 | Preparation | Customer to clear areas/routes
+DI05 | Protection | Dust protection required
+
+[Customer actions]
+CA01 | Customer | Clear working areas
+CA02 | Customer | Gain permission where required
+CA03 | Customer | Ensure animals are kept safely
+CA04 | Customer | Remove cupboard
+CA05 | Customer | Rebuild cupboard
+CA06 | Customer | Remove old flue & weather seal
+CA07 | Customer | Supply specified items
+`;
+
+    function parseOptions(txt){
+      const lines = txt.split(/\r?\n/);
+      const data = {}; let current=null; let sub=null;
+      for(const raw of lines){
+        const line = raw.trim(); if(!line) continue;
+        if(line.startsWith('[') && line.endsWith(']')){ current = line.slice(1,-1); data[current] = { items: [], subs: {} }; sub=null; continue; }
+        if(line.startsWith('|')){ sub=line.slice(1).trim(); if(!data[current].subs[sub]) data[current].subs[sub]=[]; continue; }
+        const parts=line.split('|').map(s=>s.trim()); const desc=parts[parts.length-1];
+        if(sub){ data[current].subs[sub].push(desc); } else { data[current].items.push(desc); }
       }
-    };
+      return data;
+    }
+    const OPTIONS = parseOptions(RAW_OPTIONS);
 
+    // State
+    const State = { stepIndex:0, selections:{
+      safety_wah:[], restrictions:[], hazards:[], safety:{notes:""},
+      existing_boiler:"", rooms:[], needs:[], new_boiler:"", system_advice:[],
+      old_flue:[], new_flue:[],
+      ac_free:"", ac_discharge:[], ac_waters:[],
+      uc_uc:[], uc_sc:[], uc_cb:[],
+      radiators:[], pf:[], disruption:[],
+      assistance:[], delivery:[], office:[],
+      customer_actions:[], additional:[],
+      advice_to_disruption:false
+    }};
+
+    // Steps
     const Steps = [
       "Safety","Existing Boiler Type","House Rooms","Customer Needs","New Boiler Type",
-      "Old Flue","New Flue","Sealing & Making Good","Disruption","Customer Actions","Advice","Review"
+      "Old Flue","New Flue","Airing Cupboard","User Controls","Radiators",
+      "Sealing & Making Good","Disruption","Customer Actions","Assistance","Restrictions","Hazards","Delivery","Office","Additional","Review"
     ];
 
-    function boot(){ renderSteps(); render(); wireNav(); wireCopy(); }
     function renderSteps(){
-      const nav = document.getElementById("steps");
-      nav.innerHTML = Steps.map((s,i)=>'<span class="step '+(i===State.stepIndex?'active':'')+'" data-i="'+i+'">'+(i+1)+'. '+s+'</span>').join('');
-      nav.querySelectorAll(".step").forEach(el=>el.addEventListener("click",()=>{ State.stepIndex=+el.dataset.i; render(); }));
+      const nav=document.getElementById('steps');
+      nav.innerHTML = Steps.map((s,i)=>`<span class="step ${i===State.stepIndex?'active':''}" data-i="${i}">${i+1}. ${s}</span>`).join('');
+      nav.querySelectorAll('.step').forEach(el=>el.addEventListener('click',()=>{ State.stepIndex=+el.dataset.i; render(); }));
     }
+
+    function listToGroup(group, arr){ const S=State.selections; return `<div class="list">`+arr.map(v=>`<label class="opt"><input type="checkbox" data-group="${group}" value="${v}" ${Array.isArray(S[group])&&S[group].includes(v)?'checked':''}> ${v}</label>`).join('')+`</div>`; }
+
     function render(){
-      const v = document.getElementById("view");
-      // remove fallback
-      const fb = document.getElementById("safety-fallback"); if(fb) fb.remove();
-
       renderSteps();
-      document.getElementById("prevBtn").disabled = State.stepIndex===0;
-      document.getElementById("nextBtn").textContent = State.stepIndex===Steps.length-1 ? "Generate ▶" : "Next ▶";
-
-      const D = State.data;
-      const C = (html)=> v.innerHTML = '<div class="card">'+html+'</div>';
+      document.getElementById('prevBtn').disabled = State.stepIndex===0;
+      document.getElementById('nextBtn').textContent = State.stepIndex===Steps.length-1? 'Generate ▶':'Next ▶';
+      const v=document.getElementById('view'); const O=OPTIONS; const S=State.selections;
 
       switch(Steps[State.stepIndex]){
-        case "Safety":
-          C(`
+        case 'Safety':{
+          v.innerHTML = `<div class="card">
             <h2>Safety</h2>
-            <div class="row">
-              <div><label>Working at Height (WAH)</label>
-                <select id="wah">
-                  ${["","Ladder only","Tower scaffold","Bridging/cantilever","MEWP","None"].map(o=>`<option ${sel(o,D.safety.wah)}>${o}</option>`).join("")}
-                </select>
-              </div>
-              <div><label>Parking</label>
-                <select id="parking">
-                  ${["","On-road","Permit","Driveway","Pay & display","None"].map(o=>`<option ${sel(o,D.safety.parking)}>${o}</option>`).join("")}
-                </select>
-              </div>
-              <div class="full"><label>Other safety notes</label><textarea id="safety_other" rows="3">${D.safety.other||""}</textarea></div>
-            </div>
-          `);
+            <label>Working at Height</label>${listToGroup('safety_wah', O["Working at heights"].items)}
+            <label>Restrictions to work</label>${listToGroup('restrictions', O["Restrictions to work"].items)}
+            <label>External hazards</label>${listToGroup('hazards', O["External hazards"].items)}
+            <label>Other safety notes</label><textarea id="safety_notes" rows="3">${S.safety.notes||''}</textarea>
+          </div>`; break;
+        }
+        case 'Existing Boiler Type':{
+          const opts=[
+            "Regular (open-vented with F&E tank)","Regular (sealed system kit present)","System boiler – open-vented","System boiler – unvented",
+            "Combi present","Warm air","Back boiler unit (BBU)","Storage combi","Electric"
+          ];
+          v.innerHTML = `<div class="card"><h2>Existing Boiler/System</h2>
+            <div class="list">${opts.map(val=>`<label class="opt"><input type=\"radio\" name=\"existing_boiler\" value=\"${val}\" ${S.existing_boiler===val?'checked':''}> ${val}</label>`).join('')}</div></div>`; break;
+        }
+        case 'House Rooms':{
+          const rooms=["Kitchen – not in cupboard","Kitchen – within cupboard","Kitchen – cupboard to be removed","Utility room","Loft","Garage","Bedroom","Airing cupboard","Other internal","See photos / floor plan","Adjacent wall","Minor move to gain clearances"];
+          v.innerHTML = `<div class="card"><h2>House Locations / Rooms</h2>${listToGroup('rooms', rooms)}</div>`; break;
+        }
+        case 'Customer Needs':{ v.innerHTML=`<div class="card"><h2>Customer Needs</h2>${listToGroup('needs', O['Needs'].items)}</div>`; break; }
+        case 'New Boiler Type':{
+          const types=["Regular / heat-only / conventional","System","Combi"]; const adv=[
+            "Sealed system may expose latent leaks – advise & record disclaimer",
+            "One-pipe system not suitable for modern boilers – recommend re-pipe",
+            "Galvanised/steel pipework – replace rather than flush",
+            "Loft installs require boarded area (≈1.5 m radius), fixed ladder & lighting",
+            "External condensate must be insulated/frost-protected"
+          ];
+          v.innerHTML=`<div class=card><h2>New Boiler Type</h2>
+            <div class=list>${types.map(val=>`<label class=opt><input type=radio name=new_boiler value="${val}" ${S.new_boiler===val?'checked':''}> ${val}</label>`).join('')}</div>
+            <hr/><label>Advisories (System characteristics)</label>${listToGroup('system_advice', adv)}
+          </div>`; break;
+        }
+        case 'Old Flue':{ v.innerHTML=`<div class=card><h2>Old Flue (make good)</h2>${listToGroup('old_flue', O['Flue'].subs['Old flue'])}</div>`; break; }
+        case 'New Flue':{ v.innerHTML=`<div class=card><h2>New Flue</h2>${listToGroup('new_flue', O['Flue'].subs['flue_new'])}</div>`; break; }
+        case 'Airing Cupboard':{
+          v.innerHTML=`<div class=card>
+            <h2>Airing Cupboard</h2>
+            <label>Notes (cylinder / pumps / valves)</label><textarea id=ac_free rows=3>${S.ac_free||''}</textarea>
+            <label>PRV / discharge route</label>${listToGroup('ac_discharge', O['Pipe work'].subs['discharge'])}
+            <label>Water services</label>${listToGroup('ac_waters', O['Pipe work'].subs['water_services'])}
+            <small class=banner style="display:block;margin-top:8px">Plan type (Y/S/Gravity) should be selected in <b>User Controls</b> under System controls if needed.</small>
+          </div>`; break;
+        }
+        case 'User Controls':{
+          const uc=["Hive","Hive Mini","Programmable thermostat","Programmer – mechanical","Room stat – wireless","Programmer – 2 channel","Programmer - single channel"];
+          const sc=["S-plan – additional zone","Y-plan","Room stat and TRVs","Load compensation","New wiring centre required","Room stat relocation required"];
+          const cb=["Not within a cupboard","Fits – modification required","Customer to remove cupboard","Customer to modify cupboard","Engineer to remove cupboard","Engineer to modify cupboard"];
+          v.innerHTML=`<div class=card><h2>User Controls & Cupboard</h2>
+            <label>User controls</label>${listToGroup('uc_uc', uc)}
+            <label>System controls / wiring</label>${listToGroup('uc_sc', sc)}
+            <label>Cupboard</label>${listToGroup('uc_cb', cb)}
+          </div>`; break;
+        }
+        case 'Radiators':{ v.innerHTML=`<div class=card><h2>Radiators</h2>${listToGroup('radiators', O['Disruption'].subs['radiators'])}</div>`; break; }
+        case 'Sealing & Making Good':{
+          const sealing=["Seal brickwork to flue","Vertical flashing kit","Flat roof flashing by specialist builder","Brickwork and render made good to reasonable standard, not decorative finish","Flue sealing and flashings weatherproof only — not decorative"];
+          v.innerHTML=`<div class=card><h2>Sealing & Making Good</h2>${listToGroup('new_flue', sealing)}</div>`; break; // goes into Flue box as well
+        }
+        case 'Disruption':{
+          v.innerHTML=`<div class=card><h2>Disruption</h2>
+            <label>Primaries / filtration</label>${listToGroup('pf', O['Disruption'].subs['primaries_filtration'])}
+            <label>General disruption</label>${listToGroup('disruption', O['Disruption'].subs['disruption'])}
+          </div>`; break;
+        }
+        case 'Customer Actions':{ v.innerHTML=`<div class=card><h2>Customer Actions</h2>${listToGroup('customer_actions', O['Customer actions'].items)}</div>`; break; }
+        case 'Assistance':{ v.innerHTML=`<div class=card><h2>Components that require assistance</h2>${listToGroup('assistance', O['Components that require assistance'].items)}</div>`; break; }
+        case 'Restrictions':{ v.innerHTML=`<div class=card><h2>Restrictions to work</h2>${listToGroup('restrictions', O['Restrictions to work'].items)}</div>`; break; }
+        case 'Hazards':{ v.innerHTML=`<div class=card><h2>External Hazards</h2>${listToGroup('hazards', O['External hazards'].items)}</div>`; break; }
+        case 'Delivery':{ v.innerHTML=`<div class=card><h2>Delivery notes</h2>${listToGroup('delivery', O['Delivery notes'].items)}</div>`; break; }
+        case 'Office':{ v.innerHTML=`<div class=card><h2>Office notes</h2>${listToGroup('office', O['Office notes'].items)}</div>`; break; }
+        case 'Additional':{ v.innerHTML=`<div class=card><h2>Additional (Advice / Why's)</h2>${listToGroup('additional', O['Arse_cover_notes'].items)}</div>`; break; }
+        case 'Review':{
+          v.innerHTML=`<div class=card><h2>Review & Generate</h2>
+            <p>Click <b>Generate</b> to fill the copy boxes (semicolon lines, no codes). Then copy & paste to Depot.</p>
+            <button id=generate class="btn">Generate</button>
+          </div>`;
+          document.getElementById('generate').addEventListener('click', generateOutputs);
           break;
-        case "Existing Boiler Type":
-          C(`
-            <h2>Existing Boiler Type</h2>
-            <div class="list">
-              ${["regular","system","combi","bbu","warm air","storage combi","electric"].map(v=>optRadio("existing_boiler",v,D.existing_boiler)).join("")}
-            </div>
-          `);
-          break;
-        case "House Rooms":
-          C(`
-            <h2>House – Rooms</h2>
-            <div class="list">
-              ${["kitchen","garage","utility","airing cupboard","bedroom","dining room","out building"].map(v=>optCheck("rooms",v,D.rooms.includes(v))).join("")}
-            </div>
-          `);
-          break;
-        case "Customer Needs":
-          C(`
-            <h2>Customer Needs</h2>
-            <div class="list">
-              ${needsList().map(v=>optCheck("needs",v,D.needs.includes(v))).join("")}
-            </div>
-            <label>Add custom need</label>
-            <input id="add_need" placeholder="Type and press Enter">
-          `);
-          break;
-        case "New Boiler Type":
-          C(`
-            <h2>New Boiler Type</h2>
-            <div class="list">
-              ${["regular","system","combi"].map(v=>optRadio("new_boiler",v,D.new_boiler)).join("")}
-            </div>
-          `);
-          break;
-        case "Old Flue":
-          C(`
-            <h2>Old Flue Arrangement</h2>
-            <div class="list">
-              ${["horizontal","plume kit","vertical","open","chimney"].map(v=>optRadio("old_flue",v,D.old_flue)).join("")}
-            </div>
-          `);
-          break;
-        case "New Flue":
-          C(`
-            <h2>New Flue</h2>
-            <div class="list">
-              ${["horizontal","plume kit","vertical"].map(v=>optRadio("new_flue",v,D.new_flue)).join("")}
-            </div>
-          `);
-          break;
-        case "Sealing & Making Good":
-          C(`
-            <h2>Sealing & Making Good</h2>
-            <div class="list">
-              ${["Seal system (EV/PRV/MAG)","Reinstate brickwork/vent","Make good old flue","Decorator's caulk only","Builder to make good"].map(v=>optCheck("smg",v,D.sealing_making_good.includes(v))).join("")}
-            </div>
-            <label>Add custom</label>
-            <input id="add_smg" placeholder="Type and press Enter">
-          `);
-          break;
-        case "Disruption":
-          C(`
-            <h2>Disruption</h2>
-            <div class="list">
-              ${["Boards up","Chasing walls","Ceiling access hatch","Dust/noise expected","Water off period","Power off period"].map(v=>optCheck("disruption",v,D.disruption.includes(v))).join("")}
-            </div>
-            <label>Add custom</label>
-            <input id="add_disruption" placeholder="Type and press Enter">
-          `);
-          break;
-        case "Customer Actions":
-          C(`
-            <h2>Customer Actions</h2>
-            <div class="list">
-              ${["Clear working areas","Provide parking/permit","Pets secured","Access to loft","Move appliances","Remove stored items"].map(v=>optCheck("actions",v,D.customer_actions.includes(v))).join("")}
-            </div>
-            <label>Add custom</label>
-            <input id="add_action" placeholder="Type and press Enter">
-          `);
-          break;
-        case "Advice":
-          C(`
-            <h2>Advice (Why's / GPT-created)</h2>
-            <div class="list">
-              ${["Combi not instant hot water (preheat, draw-off)","Sealing old systems can expose leaks","One-pipe or undersized rads may limit performance","Shower compatibility depends on flow/pressure","External condensate requires frost protection"].map(v=>optCheck("advice",v,D.advice.includes(v))).join("")}
-            </div>
-            <label>Add custom</label>
-            <input id="add_advice" placeholder="Type and press Enter">
-          `);
-          break;
-        case "Review":
-          v.innerHTML = `
-            <div class="card">
-              <h2>Review</h2>
-              <div class="kv">
-                <div>Safety</div><div>${D.safety.wah||"-"}, ${D.safety.parking||"-"}, ${D.safety.other||""}</div>
-                <div>Existing boiler</div><div>${D.existing_boiler||"-"}</div>
-                <div>Rooms</div><div>${D.rooms.join(", ")||"-"}</div>
-                <div>Needs</div><div>${D.needs.join(", ")||"-"}</div>
-                <div>New boiler</div><div>${D.new_boiler||"-"}</div>
-                <div>Old flue</div><div>${D.old_flue||"-"}</div>
-                <div>New flue</div><div>${D.new_flue||"-"}</div>
-                <div>Sealing/Making good</div><div>${D.sealing_making_good.join(", ")||"-"}</div>
-                <div>Disruption</div><div>${D.disruption.join(", ")||"-"}</div>
-                <div>Customer actions</div><div>${D.customer_actions.join(", ")||"-"}</div>
-                <div>Advice</div><div>${D.advice.join(", ")||"-"}</div>
-              </div>
-              <button id="generate">Generate notes</button>
-            </div>
-          `;
-          setTimeout(()=>document.getElementById("generate").addEventListener("click", generateNotes),0);
-          break;
+        }
       }
-      wireInputs();
-    }
 
-    function sel(v,c){ return v===c ? "selected":"" }
-    function optRadio(name,val,current){ return '<label class="opt"><input type="radio" name="'+name+'" value="'+val+'" '+(current===val?'checked':'')+'> '+val+'</label>' }
-    function optCheck(name,val,checked){ return '<label class="opt"><input type="checkbox" data-name="'+name+'" value="'+val+'" '+(checked?'checked':'')+'> '+val+'</label>' }
-    function needsList(){ return ["Better water pressure","Faster hot water","More space","Lower running costs","Easier controls","Quieter operation","Future-ready system"]; }
-
-    function wireInputs(){
-      const v = document.getElementById("view"); const D = State.data;
-      v.querySelectorAll("select,textarea").forEach(el=>{
-        el.addEventListener("change",()=>{
-          if(el.id==="wah") D.safety.wah=el.value;
-          if(el.id==="parking") D.safety.parking=el.value;
-          if(el.id==="safety_other") D.safety.other=el.value;
-        });
-      });
-      v.querySelectorAll('input[type="radio"]').forEach(el=>{
-        el.addEventListener("change",()=>{
-          if(el.name==="existing_boiler") D.existing_boiler=el.value;
-          if(el.name==="new_boiler") D.new_boiler=el.value;
-          if(el.name==="old_flue") D.old_flue=el.value;
-          if(el.name==="new_flue") D.new_flue=el.value;
-        });
-      });
-      v.querySelectorAll('input[type="checkbox"]').forEach(el=>{
-        el.addEventListener("change",()=>{
-          const g=el.dataset.name;
-          const arr=g==="rooms"?D.rooms:g==="needs"?D.needs:g==="smg"?D.sealing_making_good:g==="disruption"?D.disruption:g==="actions"?D.customer_actions:g==="advice"?D.advice:null;
-          if(!arr) return;
-          if(el.checked && !arr.includes(el.value)) arr.push(el.value);
-          if(!el.checked){ const i=arr.indexOf(el.value); if(i>-1) arr.splice(i,1); }
-        });
-      });
-      [["add_need","needs"],["add_smg","sealing_making_good"],["add_disruption","disruption"],["add_action","customer_actions"],["add_advice","advice"]].forEach(([id,field])=>{
-        const el=v.querySelector("#"+id); if(!el) return;
-        el.addEventListener("keydown",(e)=>{
-          if(e.key==="Enter" && el.value.trim()){
-            D[field].push(el.value.trim()); el.value=""; render();
-          }
+      // bind text inputs
+      const sn=v.querySelector('#safety_notes'); if(sn){ sn.addEventListener('input',()=>State.selections.safety.notes=sn.value); }
+      const ac=v.querySelector('#ac_free'); if(ac){ ac.addEventListener('input',()=>State.selections.ac_free=ac.value); }
+      // radios
+      v.querySelectorAll('input[type="radio"][name="existing_boiler"]').forEach(el=>el.addEventListener('change',()=>State.selections.existing_boiler=el.value));
+      v.querySelectorAll('input[type="radio"][name="new_boiler"]').forEach(el=>el.addEventListener('change',()=>State.selections.new_boiler=el.value));
+      // checkboxes
+      v.querySelectorAll('input[type="checkbox"][data-group]').forEach(el=>{
+        el.addEventListener('change',()=>{
+          const g=el.getAttribute('data-group'); const arr=State.selections[g]||(State.selections[g]=[]);
+          if(el.checked){ if(!arr.includes(el.value)) arr.push(el.value); } else { const i=arr.indexOf(el.value); if(i>-1) arr.splice(i,1); }
         });
       });
     }
 
-    function wireNav(){
-      document.getElementById("prevBtn").addEventListener("click",()=>{ if(State.stepIndex>0){State.stepIndex--; render();} });
-      document.getElementById("nextBtn").addEventListener("click",()=>{ if(State.stepIndex<Steps.length-1){State.stepIndex++; render();} else generateNotes(); });
-    }
+    function lines(arr){ return (arr||[]).map(x=>x+';').join('\n'); }
 
-    function wireCopy(){
-      document.body.addEventListener("click",(e)=>{
-        const btn=e.target.closest("button[data-copy]"); if(!btn) return;
-        const id=btn.getAttribute("data-copy");
-        const ta=document.getElementById(id);
-        try{
-          ta.select(); document.execCommand && document.execCommand("copy");
-          btn.textContent="Copied ✔";
-          setTimeout(()=>btn.textContent="Copy",1000);
-        }catch(err){ /* ignore */ }
+    function generateOutputs(){
+      const S=State.selections; const out={};
+      // Need
+      out['Need']=lines(S.needs||[]);
+      // Working at heights
+      const wah=[...(S.safety_wah||[])]; if(S.safety?.notes) wah.push(S.safety.notes); out['Working at heights']=lines(wah);
+      // System characteristics
+      const sys=[]; if(S.existing_boiler) sys.push(S.existing_boiler); if(S.new_boiler) sys.push(S.new_boiler); if(S.system_advice?.length) sys.push(...S.system_advice);
+      // Also push plan types selected in User Controls (S uc_sc contains Y-plan/S-plan)
+      if(S.uc_sc?.length) sys.push(...S.uc_sc);
+      out['System characteristics']=lines(sys);
+      // Assistance / Restrictions / Hazards / Delivery / Office
+      out['Assistance']=lines(S.assistance||[]);
+      out['Restrictions']=lines(S.restrictions||[]);
+      out['Hazards']=lines(S.hazards||[]);
+      out['Delivery']=lines(S.delivery||[]);
+      out['Office']=lines(S.office||[]);
+      // Boiler/controls
+      const bc=[]; if(S.rooms?.length) bc.push(...S.rooms); if(S.uc_uc?.length) bc.push(...S.uc_uc); if(S.uc_cb?.length) bc.push(...S.uc_cb);
+      out['Boiler/controls']=lines(bc);
+      // Flue (combine old+new + sealing/mg we placed into new_flue group earlier)
+      const flue=[...(S.old_flue||[]), ...(S.new_flue||[])]; out['Flue']=lines(flue);
+      // Pipework (AC discharge + water services + free text)
+      const pipe=[...(S.ac_discharge||[]), ...(S.ac_waters||[])]; if(S.ac_free) pipe.push(S.ac_free); out['Pipework']=lines(pipe);
+      // Disruption (PF + radiators + DI)
+      const dis=[...(S.pf||[]), ...(S.radiators||[]), ...(S.disruption||[])]; out['Disruption']=lines(dis);
+      // Customer action
+      out['Customer action']=lines(S.customer_actions||[]);
+      // Additional (Advice ARS only, per your rule)
+      out['Additional']=lines(S.additional||[]);
+
+      // Render copy boxes in exact order
+      const ORDER=['Need','Working at heights','System characteristics','Assistance','Restrictions','Hazards','Delivery','Office','Boiler/controls','Flue','Pipework','Disruption','Customer action','Additional'];
+      const grid=document.getElementById('copyBoxes');
+      grid.innerHTML = ORDER.map(key=>`<div class=copybox><label>${key}</label><textarea class=tall id="box_${key.replace(/[^a-z0-9]+/gi,'_')}" rows=8>${out[key]||''}</textarea><button class="btn small" data-copy="box_${key.replace(/[^a-z0-9]+/gi,'_')}">Copy ${key}</button></div>`).join('');
+      document.getElementById('outputs').classList.remove('hidden');
+      window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+
+      // Wire copy buttons
+      document.querySelectorAll('button[data-copy]').forEach(btn=>{
+        btn.addEventListener('click',()=>{ const id=btn.getAttribute('data-copy'); const ta=document.getElementById(id); ta.select(); try{ document.execCommand('copy'); btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=btn.textContent.replace('Copied ✓','Copy'),900);}catch(e){} });
       });
+
+      // Generate summaries
+      document.getElementById('genCustomer').onclick = ()=>{
+        const t = buildCustomerSummary(out);
+        document.getElementById('customerSummary').value = t;
+      };
+      document.getElementById('genEngineer').onclick = ()=>{
+        const t = buildEngineerSummary(out);
+        document.getElementById('engineerSummary').value = t;
+      };
     }
 
-    function generateNotes(){
-      const D=State.data; const lines=[];
-      if(D.safety.wah) lines.push(`Safety (WAH): ${D.safety.wah};`);
-      if(D.safety.parking) lines.push(`Safety (parking): ${D.safety.parking};`);
-      if(D.safety.other) lines.push(`Safety (other): ${D.safety.other};`);
-      if(D.existing_boiler) lines.push(`Existing boiler type: ${D.existing_boiler};`);
-      if(D.rooms.length) lines.push(`House rooms: ${D.rooms.join(", ")};`);
-      if(D.needs.length) lines.push(`Customer needs: ${D.needs.join(", ")};`);
-      if(D.new_boiler) lines.push(`New boiler type: ${D.new_boiler};`);
-      if(D.old_flue) lines.push(`Old flue: ${D.old_flue};`);
-      if(D.new_flue) lines.push(`New flue: ${D.new_flue};`);
-      if(D.sealing_making_good.length) lines.push(`Sealing & making good: ${D.sealing_making_good.join(", ")};`);
-      if(D.disruption.length) lines.push(`Disruption: ${D.disruption.join(", ")};`);
-      if(D.advice.length) lines.push(`Advice: ${D.advice.join(", ")};`);
-      if(D.customer_actions.length) lines.push(`Customer actions: ${D.customer_actions.join(", ")};`);
-      document.getElementById("finalNotes").value = lines.join("\n");
-      document.getElementById("outputs").classList.remove("hidden");
-      window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+    function brief(list){ return list ? list.split('\n').filter(Boolean).map(s=>s.replace(/;$/,'')).join(', ') : ''; }
+
+    function buildCustomerSummary(out){
+      const parts=[];
+      const needs=brief(out['Need']); if(needs) parts.push(`What you asked for: ${needs}.`);
+      const bc=brief(out['Boiler/controls']); if(bc) parts.push(`Boiler & controls: ${bc}.`);
+      const sys=brief(out['System characteristics']); if(sys) parts.push(`System setup: ${sys}.`);
+      const flue=brief(out['Flue']); if(flue) parts.push(`Flue changes: ${flue}.`);
+      const pipe=brief(out['Pipework']); if(pipe) parts.push(`Pipework: ${pipe}.`);
+      const dis=brief(out['Disruption']); if(dis) parts.push(`During the work: ${dis}.`);
+      const actions=brief(out['Customer action']); if(actions) parts.push(`What we need from you: ${actions}.`);
+      const add=brief(out['Additional']); if(add) parts.push(`Good to know: ${add}.`);
+      return parts.join('\n');
     }
 
-    window.addEventListener("keydown",(e)=>{
-      if(e.key==="ArrowLeft" && State.stepIndex>0){State.stepIndex--; render();}
-      if(e.key==="ArrowRight" && State.stepIndex<Steps.length-1){State.stepIndex++; render();}
-    });
+    function buildEngineerSummary(out){
+      const parts=[];
+      const safetyW=brief(out['Working at heights']); if(safetyW) parts.push(`Safety/WAH: ${safetyW}.`);
+      const restr=brief(out['Restrictions']); if(restr) parts.push(`Restrictions: ${restr}.`);
+      const haz=brief(out['Hazards']); if(haz) parts.push(`Hazards: ${haz}.`);
+      const sys=brief(out['System characteristics']); if(sys) parts.push(`System: ${sys}.`);
+      const bc=brief(out['Boiler/controls']); if(bc) parts.push(`Boiler/controls: ${bc}.`);
+      const flue=brief(out['Flue']); if(flue) parts.push(`Flue: ${flue}.`);
+      const pipe=brief(out['Pipework']); if(pipe) parts.push(`Pipework: ${pipe}.`);
+      const dis=brief(out['Disruption']); if(dis) parts.push(`Disruption/works: ${dis}.`);
+      const assist=brief(out['Assistance']); if(assist) parts.push(`Assistance: ${assist}.`);
+      const del=brief(out['Delivery']); if(del) parts.push(`Delivery: ${del}.`);
+      const off=brief(out['Office']); if(off) parts.push(`Office: ${off}.`);
+      const cust=brief(out['Customer action']); if(cust) parts.push(`Customer actions: ${cust}.`);
+      return parts.join('\n');
+    }
 
-    boot();
-  });
+    // Nav controls
+    document.getElementById('prevBtn').addEventListener('click',()=>{ if(State.stepIndex>0){ State.stepIndex--; render(); }});
+    document.getElementById('nextBtn').addEventListener('click',()=>{ if(State.stepIndex<Steps.length-1){ State.stepIndex++; render(); } else { generateOutputs(); }});
+    window.addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft'&&State.stepIndex>0){State.stepIndex--; render();} if(e.key==='ArrowRight'&&State.stepIndex<Steps.length-1){State.stepIndex++; render();} });
+
+    // First render
+    render();
   </script>
 </body>
 </html>
