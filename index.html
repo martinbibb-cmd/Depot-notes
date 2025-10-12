@@ -82,7 +82,7 @@
     <div class="credit">Depot Notes v3 — Form Logic Redesign by Martin Bibb 💡</div>
   </footer>
 
-  <section id="outputs" class="outputs hidden">
+  <section id="outputs" class="outputs">
     <h2>Depot Copy Boxes (exact names)</h2>
     <div class="grid" id="copyBoxes"></div>
     <div class="grid" style="margin-top:12px">
@@ -438,7 +438,9 @@ CA07 | Customer | Supply specified items
     function renderSteps(){
       const nav=document.getElementById('steps');
       nav.innerHTML = Steps.map((s,i)=>`<span class="step ${i===State.stepIndex?'active':''}" data-i="${i}">${i+1}. ${s}</span>`).join('');
-      nav.querySelectorAll('.step').forEach(el=>el.addEventListener('click',()=>{ State.stepIndex=+el.dataset.i; render(); }));
+      nav.querySelectorAll('.step').forEach(el=>el.addEventListener('click',()=>{ State.stepIndex=+el.dataset.i; render();
+  // Live outputs from the start
+  updateOutputs(); }));
     }
 
     function listToGroup(group, arr){ const S=State.selections; return `<div class="list">`+arr.map(v=>`<label class="opt"><input type="checkbox" data-group="${group}" value="${v}" ${Array.isArray(S[group])&&S[group].includes(v)?'checked':''}> ${v}</label>`).join('')+`</div>`; }
