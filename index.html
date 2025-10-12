@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes – Stepper</title>
+  <style>
+  :root{--bg:#0b0d10;--panel:#151a1f;--ink:#e9eef5;--muted:#9fb0c2;--accent:#4aa3ff}
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #1f2630;background:#0e1116}
+  h1{margin:0;font-size:18px}.tag{font-size:12px;color:var(--muted);margin-left:8px;border:1px solid #243041;padding:2px 6px;border-radius:8px}
+  nav#steps{display:flex;gap:8px;flex-wrap:wrap}
+  .step{padding:6px 10px;border-radius:10px;background:#0f141a;border:1px solid #202a36;color:var(--muted);cursor:pointer}
+  .step.active{color:var(--ink);border-color:#2a3b50;background:#121a22}
+  main#view{padding:16px}
+  .card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;padding:16px;margin-bottom:16px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  label{display:block;font-weight:600;margin-bottom:6px;color:#cfe0f3}
+  input,select,textarea{width:100%;background:#0f141a;border:1px solid #283241;color:var(--ink);padding:10px;border-radius:10px}
+  small.hint{color:var(--muted);display:block;margin-top:6px}
+  footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #1f2630;background:#0e1217;position:sticky;bottom:0}
+  button{background:var(--accent);border:none;color:#081018;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid #2a3b50}
+  .outputs{padding:16px;border-top:1px solid #1f2630}
+  .hidden{display:none}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid .full{grid-column:1/-1}
+  .list{display:grid;gap:8px}
+  .opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #253043;border-radius:10px;background:#0f141a;cursor:pointer}
+  .opt input{width:auto}
+  textarea.tall{min-height:160px}
+  .kv{display:grid;grid-template-columns:220px 1fr;gap:6px}
+  </style>
+  <noscript><div style="background:#ffb4b4;color:#300;padding:12px">This page needs JavaScript. Open in a browser (not Files preview) and ensure JS is enabled.</div></noscript>
+</head>
+<body>
+  <header>
+    <h1>Depot Notes <span class="tag" id="jsStatus">JS…</span></h1>
+    <nav id="steps"></nav>
+  </header>
+
+  <main id="view">
+    <!-- Progressive: render first step (Safety) without JS -->
+    <div class="card" id="safety-fallback">
+      <h2>Safety</h2>
+      <div class="row">
+        <div><label>Working at Height (WAH)</label>
+          <select>
+            <option></option><option>Ladder only</option><option>Tower scaffold</option><option>Bridging/cantilever</option><option>MEWP</option><option>None</option>
+          </select>
+        </div>
+        <div><label>Parking</label>
+          <select>
+            <option></option><option>On-road</option><option>Permit</option><option>Driveway</option><option>Pay & display</option><option>None</option>
+          </select>
+        </div>
+        <div class="full"><label>Other safety notes</label><textarea rows="3"></textarea></div>
+      </div>
+      <small class="hint">If you only see this card and no steps above, your browser blocked JavaScript.</small>
+    </div>
+  </main>
+
+  <footer>
+    <button id="prevBtn" class="ghost">◀ Back</button>
+    <button id="nextBtn">Next ▶</button>
+  </footer>
+
+  <section id="outputs" class="outputs hidden">
+    <h2>Final Depot Notes</h2>
+    <div class="grid">
+      <div class="full">
+        <label>All Sections (semicolon lines)</label>
+        <textarea id="finalNotes" class="tall" rows="16"></textarea>
+        <button class="copy" data-copy="finalNotes">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    // Mark JS as running
+    var jsTag = document.getElementById('jsStatus');
+    if(jsTag) jsTag.textContent = 'JS OK';
+
+    const State = {
+      stepIndex: 0,
+      data: {
+        safety: { wah: "", parking: "", other: "" },
+        existing_boiler: "",
+        rooms: [],
+        needs: [],
+        new_boiler: "",
+        old_flue: "",
+        new_flue: "",
+        sealing_making_good: [],
+        disruption: [],
+        customer_actions: [],
+        advice: []
+      }
+    };
+
+    const Steps = [
+      "Safety","Existing Boiler Type","House Rooms","Customer Needs","New Boiler Type",
+      "Old Flue","New Flue","Sealing & Making Good","Disruption","Customer Actions","Advice","Review"
+    ];
+
+    function boot(){ renderSteps(); render(); wireNav(); wireCopy(); }
+    function renderSteps(){
+      const nav = document.getElementById("steps");
+      nav.innerHTML = Steps.map((s,i)=>'<span class="step '+(i===State.stepIndex?'active':'')+'" data-i="'+i+'">'+(i+1)+'. '+s+'</span>').join('');
+      nav.querySelectorAll(".step").forEach(el=>el.addEventListener("click",()=>{ State.stepIndex=+el.dataset.i; render(); }));
+    }
+    function render(){
+      const v = document.getElementById("view");
+      // remove fallback
+      const fb = document.getElementById("safety-fallback"); if(fb) fb.remove();
+
+      renderSteps();
+      document.getElementById("prevBtn").disabled = State.stepIndex===0;
+      document.getElementById("nextBtn").textContent = State.stepIndex===Steps.length-1 ? "Generate ▶" : "Next ▶";
+
+      const D = State.data;
+      const C = (html)=> v.innerHTML = '<div class="card">'+html+'</div>';
+
+      switch(Steps[State.stepIndex]){
+        case "Safety":
+          C(`
+            <h2>Safety</h2>
+            <div class="row">
+              <div><label>Working at Height (WAH)</label>
+                <select id="wah">
+                  ${["","Ladder only","Tower scaffold","Bridging/cantilever","MEWP","None"].map(o=>`<option ${sel(o,D.safety.wah)}>${o}</option>`).join("")}
+                </select>
+              </div>
+              <div><label>Parking</label>
+                <select id="parking">
+                  ${["","On-road","Permit","Driveway","Pay & display","None"].map(o=>`<option ${sel(o,D.safety.parking)}>${o}</option>`).join("")}
+                </select>
+              </div>
+              <div class="full"><label>Other safety notes</label><textarea id="safety_other" rows="3">${D.safety.other||""}</textarea></div>
+            </div>
+          `);
+          break;
+        case "Existing Boiler Type":
+          C(`
+            <h2>Existing Boiler Type</h2>
+            <div class="list">
+              ${["regular","system","combi","bbu","warm air","storage combi","electric"].map(v=>optRadio("existing_boiler",v,D.existing_boiler)).join("")}
+            </div>
+          `);
+          break;
+        case "House Rooms":
+          C(`
+            <h2>House – Rooms</h2>
+            <div class="list">
+              ${["kitchen","garage","utility","airing cupboard","bedroom","dining room","out building"].map(v=>optCheck("rooms",v,D.rooms.includes(v))).join("")}
+            </div>
+          `);
+          break;
+        case "Customer Needs":
+          C(`
+            <h2>Customer Needs</h2>
+            <div class="list">
+              ${needsList().map(v=>optCheck("needs",v,D.needs.includes(v))).join("")}
+            </div>
+            <label>Add custom need</label>
+            <input id="add_need" placeholder="Type and press Enter">
+          `);
+          break;
+        case "New Boiler Type":
+          C(`
+            <h2>New Boiler Type</h2>
+            <div class="list">
+              ${["regular","system","combi"].map(v=>optRadio("new_boiler",v,D.new_boiler)).join("")}
+            </div>
+          `);
+          break;
+        case "Old Flue":
+          C(`
+            <h2>Old Flue Arrangement</h2>
+            <div class="list">
+              ${["horizontal","plume kit","vertical","open","chimney"].map(v=>optRadio("old_flue",v,D.old_flue)).join("")}
+            </div>
+          `);
+          break;
+        case "New Flue":
+          C(`
+            <h2>New Flue</h2>
+            <div class="list">
+              ${["horizontal","plume kit","vertical"].map(v=>optRadio("new_flue",v,D.new_flue)).join("")}
+            </div>
+          `);
+          break;
+        case "Sealing & Making Good":
+          C(`
+            <h2>Sealing & Making Good</h2>
+            <div class="list">
+              ${["Seal system (EV/PRV/MAG)","Reinstate brickwork/vent","Make good old flue","Decorator's caulk only","Builder to make good"].map(v=>optCheck("smg",v,D.sealing_making_good.includes(v))).join("")}
+            </div>
+            <label>Add custom</label>
+            <input id="add_smg" placeholder="Type and press Enter">
+          `);
+          break;
+        case "Disruption":
+          C(`
+            <h2>Disruption</h2>
+            <div class="list">
+              ${["Boards up","Chasing walls","Ceiling access hatch","Dust/noise expected","Water off period","Power off period"].map(v=>optCheck("disruption",v,D.disruption.includes(v))).join("")}
+            </div>
+            <label>Add custom</label>
+            <input id="add_disruption" placeholder="Type and press Enter">
+          `);
+          break;
+        case "Customer Actions":
+          C(`
+            <h2>Customer Actions</h2>
+            <div class="list">
+              ${["Clear working areas","Provide parking/permit","Pets secured","Access to loft","Move appliances","Remove stored items"].map(v=>optCheck("actions",v,D.customer_actions.includes(v))).join("")}
+            </div>
+            <label>Add custom</label>
+            <input id="add_action" placeholder="Type and press Enter">
+          `);
+          break;
+        case "Advice":
+          C(`
+            <h2>Advice (Why's / GPT-created)</h2>
+            <div class="list">
+              ${["Combi not instant hot water (preheat, draw-off)","Sealing old systems can expose leaks","One-pipe or undersized rads may limit performance","Shower compatibility depends on flow/pressure","External condensate requires frost protection"].map(v=>optCheck("advice",v,D.advice.includes(v))).join("")}
+            </div>
+            <label>Add custom</label>
+            <input id="add_advice" placeholder="Type and press Enter">
+          `);
+          break;
+        case "Review":
+          v.innerHTML = `
+            <div class="card">
+              <h2>Review</h2>
+              <div class="kv">
+                <div>Safety</div><div>${D.safety.wah||"-"}, ${D.safety.parking||"-"}, ${D.safety.other||""}</div>
+                <div>Existing boiler</div><div>${D.existing_boiler||"-"}</div>
+                <div>Rooms</div><div>${D.rooms.join(", ")||"-"}</div>
+                <div>Needs</div><div>${D.needs.join(", ")||"-"}</div>
+                <div>New boiler</div><div>${D.new_boiler||"-"}</div>
+                <div>Old flue</div><div>${D.old_flue||"-"}</div>
+                <div>New flue</div><div>${D.new_flue||"-"}</div>
+                <div>Sealing/Making good</div><div>${D.sealing_making_good.join(", ")||"-"}</div>
+                <div>Disruption</div><div>${D.disruption.join(", ")||"-"}</div>
+                <div>Customer actions</div><div>${D.customer_actions.join(", ")||"-"}</div>
+                <div>Advice</div><div>${D.advice.join(", ")||"-"}</div>
+              </div>
+              <button id="generate">Generate notes</button>
+            </div>
+          `;
+          setTimeout(()=>document.getElementById("generate").addEventListener("click", generateNotes),0);
+          break;
+      }
+      wireInputs();
+    }
+
+    function sel(v,c){ return v===c ? "selected":"" }
+    function optRadio(name,val,current){ return '<label class="opt"><input type="radio" name="'+name+'" value="'+val+'" '+(current===val?'checked':'')+'> '+val+'</label>' }
+    function optCheck(name,val,checked){ return '<label class="opt"><input type="checkbox" data-name="'+name+'" value="'+val+'" '+(checked?'checked':'')+'> '+val+'</label>' }
+    function needsList(){ return ["Better water pressure","Faster hot water","More space","Lower running costs","Easier controls","Quieter operation","Future-ready system"]; }
+
+    function wireInputs(){
+      const v = document.getElementById("view"); const D = State.data;
+      v.querySelectorAll("select,textarea").forEach(el=>{
+        el.addEventListener("change",()=>{
+          if(el.id==="wah") D.safety.wah=el.value;
+          if(el.id==="parking") D.safety.parking=el.value;
+          if(el.id==="safety_other") D.safety.other=el.value;
+        });
+      });
+      v.querySelectorAll('input[type="radio"]').forEach(el=>{
+        el.addEventListener("change",()=>{
+          if(el.name==="existing_boiler") D.existing_boiler=el.value;
+          if(el.name==="new_boiler") D.new_boiler=el.value;
+          if(el.name==="old_flue") D.old_flue=el.value;
+          if(el.name==="new_flue") D.new_flue=el.value;
+        });
+      });
+      v.querySelectorAll('input[type="checkbox"]').forEach(el=>{
+        el.addEventListener("change",()=>{
+          const g=el.dataset.name;
+          const arr=g==="rooms"?D.rooms:g==="needs"?D.needs:g==="smg"?D.sealing_making_good:g==="disruption"?D.disruption:g==="actions"?D.customer_actions:g==="advice"?D.advice:null;
+          if(!arr) return;
+          if(el.checked && !arr.includes(el.value)) arr.push(el.value);
+          if(!el.checked){ const i=arr.indexOf(el.value); if(i>-1) arr.splice(i,1); }
+        });
+      });
+      [["add_need","needs"],["add_smg","sealing_making_good"],["add_disruption","disruption"],["add_action","customer_actions"],["add_advice","advice"]].forEach(([id,field])=>{
+        const el=v.querySelector("#"+id); if(!el) return;
+        el.addEventListener("keydown",(e)=>{
+          if(e.key==="Enter" && el.value.trim()){
+            D[field].push(el.value.trim()); el.value=""; render();
+          }
+        });
+      });
+    }
+
+    function wireNav(){
+      document.getElementById("prevBtn").addEventListener("click",()=>{ if(State.stepIndex>0){State.stepIndex--; render();} });
+      document.getElementById("nextBtn").addEventListener("click",()=>{ if(State.stepIndex<Steps.length-1){State.stepIndex++; render();} else generateNotes(); });
+    }
+
+    function wireCopy(){
+      document.body.addEventListener("click",(e)=>{
+        const btn=e.target.closest("button[data-copy]"); if(!btn) return;
+        const id=btn.getAttribute("data-copy");
+        const ta=document.getElementById(id);
+        try{
+          ta.select(); document.execCommand && document.execCommand("copy");
+          btn.textContent="Copied ✔";
+          setTimeout(()=>btn.textContent="Copy",1000);
+        }catch(err){ /* ignore */ }
+      });
+    }
+
+    function generateNotes(){
+      const D=State.data; const lines=[];
+      if(D.safety.wah) lines.push(`Safety (WAH): ${D.safety.wah};`);
+      if(D.safety.parking) lines.push(`Safety (parking): ${D.safety.parking};`);
+      if(D.safety.other) lines.push(`Safety (other): ${D.safety.other};`);
+      if(D.existing_boiler) lines.push(`Existing boiler type: ${D.existing_boiler};`);
+      if(D.rooms.length) lines.push(`House rooms: ${D.rooms.join(", ")};`);
+      if(D.needs.length) lines.push(`Customer needs: ${D.needs.join(", ")};`);
+      if(D.new_boiler) lines.push(`New boiler type: ${D.new_boiler};`);
+      if(D.old_flue) lines.push(`Old flue: ${D.old_flue};`);
+      if(D.new_flue) lines.push(`New flue: ${D.new_flue};`);
+      if(D.sealing_making_good.length) lines.push(`Sealing & making good: ${D.sealing_making_good.join(", ")};`);
+      if(D.disruption.length) lines.push(`Disruption: ${D.disruption.join(", ")};`);
+      if(D.advice.length) lines.push(`Advice: ${D.advice.join(", ")};`);
+      if(D.customer_actions.length) lines.push(`Customer actions: ${D.customer_actions.join(", ")};`);
+      document.getElementById("finalNotes").value = lines.join("\n");
+      document.getElementById("outputs").classList.remove("hidden");
+      window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+    }
+
+    window.addEventListener("keydown",(e)=>{
+      if(e.key==="ArrowLeft" && State.stepIndex>0){State.stepIndex--; render();}
+      if(e.key==="ArrowRight" && State.stepIndex<Steps.length-1){State.stepIndex++; render();}
+    });
+
+    boot();
+  });
+  </script>
+</body>
+</html>
