@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quote Tool – Inline (with Boiler Selector + Parts Picker)</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#151a1f; --ink:#e9eef5; --muted:#9fb0c2; --accent:#4aa3ff; --ok:#3ecf8e; --warn:#ffc247; --bad:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #1f2630;background:linear-gradient(0deg,#0b0d10,#0e1116)}
+h1{margin:0;font-size:18px;}
+.tag{font-size:12px;color:var(--muted);margin-left:8px;border:1px solid #243041;padding:2px 6px;border-radius:8px}
+nav#steps{display:flex;gap:8px;flex-wrap:wrap}
+.step{padding:6px 10px;border-radius:10px;background:#0f141a;border:1px solid #202a36;color:var(--muted);cursor:pointer}
+.step.active{color:var(--ink);border-color:#2a3b50;background:#121a22}
+main#view{padding:16px}
+.card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;padding:16px;margin-bottom:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-weight:600;margin-bottom:6px;color:#cfe0f3}
+input,select,textarea{width:100%;background:#0f141a;border:1px solid #283241;color:#e9eef5;padding:10px;border-radius:10px}
+small.hint{color:var(--muted);display:block;margin-top:6px}
+footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid #1f2630;background:#0e1217;position:sticky;bottom:0}
+button{background:var(--accent);border:none;color:#081018;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:#e9eef5;border:1px solid #2a3b50}
+button.copy{margin-top:8px}
+.outputs{padding:16px;border-top:1px solid #1f2630}
+.outputs.hidden{display:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid .full{grid-column:1/-1}
+.kv{display:grid;grid-template-columns:200px 1fr;gap:6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #283241;color:#9fb0c2;margin:6px 6px 0 0}
+.status-pass{border-color:#2e684a;color:#88e0b1}
+.status-warn{border-color:#665a2e;color:#ffd47a}
+.status-fail{border-color:#6b2e2e;color:#ff9f9f}
+.list{display:grid;gap:8px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #253043;border-radius:10px;background:#0f141a;cursor:pointer}
+.opt input{width:auto}
+hr{border:0;border-top:1px solid #1f2630;margin:14px 0}
+.svg-wrap{background:#0f141a;border:1px solid #253043;border-radius:12px;padding:8px}
+svg{width:100%;height:auto;display:block}
+
+/* Top utility bar for instant boiler pick */
+.boilerbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid #1f2630;background:#0e1319}
+.boilerbar select{background:#0f141a;border:1px solid #283241;color:#e9eef5;padding:8px;border-radius:8px;min-width:140px}
+.boilerbar .chip{font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid #283241;color:#9fb0c2}
+
+/* Parts drawer */
+.parts-drawer{position:fixed;right:14px;bottom:14px;background:#0f141a;border:1px solid #283241;border-radius:12px;width:360px;max-height:60vh;display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.45);overflow:hidden}
+.parts-drawer header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #243041}
+.parts-drawer .parts-list{overflow:auto;padding:10px 12px;display:grid;gap:8px}
+.parts-drawer .rowline{display:grid;grid-template-columns:1fr 64px 32px;gap:8px;align-items:center}
+.parts-drawer footer{padding:10px 12px;border-top:1px solid #243041;display:flex;gap:8px;justify-content:flex-end}
+.hide{display:none}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Quote Tool <span class="tag">v1-test</span></h1>
+    <nav id="steps"></nav>
+  </header>
+
+  <!-- Quick Boiler Selector + Parts button -->
+  <div class="boilerbar">
+    <strong>Boiler:</strong>
+    <select id="qb_brand"><option value="">Brand…</option><option>worcester</option><option>vaillant</option><option>ideal</option></select>
+    <select id="qb_range"><option value="">Range…</option></select>
+    <select id="qb_model"><option value="">Model…</option></select>
+    <button id="qb_apply" class="ghost">Apply to notes</button>
+    <span class="chip" id="qb_flow">Flow: –</span>
+    <span class="chip" id="qb_flue">Flue: –</span>
+    <span class="chip" id="qb_note">Note: –</span>
+    <button id="toggleParts" class="ghost">Parts (0)</button>
+  </div>
+
+  <main id="view"></main>
+
+  <footer>
+    <button id="prevBtn" class="ghost">◀ Back</button>
+    <button id="nextBtn">Next ▶</button>
+  </footer>
+
+  <section id="outputs" class="outputs hidden">
+    <h2>Outputs</h2>
+    <div class="grid">
+      <div>
+        <label>Customer Summary</label>
+        <textarea id="customerSummary" rows="10"></textarea>
+        <button class="copy" data-copy="customerSummary">Copy</button>
+      </div>
+      <div>
+        <label>Installation Notes (semicolon lines)</label>
+        <textarea id="installNotes" rows="10"></textarea>
+        <button class="copy" data-copy="installNotes">Copy</button>
+      </div>
+      <div class="full">
+        <label>Skill Hours (JSON)</label>
+        <textarea id="skillHours" rows="8"></textarea>
+        <button class="copy" data-copy="skillHours">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Parts Drawer -->
+  <div id="partsDrawer" class="parts-drawer hide" role="dialog" aria-label="Picked parts">
+    <header>
+      <strong>Picked Parts</strong>
+      <button id="closeParts" class="ghost">Close</button>
+    </header>
+    <div id="partsList" class="parts-list"></div>
+    <footer>
+      <button id="copyParts">Copy parts</button>
+    </footer>
+  </div>
+
+<script>
+/* ================= Inline fallback RULES (used if external JSON missing) ================= */
+const INLINE_RULES = {
+  boiler: {
+    "worcester": {
+      "4000": {
+        "4000 24 System": {
+          "meta": {"flow":"—","flue":"100: 12 m / 125: 21 m","note":"Auto-bypass on S-plan"},
+          "case":{"w":390,"h":724,"d":310},
+          "clearances":{"install":{"top":170,"bottom":186,"sides":5,"front":5},"service":{"top":170,"bottom":186,"sides":5,"front":450}},
+          "rules":{"reduced_front":{"front":450,"above":170,"below":186,"sides":5}}
+        }
+      },
+      "8000": {
+        "8000 30 System": {
+          "meta":{"flow":"—","flue":"100: 14 m / 125: 29 m","note":"Long flue options"},
+          "case":{"w":440,"h":780,"d":365},
+          "clearances":{"install":{"top":200,"bottom":200,"sides":5,"front":5},"service":{"top":200,"bottom":200,"sides":5,"front":600}},
+          "rules":{}
+        }
+      }
+    },
+    "vaillant": {
+      "ecoFIT pure": {
+        "ecoFIT pure 415": {
+          "meta":{"flow":"—","flue":"~10 m","note":"Open-vent regular"},
+          "case":{"w":375,"h":602,"d":295},
+          "clearances":{"install":{"top":200,"bottom":200,"sides":5,"front":5},"service":{"top":200,"bottom":200,"sides":5,"front":600}},
+          "rules":{}
+        }
+      }
+    },
+    "ideal": {
+      "Logic System": {
+        "Logic S24": {
+          "meta":{"flow":"—","flue":"100: 9 m","note":"New combi installs need ≥10 lpm @1 bar"},
+          "case":{"w":395,"h":700,"d":278},
+          "clearances":{"install":{"top":150,"bottom":150,"sides":5,"front":5},"service":{"top":150,"bottom":150,"sides":5,"front":600}},
+          "rules":{}
+        }
+      }
+    }
+  },
+  flue: {
+    "defaults": {
+      "horizontal":{"to_opening_mm":300,"to_boundary_mm":600},
+      "vertical":{"to_roof_mm":300,"min_height_above_roof_mm":300},
+      "rear":{"to_opening_mm":300},
+      "plume":{"extra_to_opening_mm":300,"note":"Direct away from openings"}
+    },
+    "equivalent_lengths":{"default_elbow_90":1.5,"default_elbow_45":0.75}
+  },
+  gas: {
+    "hints": [
+      {"kw_up_to":24,"run_m":10,"likely":"22 mm OK"},
+      {"kw_up_to":30,"run_m":15,"likely":"28 mm advised"},
+      {"kw_up_to":35,"run_m":30,"likely":"35 mm may be needed"}
+    ],
+    "meters":["U6","U16","MP"]
+  }
+};
+
+/* ================= App State ================= */
+const State = {
+  quote: {
+    quote_id: "",
+    customer: { salesforce_id:"", name:"", address:"", contact:{phone:"", email:""} },
+    survey: {
+      present_system: "",
+      new_system: "",
+      house_map: { current_location:"", new_location:"" },
+      measurements_mm: { opening_width:0, opening_height:0, opening_depth:0, front_clearance:0, above_case:0, below_case:0, left_clearance:0, right_clearance:0 },
+      pressures: { standing_bar:0, working_bar:0 },
+      flow_test: { lpm_at_1bar:0 },
+      gas: { meter_type:"", route_len_m:0, other_appliances_kw:0 },
+      earthing: "",
+      wah: { ladder_ok:true, flat_roof:false, scaffold_required:false },
+      safety: { asbestos_present:false, notes:"" }
+    },
+    packs: { base_A:"", base_B:"", components:["boiler","flue","gas","condensate"] },
+    selections: {
+      boiler: { brand:"", range:"", model:"", fuel:"NG" },
+      flue: { type:"", kit_codes:[] },
+      gas: { pipe_diameters:{ near_boiler_mm:22 }, route:"" },
+      condensate: { route:"", protection:"" },
+      controls: { type:"" },
+      cylinder: { type:"none", size_l:0 },
+      services: [],
+      plan: "" // "S" | "Y" | ""
+    },
+    rules: { clearance_checks:[], flue_checks:[], gas_checks:[] },
+    pricing: { base_packs:[], materials:[], labour_hours:{survey:0.5, install_core:0, extras:0}, totals:{materials:0,labour:0,vat:0,grand:0} },
+    outputs: { customer_summary:"", installation_notes:"", skill_hours_breakdown:[] }
+  },
+  rules: { boiler:null, flue:null, gas:null },
+  stepIndex: 0
+};
+
+const Steps = [
+  "Customer","Present System","Photos & Obs","New System","House Map",
+  "Boiler","Flue","Gas","Condensate","Components","Review"
+];
+
+/* ================= Parts Picker (background) ================= */
+const Parts = (() => {
+  const bag = new Map(); // key -> {name, qty}
+  const add = (key, name, qty=1) => { bag.set(key, {name, qty:(bag.get(key)?.qty||0)+qty}); render(); };
+  const set = (key, name, qty=1) => { bag.set(key, {name, qty}); render(); };
+  const del = key => { bag.delete(key); render(); };
+  const clear = () => { bag.clear(); render(); };
+  function render(){
+    const list = document.getElementById('partsList'); if(!list) return;
+    list.innerHTML = '';
+    [...bag.entries()].forEach(([k,v])=>{
+      const row = document.createElement('div'); row.className='rowline';
+      row.innerHTML = `<span>${v.name}</span>
+        <input type="number" min="0" step="1" value="${v.qty}">
+        <button class="ghost">✕</button>`;
+      row.querySelector('input').addEventListener('change', e=>{
+        const n = Math.max(0, parseInt(e.target.value||0,10)); if(n===0){ del(k); } else { set(k, v.name, n); }
+      });
+      row.querySelector('button').addEventListener('click', ()=>del(k));
+      list.appendChild(row);
+    });
+    document.getElementById('toggleParts').textContent = `Parts (${bag.size})`;
+  }
+  function copy(){
+    const lines = [...bag.values()].map(p=>`${p.qty} × ${p.name}`);
+    navigator.clipboard.writeText(lines.join('\n'));
+    const btn = document.getElementById('toggleParts');
+    btn.textContent = `Parts (${bag.size} – copied)`;
+    setTimeout(()=>btn.textContent=`Parts (${bag.size})`,1200);
+  }
+  return { add, set, del, clear, render, copy, items:()=>[...bag.values()] };
+})();
+
+/* Keys that get recalculated each time background rules fire */
+const AUTO_KEYS = ['filter','autobypass','fe-removal','pump-ov-cf','fill-loop','prv-run','remprv','freeze-kit','gas-roth','min-flow'];
+
+/* Background rules — call after any relevant change */
+function applyBackgroundRules(){
+  const Q = State.quote;
+  // wipe dynamic keys
+  AUTO_KEYS.forEach(k=>Parts.del(k));
+
+  // Always recommend a magnetic filter
+  Parts.add('filter','Fernox TF1 Omega magnetic filter',1);
+
+  // Conversion Regular -> System (typical pack items)
+  if (Q.survey.present_system==='regular' && Q.survey.new_system==='system') {
+    Parts.add('fe-removal','F&E tank removal pack');
+    Parts.add('pump-ov-cf','Remove pump + open-vent/cold-feed (allow 1h)');
+    Parts.add('fill-loop','Mains cold for filling loop to boiler');
+    Parts.add('prv-run','PRV to suitable termination');
+  }
+
+  // Simple plan selector heuristic via Components tick: if cylinder selected assume S-plan
+  const sPlan = Q.selections.plan==='S' || Q.selections.services.includes('cylinder_unvented') || Q.selections.services.includes('cylinder_vented');
+  if (sPlan) Parts.add('autobypass','Automatic bypass valve');
+
+  // Location hints (unheated)
+  const newLoc = (Q.survey.house_map.new_location||'').toLowerCase();
+  if (newLoc.includes('garage') || newLoc.includes('loft')) {
+    Parts.add('freeze-kit','Condensate freeze protection (trace/32 mm where req.)');
+  }
+
+  // Remote PRV option for non-regulars
+  if (Q.survey.new_system!=='regular') Parts.add('remprv','Remote/secondary PRV kit (if required)');
+
+  // Gas nudge based on route length
+  const L = Number(Q.survey.gas.route_len_m||0);
+  let hint = '22 mm likely OK';
+  if (L>15) hint = '28 mm advised (check calcs)';
+  if (L>30) hint = '35 mm may be needed (calc)';
+  Parts.add('gas-roth',`Gas sizing check: route ${L} m → ${hint}`);
+
+  // New combi check (≥10 lpm @1 bar)
+  if (Q.survey.new_system==='combi') {
+    const lpm = Number(Q.survey.flow_test.lpm_at_1bar||0);
+    if (lpm < 10) Parts.add('min-flow','⚠︎ Combi new install: measured <10 lpm @1 bar – NOT suitable');
+    else Parts.add('min-flow',`Combi mains-flow check passed: ${lpm} lpm @1 bar`);
+  }
+
+  Parts.render();
+}
+
+/* ================= App Boot & Rule loading ================= */
+async function boot(){
+  await loadRules();
+  renderSteps();
+  render();
+  wireNav();
+  wireCopy();
+  wireBoilerBar();
+  Parts.render();
+}
+
+async function loadRules(){
+  // Try external JSONs; fall back to inline if they 404 in a test run
+  async function safe(url){ try{ const r=await fetch(url); if(!r.ok) throw 0; return await r.json(); }catch{ return null; } }
+  const [boiler, flue, gas] = await Promise.all([
+    safe("data/rules/boiler_clearances.models.json"),
+    safe("data/rules/flue_rules.json"),
+    safe("data/rules/gas_rules.json")
+  ]);
+  State.rules.boiler = boiler || INLINE_RULES.boiler;
+  State.rules.flue   = flue   || INLINE_RULES.flue;
+  State.rules.gas    = gas    || INLINE_RULES.gas;
+}
+
+/* ================= Rendering ================= */
+function renderSteps(){
+  const nav = document.getElementById("steps");
+  nav.innerHTML = Steps.map((s,i)=>`<span class="step ${i===State.stepIndex?'active':''}">${i+1}. ${s}</span>`).join("");
+}
+
+function render(){
+  const v = document.getElementById("view");
+  const i = State.stepIndex;
+  renderSteps();
+  document.getElementById("prevBtn").disabled = i===0;
+  document.getElementById("nextBtn").textContent = i===Steps.length-1 ? "Generate ▶" : "Next ▶";
+
+  const Q = State.quote;
+  switch(Steps[i]){
+    case "Customer":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Customer</h2>
+        <div class="row">
+          <div><label>Salesforce ID</label><input id="sfid" value="${Q.customer.salesforce_id}"></div>
+          <div><label>Quote ID</label><input id="qid" value="${Q.quote_id}"></div>
+          <div><label>Name</label><input id="cname" value="${Q.customer.name}"></div>
+          <div><label>Email</label><input id="cemail" value="${Q.customer.contact.email}"></div>
+          <div class="full"><label>Address</label><input id="caddr" value="${Q.customer.address}"></div>
+        </div>
+        <small class="hint">Later: wire to Salesforce search.</small>
+      </div>`;
+      break;
+
+    case "Present System":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Present boiler/system</h2>
+        <div class="list">
+          ${["regular","system","combi","warm_air","storage_combi","none"].map(val => optRadio("present_system", val, Q.survey.present_system)).join("")}
+        </div>
+        <small class="hint">Selecting sets Base Pack A.</small>
+      </div>`;
+      break;
+
+    case "Photos & Obs":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Photos & Observations</h2>
+        <div class="row">
+          <div><label>Standing pressure (bar)</label><input id="standing_bar" type="number" step="0.1" value="${Q.survey.pressures.standing_bar}"></div>
+          <div><label>Working pressure (bar)</label><input id="working_bar" type="number" step="0.1" value="${Q.survey.pressures.working_bar}"></div>
+          <div><label>Flow test @ 1 bar (L/min)</label><input id="flow_lpm" type="number" step="0.1" value="${Q.survey.flow_test.lpm_at_1bar}"></div>
+          <div><label>Earthing</label><select id="earthing">
+            ${["","TN-S","TN-C-S","TT","unknown"].map(v=>`<option ${sel(v,Q.survey.earthing)}>${v}</option>`).join("")}
+          </select></div>
+          <div class="full"><label>Safety notes</label><input id="safety_notes" value="${Q.survey.safety.notes}"></div>
+        </div>
+      </div>`;
+      break;
+
+    case "New System":
+      v.innerHTML = `
+      <div class="card">
+        <h2>New system</h2>
+        <div class="list">
+          ${["regular","system","combi"].map(val => optRadio("new_system", val, Q.survey.new_system)).join("")}
+        </div>
+        <div class="row">
+          <div><label>Plan</label><select id="planSel">
+            ${["","S","Y"].map(v=>`<option ${sel(v,Q.selections.plan)}>${v}</option>`).join("")}
+          </select></div>
+        </div>
+        <small class="hint">Plan used for auto-bypass suggestion.</small>
+      </div>`;
+      break;
+
+    case "House Map":
+      v.innerHTML = `
+      <div class="card">
+        <h2>House locations</h2>
+        <div class="row">
+          <div>
+            <label>Current location</label>
+            <select id="loc_cur">${locOpts(Q.survey.house_map.current_location)}</select>
+          </div>
+          <div>
+            <label>New location</label>
+            <select id="loc_new">${locOpts(Q.survey.house_map.new_location)}</select>
+          </div>
+        </div>
+        <hr/>
+        <div class="row">
+          <div><label>Front clearance (mm)</label><input id="front_clearance" type="number" value="${Q.survey.measurements_mm.front_clearance}"></div>
+          <div><label>Above case (mm)</label><input id="above_case" type="number" value="${Q.survey.measurements_mm.above_case}"></div>
+          <div><label>Below case (mm)</label><input id="below_case" type="number" value="${Q.survey.measurements_mm.below_case}"></div>
+          <div><label>Left clearance (mm)</label><input id="left_clr" type="number" value="${Q.survey.measurements_mm.left_clearance}"></div>
+          <div><label>Right clearance (mm)</label><input id="right_clr" type="number" value="${Q.survey.measurements_mm.right_clearance}"></div>
+        </div>
+        <small class="hint">Tap hotspots on the simple diagram to quick-fill.</small>
+      </div>`;
+      break;
+
+    case "Boiler":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Boiler selection</h2>
+        <div class="row">
+          <div><label>Brand</label><select id="b_brand">${brandOpts(Q.selections.boiler.brand)}</select></div>
+          <div><label>Range</label><select id="b_range">${rangeOpts(Q.selections.boiler.brand,Q.selections.boiler.range)}</select></div>
+          <div class="full"><label>Model</label><select id="b_model">${modelOpts(Q.selections.boiler.brand,Q.selections.boiler.range,Q.selections.boiler.model)}</select></div>
+        </div>
+        <div id="clearancePanel"></div>
+      </div>`;
+      setTimeout(()=>showClearances(),0);
+      break;
+
+    case "Flue":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Flue</h2>
+        <div class="row">
+          <div><label>Type</label>
+            <select id="flue_type">
+              ${["","horizontal","vertical","rear","plume"].map(v=>`<option ${sel(v,Q.selections.flue.type)}>${v}</option>`).join("")}
+            </select>
+          </div>
+          <div class="full"><small class="hint">Defaults shown; brand overrides can be layered.</small></div>
+        </div>
+        <div id="fluePanel"></div>
+      </div>`;
+      setTimeout(()=>showFlueRules(),0);
+      break;
+
+    case "Gas":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Gas</h2>
+        <div class="row">
+          <div><label>Meter type</label><select id="meter">
+            ${["","U6","U16","MP"].map(v=>`<option ${sel(v,Q.survey.gas.meter_type)}>${v}</option>`).join("")}
+          </select></div>
+          <div><label>Route length (m)</label><input id="route_m" type="number" step="0.1" value="${Q.survey.gas.route_len_m}"></div>
+          <div><label>Other appliances (kW)</label><input id="other_kw" type="number" step="0.1" value="${Q.survey.gas.other_appliances_kw}"></div>
+        </div>
+        <div id="gasPanel"></div>
+      </div>`;
+      setTimeout(()=>showGasRules(),0);
+      break;
+
+    case "Condensate":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Condensate</h2>
+        <div class="row">
+          <div><label>Route</label><select id="cond_route">
+            ${["","internal","external"].map(v=>`<option ${sel(v,Q.selections.condensate.route)}>${v}</option>`).join("")}
+          </select></div>
+          <div><label>Frost protection</label><select id="cond_prot">
+            ${["","yes","no"].map(v=>`<option ${sel(v,Q.selections.condensate.protection)}>${v}</option>`).join("")}
+          </select></div>
+        </div>
+        <small class="hint">External routes: enforce protection in outputs.</small>
+      </div>`;
+      break;
+
+    case "Components":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Components & Services</h2>
+        <div class="list">
+          ${["powerflush","filter_install","controls_hive","controls_onboard","cylinder_unvented","cylinder_vented"].map(k=>optCheck("svc_",k, Q.selections.services.includes(k))).join("")}
+        </div>
+      </div>`;
+      break;
+
+    case "Review":
+      v.innerHTML = `
+      <div class="card">
+        <h2>Review & Submit</h2>
+        <div class="kv">
+          <div>Present system</div><div>${Q.survey.present_system || "-"}</div>
+          <div>New system</div><div>${Q.survey.new_system || "-"}</div>
+          <div>Boiler</div><div>${[Q.selections.boiler.brand,Q.selections.boiler.range,Q.selections.boiler.model].filter(Boolean).join(" / ") || "-"}</div>
+          <div>Flue</div><div>${Q.selections.flue.type || "-"}</div>
+          <div>Gas meter</div><div>${Q.survey.gas.meter_type || "-"}</div>
+          <div>Condensate</div><div>${Q.selections.condensate.route || "-"}</div>
+        </div>
+        <button id="generate">Generate outputs</button>
+      </div>`;
+      setTimeout(()=>document.getElementById("generate").addEventListener("click", generateOutputs),0);
+      break;
+  }
+  wireInputs();
+  // lightweight house hotspots
+  if (Steps[i]==="House Map") addHouseHotspots();
+}
+
+/* ================= UI helpers ================= */
+function optRadio(name, val, current){ return `<label class="opt"><input type="radio" name="${name}" value="${val}" ${current===val?"checked":""}> ${val}</label>`; }
+function optCheck(prefix, val, checked){ return `<label class="opt"><input type="checkbox" data-k="${prefix+val}" ${checked?"checked":""}> ${val}</label>`; }
+function sel(v,c){ return v===c ? "selected":""; }
+function locOpts(cur){ return ["","garage","kitchen","loft","cupboard","other"].map(v=>`<option ${sel(v,cur)}>${v}</option>`).join(""); }
+function brandOpts(cur){ return ["","worcester","vaillant","ideal"].map(v=>`<option ${sel(v,cur)}>${v}</option>`).join(""); }
+function rangeOpts(brand, cur){ const data = State.rules.boiler || {}; const ranges = Object.keys((data[brand]||{})); return ["",...ranges].map(v=>`<option ${sel(v,cur)}>${v}</option>`).join(""); }
+function modelOpts(brand, range, cur){ const data = State.rules.boiler || {}; const models = Object.keys(((data[brand]||{})[range]||{})); return ["",...models].map(v=>`<option ${sel(v,cur)}>${v}</option>`).join(""); }
+
+function wireInputs(){
+  const v = document.getElementById("view");
+  v.querySelectorAll("input,select,textarea").forEach(el=>{
+    el.addEventListener("change", ()=>{
+      const Q = State.quote;
+      switch(el.id){
+        case "sfid": Q.customer.salesforce_id = el.value.trim(); break;
+        case "qid": Q.quote_id = el.value.trim(); break;
+        case "cname": Q.customer.name = el.value.trim(); break;
+        case "cemail": Q.customer.contact.email = el.value.trim(); break;
+        case "caddr": Q.customer.address = el.value.trim(); break;
+        case "standing_bar": Q.survey.pressures.standing_bar = +el.value; applyBackgroundRules(); break;
+        case "working_bar": Q.survey.pressures.working_bar = +el.value; break;
+        case "flow_lpm": Q.survey.flow_test.lpm_at_1bar = +el.value; applyBackgroundRules(); break;
+        case "earthing": Q.survey.earthing = el.value; break;
+        case "safety_notes": Q.survey.safety.notes = el.value; break;
+        case "loc_cur": Q.survey.house_map.current_location = el.value; break;
+        case "loc_new": Q.survey.house_map.new_location = el.value; applyBackgroundRules(); break;
+        case "front_clearance": Q.survey.measurements_mm.front_clearance = +el.value; showClearances(); break;
+        case "above_case": Q.survey.measurements_mm.above_case = +el.value; showClearances(); break;
+        case "below_case": Q.survey.measurements_mm.below_case = +el.value; showClearances(); break;
+        case "left_clr": Q.survey.measurements_mm.left_clearance = +el.value; showClearances(); break;
+        case "right_clr": Q.survey.measurements_mm.right_clearance = +el.value; showClearances(); break;
+        case "b_brand": Q.selections.boiler.brand = el.value; Q.selections.boiler.range=""; Q.selections.boiler.model=""; render(); break;
+        case "b_range": Q.selections.boiler.range = el.value; Q.selections.boiler.model=""; render(); break;
+        case "b_model": Q.selections.boiler.model = el.value; showClearances(); break;
+        case "flue_type": Q.selections.flue.type = el.value; showFlueRules(); applyBackgroundRules(); break;
+        case "meter": Q.survey.gas.meter_type = el.value; showGasRules(); break;
+        case "route_m": Q.survey.gas.route_len_m = +el.value; showGasRules(); applyBackgroundRules(); break;
+        case "other_kw": Q.survey.gas.other_appliances_kw = +el.value; showGasRules(); break;
+        case "cond_route": Q.selections.condensate.route = el.value; break;
+        case "cond_prot": Q.selections.condensate.protection = el.value; break;
+        case "planSel": Q.selections.plan = el.value; applyBackgroundRules(); break;
+      }
+    });
+  });
+  // radios
+  v.querySelectorAll('input[type="radio"]').forEach(el=>{
+    el.addEventListener("change", ()=>{
+      const Q = State.quote;
+      if(el.name==="present_system"){ Q.survey.present_system = el.value; Q.packs.base_A = el.value; applyBackgroundRules(); }
+      if(el.name==="new_system"){ Q.survey.new_system = el.value; Q.packs.base_B = el.value; applyBackgroundRules(); }
+    });
+  });
+  // component services checkboxes
+  v.querySelectorAll('input[type="checkbox"][data-k^="svc_"]').forEach(el=>{
+    el.addEventListener("change", ()=>{
+      const key = el.getAttribute("data-k").replace("svc_","");
+      const arr = State.quote.selections.services;
+      if(el.checked && !arr.includes(key)) arr.push(key);
+      if(!el.checked) State.quote.selections.services = arr.filter(x=>x!==key);
+      applyBackgroundRules();
+    });
+  });
+}
+
+function wireNav(){
+  document.getElementById("prevBtn").addEventListener("click", ()=>{
+    if(State.stepIndex>0){ State.stepIndex--; render(); }
+  });
+  document.getElementById("nextBtn").addEventListener("click", ()=>{
+    if(State.stepIndex < Steps.length-1){ State.stepIndex++; render(); }
+    else { generateOutputs(); }
+  });
+}
+
+function wireCopy(){
+  document.body.addEventListener("click", (e)=>{
+    const btn = e.target.closest("button.copy");
+    if(!btn) return;
+    const id = btn.getAttribute("data-copy");
+    const ta = document.getElementById(id);
+    ta.select(); document.execCommand("copy");
+    btn.textContent = "Copied ✔";
+    setTimeout(()=>btn.textContent="Copy",1000);
+  });
+}
+
+/* ================= Boiler clearances / rules panels ================= */
+function showClearances(){
+  const Q = State.quote;
+  const panel = document.getElementById("clearancePanel");
+  if(!panel) return;
+  const model = lookupModel(Q.selections.boiler);
+  if(!model){ panel.innerHTML = `<small class="hint">Pick brand, range, and model.</small>`; return; }
+  const m = model;
+  const dims = `<span class="badge">Case ${m.case.w}×${m.case.h}×${m.case.d} mm</span>`;
+  const inst = m.clearances.install;
+  const serv = m.clearances.service;
+  const checks = evalClearances(m, Q.survey.measurements_mm);
+  panel.innerHTML = `
+    <hr/>
+    <div>Install: top ${inst.top} / bottom ${inst.bottom} / sides ${inst.sides} / front ${inst.front} mm ${dims}</div>
+    <div>Service: top ${serv.top} / bottom ${serv.bottom} / sides ${serv.sides} / front ${serv.front} mm</div>
+    <div>Reduced front rule: ${m.rules?.reduced_front ? "available" : "n/a"}</div>
+    <div class="list">${checks.map(c=>`<span class="badge status-${c.status}">${c.rule_id} → ${c.status}</span>`).join(" ")}</div>
+  `;
+  State.quote.rules.clearance_checks = checks;
+
+  // Also push meta to quick bar
+  const meta = m.meta||{};
+  document.getElementById('qb_flow').textContent = 'Flow: ' + (meta.flow||'–');
+  document.getElementById('qb_flue').textContent = 'Flue: ' + (meta.flue||'–');
+  document.getElementById('qb_note').textContent = 'Note: ' + (meta.note||'–');
+}
+
+function showFlueRules(){
+  const Q = State.quote;
+  const p = document.getElementById("fluePanel");
+  if(!p) return;
+  const rules = State.rules.flue;
+  if(!Q.selections.flue.type){ p.innerHTML = `<small class="hint">Select a flue type.</small>`; return; }
+  const r = rules.defaults[Q.selections.flue.type] || {};
+  p.innerHTML = `
+    <hr/>
+    <div>Terminal to opening: ${r.to_opening_mm ?? "-"} mm</div>
+    <div>Terminal to boundary: ${r.to_boundary_mm ?? "-"} mm</div>
+    <div>Vertical rules: roof penetration min ${rules.defaults.vertical?.min_height_above_roof_mm ?? "-"} mm</div>
+  `;
+  State.quote.rules.flue_checks = [{rule_id:"FLUE_DEFAULTS", status:"pass"}];
+}
+
+function showGasRules(){
+  const Q = State.quote;
+  const p = document.getElementById("gasPanel");
+  if(!p) return;
+  const route = Number(Q.survey.gas.route_len_m||0);
+  let hint = "22 mm likely OK";
+  if(route>15) hint = "28 mm advised";
+  if(route>30) hint = "35 mm may be needed";
+  p.innerHTML = `<hr/><div>Route length: ${route} m → <b>${hint}</b></div>`;
+  State.quote.rules.gas_checks = [{rule_id:"GAS_ROUTE_HINT", status: route>30?"warn":"pass", details: hint}];
+}
+
+function evalClearances(model, meas){
+  const out = [];
+  const I = model.clearances.install, S = model.clearances.service;
+  const m = v=>Number(v||0);
+  function check(rule_id, cond){ out.push({rule_id, status: cond?"pass":"fail"}); }
+  check("INSTALL_TOP", m(meas.above_case) >= I.top);
+  check("INSTALL_BOTTOM", m(meas.below_case) >= I.bottom);
+  check("INSTALL_SIDES", m(meas.left_clearance) >= I.sides && m(meas.right_clearance) >= I.sides);
+  let serviceOK = m(meas.front_clearance) >= S.front;
+  const reduced = model.rules?.reduced_front;
+  if(!serviceOK && reduced){
+    const meetsReduced = m(meas.front_clearance) >= reduced.front &&
+                         m(meas.above_case) >= reduced.above &&
+                         m(meas.below_case) >= reduced.below &&
+                         m(meas.left_clearance) >= reduced.sides &&
+                         m(meas.right_clearance) >= reduced.sides;
+    serviceOK = meetsReduced;
+    out.push({rule_id:"SERVICE_FRONT_REDUCED_PATH", status: meetsReduced?"pass":"fail"});
+  } else {
+    out.push({rule_id:"SERVICE_FRONT", status: serviceOK?"pass":"fail"});
+  }
+  return out;
+}
+
+function lookupModel(sel){
+  const data = State.rules.boiler;
+  if(!sel.brand || !sel.range || !sel.model) return null;
+  return (((data[sel.brand]||{})[sel.range]||{})[sel.model]||null);
+}
+
+/* ================= Outputs ================= */
+function generateOutputs(){
+  const q = State.quote;
+  const parts = [];
+  parts.push(`We will replace your ${q.survey.present_system||"current"} system with a ${q.survey.new_system||"new"} boiler.`);
+  if(q.selections.boiler.brand) parts.push(`Selected boiler: ${[q.selections.boiler.brand,q.selections.boiler.range,q.selections.boiler.model].filter(Boolean).join(" ")}.`);
+  if(q.selections.flue.type) parts.push(`Flue: ${q.selections.flue.type}.`);
+  if(q.survey.house_map.current_location || q.survey.house_map.new_location){
+    parts.push(`Location: from ${q.survey.house_map.current_location||"current"} to ${q.survey.house_map.new_location||"same"}.`);
+  }
+  if(q.selections.services.length) parts.push(`Additional services: ${q.selections.services.join(", ")}.`);
+  const summary = parts.join(" ");
+
+  const notes = [
+    `Present system: ${q.survey.present_system}`,
+    `New system: ${q.survey.new_system}`,
+    `Boiler: ${[q.selections.boiler.brand,q.selections.boiler.range,q.selections.boiler.model].filter(Boolean).join(" / ")}`,
+    `Flue: ${q.selections.flue.type}`,
+    `Gas meter: ${q.survey.gas.meter_type}`,
+    `Condensate: ${q.selections.condensate.route} (frost: ${q.selections.condensate.protection})`,
+    `Locations: ${q.survey.house_map.current_location} → ${q.survey.house_map.new_location}`,
+    // include parts into notes for depot
+    ...Parts.items().map(p=>`${p.qty} × ${p.name}`)
+  ].filter(Boolean).map(s=>s+";").join("\n");
+
+  const hours = [
+    {code:"PACK-A-"+(q.survey.present_system||"NA").toUpperCase(), hours:2.0},
+    {code:"PACK-B-"+(q.survey.new_system||"NA").toUpperCase(), hours:3.0}
+  ];
+
+  State.quote.outputs.customer_summary = summary;
+  State.quote.outputs.installation_notes = notes;
+  State.quote.outputs.skill_hours_breakdown = hours;
+
+  document.getElementById("customerSummary").value = summary;
+  document.getElementById("installNotes").value = notes;
+  document.getElementById("skillHours").value = JSON.stringify(hours, null, 2);
+  document.getElementById("outputs").classList.remove("hidden");
+  window.scrollTo({top: document.body.scrollHeight, behavior:"smooth"});
+}
+
+/* ================= Quick Boiler Bar (top) ================= */
+function wireBoilerBar(){
+  const b = document.getElementById('qb_brand');
+  const r = document.getElementById('qb_range');
+  const m = document.getElementById('qb_model');
+
+  function reloadRanges(){
+    const ranges = Object.keys((State.rules.boiler[b.value]||{}));
+    r.innerHTML = `<option value="">Range…</option>` + ranges.map(x=>`<option>${x}</option>`).join('');
+    m.innerHTML = `<option value="">Model…</option>`;
+    updateChips(null);
+  }
+  function reloadModels(){
+    const models = Object.keys(((State.rules.boiler[b.value]||{})[r.value]||{}));
+    m.innerHTML = `<option value="">Model…</option>` + models.map(x=>`<option>${x}</option>`).join('');
+    updateChips(null);
+  }
+  function updateChips(sel){
+    const meta = sel?.meta || {};
+    document.getElementById('qb_flow').textContent = 'Flow: ' + (meta?.flow||'–');
+    document.getElementById('qb_flue').textContent = 'Flue: ' + (meta?.flue||'–');
+    document.getElementById('qb_note').textContent = 'Note: ' + (meta?.note||'–');
+  }
+
+  b.addEventListener('change', reloadRanges);
+  r.addEventListener('change', reloadModels);
+  m.addEventListener('change', ()=>{
+    const model = (((State.rules.boiler[b.value]||{})[r.value]||{})[m.value]||null);
+    updateChips(model);
+  });
+
+  document.getElementById('qb_apply').addEventListener('click', ()=>{
+    if(!b.value || !r.value || !m.value){ alert('Pick brand, range, model'); return; }
+    State.quote.selections.boiler = { brand:b.value, range:r.value, model:m.value, fuel:"NG" };
+    // jump user to Boiler step so they can see clearances
+    State.stepIndex = Steps.indexOf("Boiler");
+    render();
+    applyBackgroundRules();
+    // append concise line into install notes immediately
+    const model = lookupModel(State.quote.selections.boiler);
+    const meta = model?.meta||{};
+    const line = `Boiler selected: ${b.value} ${r.value} ${m.value} – DHW ${meta.flow||"—"}; Flue ${meta.flue||"—"}. ${meta.note||""}`.trim();
+    const out = document.getElementById("installNotes");
+    if(out){
+      const v = (out.value||'').trim();
+      out.value = (v? v+"\n" : "") + line + ";";
+    }
+  });
+
+  // Parts drawer wiring
+  const drawer = document.getElementById('partsDrawer');
+  document.getElementById('toggleParts').addEventListener('click', ()=>drawer.classList.toggle('hide'));
+  document.getElementById('closeParts').addEventListener('click', ()=>drawer.classList.add('hide'));
+  document.getElementById('copyParts').addEventListener('click', Parts.copy);
+}
+
+/* ================= House hotspots ================= */
+function addHouseHotspots(){
+  const wrap = document.createElement('div');
+  wrap.className = 'svg-wrap card';
+  wrap.innerHTML = `<h3>Simple House Diagram</h3>
+  <svg viewBox="0 0 300 180">
+    <rect x="10" y="60" width="280" height="110" fill="#121a22" stroke="#2a3b50"/>
+    <polygon points="10,60 150,10 290,60" fill="#0f141a" stroke="#2a3b50"/>
+    <g id="hotspots" font-size="10" fill="#cfe0f3">
+      <circle cx="70" cy="110" r="8" stroke="#4aa3ff" fill="none"></circle>
+      <text x="60" y="130">Kitchen</text>
+      <circle cx="230" cy="110" r="8" stroke="#4aa3ff" fill="none"></circle>
+      <text x="215" y="130">Garage</text>
+      <circle cx="150" cy="40" r="8" stroke="#4aa3ff" fill="none"></circle>
+      <text x="135" y="25">Loft</text>
+    </g>
+  </svg>
+  <small class="hint">Tap a hotspot to set current/new location quickly.</small>`;
+  document.getElementById('view').appendChild(wrap);
+  const setLoc = (field,val)=>{ State.quote.survey.house_map[field]=val; render(); };
+  const map = ['kitchen','garage','loft'];
+  wrap.querySelectorAll('circle').forEach((c,i)=>{
+    c.style.cursor='pointer';
+    c.addEventListener('click',()=>{
+      if(!State.quote.survey.house_map.current_location) setLoc('current_location', map[i]);
+      else setLoc('new_location', map[i]);
+    });
+  });
+}
+
+/* ================= Boiler lookup shared ================= */
+function brandOptsQuick(){ return ["","worcester","vaillant","ideal"]; }
+
+/* ================= Quick bar selects reflect data ================= */
+(function initQuickBar(){
+  // populate ranges/models if rules already loaded (after boot runs)
+})();
+
+/* ================= Keyboard nav ================= */
+window.addEventListener("keydown", (e)=>{
+  if(e.key==="ArrowLeft" && State.stepIndex>0){ State.stepIndex--; render(); }
+  if(e.key==="ArrowRight" && State.stepIndex<Steps.length-1){ State.stepIndex++; render(); }
+});
+
+/* ================= Boot ================= */
+boot();
+
+/* ================= Small helpers for quick bar meta ================= */
+function selModelMeta(brand, range, model){
+  return (((State.rules.boiler||{})[brand]||{})[range]||{})[model]||null;
+}
+</script>
+</body>
+</html>
