@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Depot Notes – Cachebuster Redirect</title>
+  <!-- Force no-cache on this expendable entry point -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <script>
+  (function() {
+    // Build a fresh cache-buster on every load
+    var v = 'v=' + Date.now();
+    // Preserve any existing query string and append the buster
+    var q = window.location.search;
+    var target = 'index.html' + (q ? q + '&' + v : '?' + v);
+    // Redirect immediately to the main app with a unique version param
+    window.location.replace(target);
+  })();
+  </script>
+</head>
+<body>
+  <noscript>
+    <p>This page auto-redirects to <code>index.html</code> with a cache buster.
+    JavaScript is disabled. Click here instead:
+    <a href="index.html?v=1760288870">Open app</a>.</p>
+  </noscript>
+</body>
+</html>
