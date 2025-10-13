@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0b0d10" />
+<link rel="manifest" href="manifest.webmanifest" />
 <title>Depot Notes Picker – Clean Copy</title>
 <style>
   :root { --bg:#0b0d10; --panel:#151a1f; --ink:#e9eef5; --muted:#98a5b3; --accent:#4aa3ff; }
@@ -125,6 +127,15 @@
   </section>
 </main>
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((err) => {
+      console.error('Service worker registration failed:', err);
+    });
+  });
+}
+</script>
 <script>
 /* -------------------- Config for GPT summary call --------------------
    Point this to your Cloudflare Worker / API that wraps OpenAI.

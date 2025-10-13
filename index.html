@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <title>Depot Notes – Stepper v3</title>
   <style>
     :root{
@@ -99,6 +101,15 @@
     </div>
   </section>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.error('Service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
   <script>
     // THEME
     const themeToggle = document.getElementById('themeToggle');
