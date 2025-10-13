@@ -1,8 +1,10 @@
 // sw.js — minimal, safe PWA cache
-const VERSION = 'v2025-10-05-1538';                 // bump this to force update
+const VERSION = 'v2025-12-28-0020';                 // bump this to force update
 const CACHE_NAME = `depot-notes-${VERSION}`;
 const ASSETS = [
+  './welcome.html',
   './index.html',
+  './index-v2.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -31,14 +33,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for navigations (so index.html updates immediately)
+  // Network-first for navigations so the latest HTML is served immediately
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).then((resp) => {
         const copy = resp.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         return resp;
-      }).catch(() => caches.match('./index.html'))
+      }).catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
+        return caches.match('./welcome.html');
+      })
     );
     return;
   }
