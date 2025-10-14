@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Depot Notes – Quick Survey</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #151a1f;
+      --ink: #e9eef5;
+      --muted: #9fb0c2;
+      --accent: #4aa3ff;
+      --border: #1f2630;
+      --banner: #0f3c80;
+      --bannerText: #e9eef5;
+      --copyBtn: #4aa3ff;
+      --copyInk: #081018;
+    }
+    html[data-theme="light"] {
+      --bg: #f6f9fc;
+      --panel: #ffffff;
+      --ink: #0b0d10;
+      --muted: #5a6b7d;
+      --accent: #246bff;
+      --border: #dde6f0;
+      --banner: #e8f1ff;
+      --bannerText: #113366;
+      --copyBtn: #246bff;
+      --copyInk: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.45 ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    h1 { margin: 0; font-size: 18px; }
+    .tag {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 8px;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .right { display: flex; align-items: center; gap: 8px; }
+    .btn {
+      background: var(--accent);
+      border: none;
+      color: var(--copyInk);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+    .btn.small { padding: 6px 10px; font-weight: 600; }
+    .switch { display: flex; align-items: center; gap: 6px; }
+    .switch input { accent-color: var(--accent); }
+    nav#steps {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 16px;
+    }
+    .step {
+      padding: 6px 10px;
+      border-radius: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .step.active {
+      color: var(--ink);
+      border-color: #2a3b50;
+      background: linear-gradient(0deg, rgba(74,163,255,0.12), rgba(74,163,255,0));
+    }
+    main#view { padding: 16px; flex: 1; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+    .list { display: grid; gap: 8px; }
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .opt input { width: auto; }
+    footer.page {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+    }
+    .info { color: var(--muted); font-size: 13px; }
+    .outputs { padding: 16px; border-top: 1px solid var(--border); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .copybox { display: flex; flex-direction: column; gap: 8px; }
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ink);
+      padding: 10px;
+      border-radius: 10px;
+      min-height: 110px;
+      resize: vertical;
+    }
+    textarea.tall { min-height: 120px; }
+    .hidden { display: none !important; }
+    @media (max-width: 640px) {
+      header { flex-direction: column; align-items: flex-start; }
+      .right { width: 100%; justify-content: space-between; }
+      nav#steps { margin: 12px; }
+    }
+  </style>
+  <noscript><div style="background:#ffb4b4;color:#300;padding:12px">This page needs JavaScript. Open in a browser and ensure JS is enabled.</div></noscript>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <h1>Depot Notes</h1>
+      <span class="tag">Quick Survey</span>
+      <span class="info">Rapid capture for boiler surveys</span>
+    </div>
+    <div class="right">
+      <div class="switch"><input type="checkbox" id="themeToggle"><label for="themeToggle">Light mode</label></div>
+      <button id="prevBtn" class="btn ghost">◀ Back</button>
+      <button id="nextBtn" class="btn">Next ▶</button>
+    </div>
+  </header>
+
+  <nav id="steps"></nav>
+  <main id="view"></main>
+
+  <footer class="page">
+    <div class="info">Selections auto-fill the copy boxes. Go to Summary to copy into Depot.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="jumpSummary" class="btn ghost">Skip to Summary</button>
+    </div>
+  </footer>
+
+  <section id="outputs" class="outputs hidden">
+    <h2>Depot Copy Boxes (exact names)</h2>
+    <div class="grid" id="copyBoxes"></div>
+  </section>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+          console.error('Service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+  <script>
+    const themeToggle = document.getElementById('themeToggle');
+    function applyTheme() {
+      const pref = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', pref);
+      themeToggle.checked = (pref === 'light');
+    }
+    themeToggle.addEventListener('change', () => {
+      const next = themeToggle.checked ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      applyTheme();
+    });
+    applyTheme();
+
+    const Steps = [
+      { id: 'currentBoiler', title: 'Current Boiler Type', options: [
+        'Regular', 'System', 'Combi', 'Storage combi', 'Warm air', 'Multi point'
+      ]},
+      { id: 'currentFlue', title: 'Current Flue', options: [
+        'Balanced', 'Fanned', 'Side', 'Chimney', 'Extended', 'Horizontal', 'Vertical / pitched / flat', 'Rear', 'None'
+      ]},
+      { id: 'currentCylinder', title: 'Current Cylinder', options: [
+        'Open vented', 'Unvented', 'Thermal store', 'Combi cylinder', 'Fortic', 'None'
+      ]},
+      { id: 'systemIssues', title: 'System Issues', options: [
+        'Micro bore', 'Under floor heating', '1 pipe', 'Passivated'
+      ]},
+      { id: 'newBoiler', title: 'New Boiler', options: [
+        'Regular', 'System', 'Combi'
+      ]},
+      { id: 'newFlue', title: 'New Flue', options: [
+        'Turret side', 'Turret rear', 'Direct rear', 'Extended', 'Vertical pitched / flat', 'Plume kit'
+      ]},
+      { id: 'newCylinder', title: 'New Cylinder', options: [
+        'Open vented', 'Open vented Mixergy', 'Unvented', 'Unvented Mixergy', 'Existing', 'N/A'
+      ]},
+      { id: 'safety', title: 'Safety & Site Considerations', options: [
+        'Ladders', 'Roof', 'Scaffolding', 'Pets', 'Clutter', 'Hygiene'
+      ]},
+      { id: 'summary', title: 'Summary' }
+    ];
+
+    const OUTPUT_ORDER = [
+      'Need',
+      'Working at heights',
+      'System characteristics',
+      'Assistance',
+      'Restrictions',
+      'Hazards',
+      'Delivery',
+      'Office',
+      'Boiler/controls',
+      'Flue',
+      'Pipework',
+      'Disruption',
+      'Customer action',
+      'Additional'
+    ];
+
+    const GROUPS = ['currentBoiler','currentFlue','currentCylinder','systemIssues','newBoiler','newFlue','newCylinder','safety'];
+
+    const State = {
+      stepIndex: 0,
+      selections: GROUPS.reduce((acc, id) => { acc[id] = []; return acc; }, {})
+    };
+
+    const stepNav = document.getElementById('steps');
+    const view = document.getElementById('view');
+    const outputsSection = document.getElementById('outputs');
+    const copyGrid = document.getElementById('copyBoxes');
+
+    copyGrid.innerHTML = OUTPUT_ORDER.map(label => {
+      const safeId = 'copy_' + label.replace(/[^a-z0-9]+/gi, '_');
+      return `<div class="copybox">`+
+        `<label for="${safeId}">${label}</label>`+
+        `<textarea id="${safeId}" class="tall" data-out="${label}" rows="8"></textarea>`+
+        `<button class="btn small" data-copy="${safeId}">Copy ${label}</button>`+
+      `</div>`;
+    }).join('');
+
+    const CODE_MAP = {
+      currentBoiler: {
+        'Regular': [
+          { target: 'System characteristics', codes: ['SE01'] }
+        ],
+        'System': [
+          { target: 'System characteristics', codes: ['SC51'] }
+        ],
+        'Combi': [
+          { target: 'System characteristics', codes: ['SE08'] }
+        ],
+        'Storage combi': [
+          { target: 'Additional', codes: ['ARS08'] }
+        ],
+        'Warm air': [
+          { target: 'Additional', codes: ['ARS45'] }
+        ],
+        'Multi point': [
+          { target: 'Additional', codes: ['ARS10'] }
+        ]
+      },
+      currentFlue: {
+        'Balanced': [
+          { target: 'Flue', codes: ['FMG01'] }
+        ],
+        'Fanned': [
+          { target: 'Flue', codes: ['FMG02'] }
+        ],
+        'Side': [
+          { target: 'Flue', codes: ['FN12'] }
+        ],
+        'Chimney': [
+          { target: 'Flue', codes: ['FMG03'] }
+        ],
+        'Extended': [
+          { target: 'Flue', codes: ['FN10'] }
+        ],
+        'Horizontal': [
+          { target: 'Flue', codes: ['FN04'] }
+        ],
+        'Vertical / pitched / flat': [
+          { target: 'Flue', codes: ['FN05'] }
+        ],
+        'Rear': [
+          { target: 'Flue', codes: ['FN13'] }
+        ]
+      },
+      currentCylinder: {
+        'Open vented': [
+          { target: 'System characteristics', codes: ['SN04'] }
+        ],
+        'Unvented': [
+          { target: 'System characteristics', codes: ['SN05'] }
+        ],
+        'Thermal store': [
+          { target: 'Additional', codes: ['ARS15'] }
+        ],
+        'Combi cylinder': [
+          { target: 'Additional', codes: ['ARS09'] }
+        ],
+        'Fortic': [
+          { target: 'Additional', codes: ['ARS16'] }
+        ]
+      },
+      systemIssues: {
+        'Micro bore': [
+          { target: 'System characteristics', codes: ['SE09'] }
+        ],
+        'Under floor heating': [
+          { target: 'Pipework', codes: ['PF05'] }
+        ],
+        '1 pipe': [
+          { target: 'System characteristics', codes: ['SC55'] }
+        ],
+        'Passivated': [
+          { target: 'Additional', codes: ['PF53'] }
+        ]
+      },
+      newBoiler: {
+        'Regular': [
+          { target: 'Boiler/controls', codes: ['BT01'] }
+        ],
+        'System': [
+          { target: 'Boiler/controls', codes: ['BT02'] }
+        ],
+        'Combi': [
+          { target: 'Boiler/controls', codes: ['BT03'] }
+        ]
+      },
+      newFlue: {
+        'Turret side': [
+          { target: 'Flue', codes: ['FN02'] }
+        ],
+        'Turret rear': [
+          { target: 'Flue', codes: ['FN03'] }
+        ],
+        'Direct rear': [
+          { target: 'Flue', codes: ['FN13'] }
+        ],
+        'Extended': [
+          { target: 'Flue', codes: ['FN10'] }
+        ],
+        'Vertical pitched / flat': [
+          { target: 'Flue', codes: ['FN05'] }
+        ],
+        'Plume kit': [
+          { target: 'Flue', codes: ['FN09'] }
+        ]
+      },
+      newCylinder: {
+        'Open vented': [
+          { target: 'System characteristics', codes: ['SN04'] }
+        ],
+        'Open vented Mixergy': [
+          { target: 'System characteristics', codes: ['SN03'] },
+          { target: 'Additional', codes: ['ARS16'] }
+        ],
+        'Unvented': [
+          { target: 'System characteristics', codes: ['SN02'] }
+        ],
+        'Unvented Mixergy': [
+          { target: 'System characteristics', codes: ['SN03'] },
+          { target: 'Additional', codes: ['ARS16'] }
+        ],
+        'Existing': [
+          { target: 'Additional', codes: ['ARS33'] }
+        ]
+      },
+      safety: {
+        'Ladders': [
+          { target: 'Working at heights', codes: ['WAH01'] }
+        ],
+        'Roof': [
+          { target: 'Working at heights', codes: ['WAH03'] }
+        ],
+        'Scaffolding': [
+          { target: 'Working at heights', codes: ['WAH02A'] }
+        ],
+        'Pets': [
+          { target: 'Customer action', codes: ['CA03'] },
+          { target: 'Additional', codes: ['ARS38'] }
+        ],
+        'Clutter': [
+          { target: 'Customer action', codes: ['CA01'] }
+        ],
+        'Hygiene': [
+          { target: 'Disruption', codes: ['DI05'] },
+          { target: 'Additional', codes: ['ARS39'] }
+        ]
+      }
+    };
+
+    let optionsLookup = {};
+    let optionsReady = false;
+    let optionsError = false;
+
+    function parseOptionsLookup(raw) {
+      const map = {};
+      raw.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('[') || trimmed.startsWith('|')) return;
+        const parts = line.split('|');
+        const code = (parts.shift() || '').trim();
+        if (!code) return;
+        const rest = parts.map(part => part.trim()).filter(Boolean).join(' | ');
+        map[code] = rest ? `${code} | ${rest}` : code;
+      });
+      return map;
+    }
+
+    function ensureOptionsLoaded() {
+      fetch('Options.txt')
+        .then(resp => {
+          if (!resp.ok) throw new Error(`Options load failed: ${resp.status}`);
+          return resp.text();
+        })
+        .then(text => {
+          optionsLookup = parseOptionsLookup(text);
+          optionsReady = true;
+          optionsError = false;
+          updateOutputs();
+        })
+        .catch(err => {
+          console.error('Unable to load Options.txt', err);
+          optionsError = true;
+          updateOutputs();
+        });
+    }
+
+    ensureOptionsLoaded();
+
+    function enforceNoneRule(groupId, changedValue, checked) {
+      const arr = State.selections[groupId];
+      const noneValues = ['None', 'N/A'];
+      if (noneValues.includes(changedValue)) {
+        if (checked) {
+          State.selections[groupId] = [changedValue];
+          return true;
+        }
+        return false;
+      }
+      if (checked) {
+        let mutated = false;
+        const idx = arr.indexOf('None');
+        if (idx > -1) { arr.splice(idx, 1); mutated = true; }
+        const idxNA = arr.indexOf('N/A');
+        if (idxNA > -1) { arr.splice(idxNA, 1); mutated = true; }
+        return mutated;
+      }
+      return false;
+    }
+
+    function buildOutputs() {
+      const compiled = {};
+      OUTPUT_ORDER.forEach(label => { compiled[label] = []; });
+
+      if (!optionsReady) {
+        return compiled;
+      }
+
+      Object.entries(State.selections).forEach(([groupId, values]) => {
+        (values || []).forEach(value => {
+          const mappings = CODE_MAP[groupId]?.[value];
+          if (!mappings) return;
+          mappings.forEach(({ target, codes }) => {
+            if (!compiled[target]) {
+              compiled[target] = [];
+            }
+            (codes || []).forEach(code => {
+              const line = optionsLookup[code];
+              if (!line) {
+                console.warn('Missing Options.txt entry for code', code);
+                return;
+              }
+              if (!compiled[target].includes(line)) {
+                compiled[target].push(line);
+              }
+            });
+          });
+        });
+      });
+
+      return compiled;
+    }
+
+    function toLines(list) {
+      return (list || []).map(v => v + ';').join('\n');
+    }
+
+    function updateOutputs() {
+      const compiled = buildOutputs();
+      OUTPUT_ORDER.forEach(label => {
+        const textarea = document.querySelector(`textarea[data-out="${label}"]`);
+        if (textarea) textarea.value = toLines(compiled[label]);
+      });
+    }
+
+    function renderSteps() {
+      stepNav.innerHTML = Steps.map((step, index) => {
+        const active = index === State.stepIndex ? 'active' : '';
+        return `<span class="step ${active}" data-index="${index}">${index + 1}. ${step.title}</span>`;
+      }).join('');
+      stepNav.querySelectorAll('.step').forEach(el => {
+        el.addEventListener('click', () => {
+          State.stepIndex = Number(el.dataset.index);
+          render();
+        });
+      });
+    }
+
+    function render() {
+      renderSteps();
+      const step = Steps[State.stepIndex];
+      document.getElementById('prevBtn').disabled = State.stepIndex === 0;
+      document.getElementById('nextBtn').textContent = State.stepIndex === Steps.length - 1 ? 'Finish' : 'Next ▶';
+
+      if (step.id === 'summary') {
+        const summaryMessage = optionsError
+          ? `<p class="info" style="color:#ffb4b4">Options list unavailable. Ensure <code>Options.txt</code> is accessible, then reload for copy text.</p>`
+          : `<p class="info">Review your selections and use the copy buttons below to paste into Depot.</p>`;
+        view.innerHTML = `<div class="card"><h2>Summary</h2>${summaryMessage}</div>`;
+        outputsSection.classList.remove('hidden');
+        updateOutputs();
+      } else {
+        outputsSection.classList.add('hidden');
+        view.innerHTML = `<div class="card"><h2>${step.title}</h2>${renderOptions(step)}</div>`;
+        bindCheckboxes(step.id);
+      }
+    }
+
+    function renderOptions(step) {
+      return `<div class="list">${step.options.map(option => {
+        const checked = State.selections[step.id].includes(option) ? 'checked' : '';
+        const inputId = `${step.id}_${option.replace(/[^a-z0-9]+/gi, '').toLowerCase()}`;
+        return `<label class="opt" for="${inputId}"><input id="${inputId}" type="checkbox" value="${option}" data-group="${step.id}" ${checked}> ${option}</label>`;
+      }).join('')}</div>`;
+    }
+
+    function bindCheckboxes(groupId) {
+      view.querySelectorAll('input[type="checkbox"][data-group="' + groupId + '"]').forEach(input => {
+        input.addEventListener('change', (event) => {
+          const value = event.target.value;
+          const checked = event.target.checked;
+          const needsRefresh = enforceNoneRule(groupId, value, checked);
+          if (!Array.isArray(State.selections[groupId])) {
+            State.selections[groupId] = [];
+          }
+          if (checked) {
+            const list = State.selections[groupId];
+            if (!list.includes(value)) list.push(value);
+          } else {
+            const list = State.selections[groupId];
+            const index = list.indexOf(value);
+            if (index > -1) list.splice(index, 1);
+          }
+          updateOutputs();
+          if (needsRefresh) {
+            render();
+          }
+        });
+      });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (State.stepIndex > 0) {
+        State.stepIndex--;
+        render();
+      }
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      if (State.stepIndex < Steps.length - 1) {
+        State.stepIndex++;
+        render();
+      } else {
+        outputsSection.classList.remove('hidden');
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+    });
+
+    document.getElementById('jumpSummary').addEventListener('click', () => {
+      State.stepIndex = Steps.length - 1;
+      render();
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    });
+
+    document.querySelectorAll('button[data-copy]').forEach(button => {
+      button.addEventListener('click', () => {
+        const id = button.getAttribute('data-copy');
+        const textarea = document.getElementById(id);
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        try {
+          document.execCommand('copy');
+          const original = button.textContent;
+          button.textContent = 'Copied ✓';
+          setTimeout(() => button.textContent = original, 900);
+        } catch (err) {
+          console.error('Copy failed', err);
+        }
+      });
+    });
+
+    updateOutputs();
+    render();
+  </script>
+</body>
+</html>
