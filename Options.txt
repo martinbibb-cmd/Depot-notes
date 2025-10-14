@@ -210,6 +210,11 @@ UC04 | User control | Programmer – mechanical
 UC05 | User control | Room stat – wireless
 UC06 | User control | Programmer – 2 channel
 UC07 | User control | Programmer - single channel 
+CYL | hot water cylinder | replace open vented hot water cylinder 
+CYL2 | hot water cylinder | replace open vented with unvented
+CYL3 | hot water cylinder | replace thermal store with unvented
+CYL4 | hot water cylinder | replace storage combi with unvented
+CYL5 | hot water cylinder | remove existing hot water cylinder 
 
 SC00 | system_config
 SC01 | System controls | S-plan – additional zone
