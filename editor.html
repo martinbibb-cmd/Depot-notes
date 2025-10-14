@@ -35,12 +35,15 @@
     .sp { flex:1; }
     .danger { border-color: rgba(239,68,68,.4) !important; }
     a { color:#9ecbff; text-decoration:none; }
+    a.home-link { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:rgba(17,24,39,.6); color:var(--ink); font-weight:600; }
+    a.home-link:hover { background:#1f2937; }
   </style>
 </head>
 <body>
   <header>
     <div class="bar">
       <h1>JSON Editor</h1>
+      <a class="home-link" href="welcome.html">🏠 Back to welcome</a>
       <button id="loadBtn">Load from App_config.json</button>
       <input id="fileIn" type="file" accept="application/json" />
       <button id="prettyBtn">Pretty-print</button>

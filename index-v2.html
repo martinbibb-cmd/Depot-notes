@@ -37,6 +37,8 @@
   .footrow{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .muted{color:var(--muted)}
   a.link{color:#b8d7ff;text-decoration:none}
+  a.home-link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;border:1px solid #2d3644;background:transparent;color:var(--ink);font-weight:600;text-decoration:none}
+  a.home-link:hover{background:#152233;border-color:#355074}
   /* Let child flex items actually shrink inside grid/flex parents */
   main, .card, .pad { min-height: 0; }
 
@@ -59,6 +61,7 @@
 <header>
   <h1>Depot Notes Picker — Clean Copy</h1>
   <span class="pill">Spaces/newlines are copied as plain text (no %20)</span>
+  <a class="home-link" href="welcome.html">🏠 Back to welcome</a>
 </header>
 
 <main>
