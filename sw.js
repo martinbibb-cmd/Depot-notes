@@ -1,10 +1,13 @@
 // sw.js — minimal, safe PWA cache
-const VERSION = 'v2025-12-28-0020';                 // bump this to force update
+const VERSION = 'v2025-12-28-0021';                 // bump this to force update
 const CACHE_NAME = `depot-notes-${VERSION}`;
 const ASSETS = [
   './welcome.html',
   './index.html',
   './index-v2.html',
+  './thing.html',
+  './quick-survey.html',
+  './Options.txt',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
