@@ -130,22 +130,62 @@
     </div>
   </header>
   <main>
-    <div class="grid">
-      <article class="card">
-        <h2>Version 3 – Stepper</h2>
-        <p>Guided step-by-step flow with reorganized sections and quick copy buttons.</p>
-        <a href="index.html">Open v3</a>
-      </article>
-      <article class="card">
-        <h2>Version 2 – Classic</h2>
-        <p>Familiar layout with side-by-side options and original copy output.</p>
-        <a href="index-v2.html">Open v2</a>
-      </article>
-    </div>
+    <div class="grid" id="appGrid" aria-live="polite"></div>
+    <noscript>
+      <div class="grid">
+        <article class="card">
+          <h2>Version 3 – Stepper</h2>
+          <p>Guided step-by-step flow with reorganized sections and quick copy buttons.</p>
+          <a href="index.html">Open v3</a>
+        </article>
+        <article class="card">
+          <h2>Version 2 – Classic</h2>
+          <p>Familiar layout with side-by-side options and original copy output.</p>
+          <a href="index-v2.html">Open v2</a>
+        </article>
+        <article class="card">
+          <h2>Quick Survey</h2>
+          <p>Lightweight checklist that auto-fills Depot copy boxes for rapid boiler surveys.</p>
+          <a href="quick-survey.html">Open Quick Survey</a>
+        </article>
+      </div>
+    </noscript>
   </main>
   <footer>Depot Notes works offline once installed. Updates arrive automatically.</footer>
 
   <script>
+    const apps = [
+      {
+        title: 'Version 3 – Stepper',
+        description: 'Guided step-by-step flow with reorganized sections and quick copy buttons.',
+        href: 'index.html',
+        cta: 'Open v3'
+      },
+      {
+        title: 'Version 2 – Classic',
+        description: 'Familiar layout with side-by-side options and original copy output.',
+        href: 'index-v2.html',
+        cta: 'Open v2'
+      },
+      {
+        title: 'Quick Survey',
+        description: 'Lightweight checklist that auto-fills Depot copy boxes for rapid boiler surveys.',
+        href: 'quick-survey.html',
+        cta: 'Open Quick Survey'
+      }
+    ];
+
+    const grid = document.getElementById('appGrid');
+    if (grid) {
+      grid.innerHTML = apps.map((app) => `
+        <article class="card">
+          <h2>${app.title}</h2>
+          <p>${app.description}</p>
+          <a href="${app.href}">${app.cta}</a>
+        </article>
+      `).join('');
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch((err) => {
