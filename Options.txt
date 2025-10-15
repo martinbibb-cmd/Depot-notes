@@ -290,6 +290,7 @@ CD01 | Connection | Internal waste – P-trap present
 CD02 | Connection | Internal waste – new trap required
 CD03 | External run | Insulate (42 mm MI)
 CD04 | External run | Replace with 42 mm (MI compliant)
+CD04a | external run | install new specialist builder installed soak away through hard surface.
 CD05 | Pump | Condensate pump required
 CD06 | Soakaway | 42 mm pipe
 CD07 | Soakaway | Gravel trap
