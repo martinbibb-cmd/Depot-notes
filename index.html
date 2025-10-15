@@ -127,10 +127,11 @@
     applyTheme();
 
     // STATUS
-    const jsTag = document.getElementById('jsStatus'); if(jsTag) jsTag.textContent='JS OK';
+    const jsTag = document.getElementById('jsStatus');
+    if (jsTag) jsTag.textContent = 'Loading options…';
 
-    // Options (embedded from your Options.txt — codes omitted when outputting)
-    const RAW_OPTIONS = `
+    // Options fallback (used if Options.txt fails to load)
+    const OPTIONS_FALLBACK = `
 [Needs]
 NE01 | Need | Better water pressure
 NE02 | Need | Faster hot water delivery
@@ -425,7 +426,24 @@ CA07 | Customer | Supply specified items
       }
       return data;
     }
-    const OPTIONS = parseOptions(RAW_OPTIONS);
+    let OPTIONS = {};
+    let OPTIONS_READY = false;
+
+    async function loadOptions(){
+      try {
+        const res = await fetch('./Options.txt', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Options.txt not found');
+        const txt = await res.text();
+        OPTIONS = parseOptions(txt);
+        if (jsTag) jsTag.textContent = 'Options ✓';
+      } catch (err) {
+        console.warn('Failed loading Options.txt — using embedded fallback', err);
+        OPTIONS = parseOptions(OPTIONS_FALLBACK);
+        if (jsTag) jsTag.textContent = 'Fallback ✓';
+      }
+      OPTIONS_READY = true;
+      render();
+    }
 
     // State
     const State = { stepIndex:0, selections:{
@@ -459,9 +477,27 @@ CA07 | Customer | Supply specified items
 
     function render(){
       renderSteps();
-      document.getElementById('prevBtn').disabled = State.stepIndex===0;
-      document.getElementById('nextBtn').textContent = State.stepIndex===Steps.length-1? 'Generate ▶':'Next ▶';
-      const v=document.getElementById('view'); const O=OPTIONS; const S=State.selections;
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const v=document.getElementById('view');
+
+      if (!OPTIONS_READY) {
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) {
+          nextBtn.disabled = true;
+          nextBtn.textContent = 'Next ▶';
+        }
+        v.innerHTML = `<div class="card"><h2>Loading options…</h2><p>Fetching Options.txt</p></div>`;
+        return;
+      }
+
+      if (prevBtn) prevBtn.disabled = State.stepIndex===0;
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.textContent = State.stepIndex===Steps.length-1? 'Generate ▶':'Next ▶';
+      }
+
+      const O=OPTIONS; const S=State.selections;
 
       switch(Steps[State.stepIndex]){
         case 'Safety':{
@@ -566,6 +602,7 @@ CA07 | Customer | Supply specified items
     function lines(arr){ return (arr||[]).map(x=>x+';').join('\n'); }
 
     function generateOutputs(){
+      if (!OPTIONS_READY) return;
       const S=State.selections; const out={};
       // Need
       out['Need']=lines(S.needs||[]);
@@ -652,12 +689,13 @@ CA07 | Customer | Supply specified items
     }
 
     // Nav controls
-    document.getElementById('prevBtn').addEventListener('click',()=>{ if(State.stepIndex>0){ State.stepIndex--; render(); }});
-    document.getElementById('nextBtn').addEventListener('click',()=>{ if(State.stepIndex<Steps.length-1){ State.stepIndex++; render(); } else { generateOutputs(); }});
-    window.addEventListener('keydown',(e)=>{ if(e.key==='ArrowLeft'&&State.stepIndex>0){State.stepIndex--; render();} if(e.key==='ArrowRight'&&State.stepIndex<Steps.length-1){State.stepIndex++; render();} });
+    document.getElementById('prevBtn').addEventListener('click',()=>{ if(!OPTIONS_READY) return; if(State.stepIndex>0){ State.stepIndex--; render(); }});
+    document.getElementById('nextBtn').addEventListener('click',()=>{ if(!OPTIONS_READY) return; if(State.stepIndex<Steps.length-1){ State.stepIndex++; render(); } else { generateOutputs(); }});
+    window.addEventListener('keydown',(e)=>{ if(!OPTIONS_READY) return; if(e.key==='ArrowLeft'&&State.stepIndex>0){State.stepIndex--; render();} if(e.key==='ArrowRight'&&State.stepIndex<Steps.length-1){State.stepIndex++; render();} });
 
     // First render
     render();
+    loadOptions();
   </script>
 </body>
 </html>
