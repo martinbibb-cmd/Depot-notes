@@ -151,7 +151,7 @@ const CONFIG = {
 };
 
 /* -------------------- Driven by Options.txt -------------------- */
-let OPTIONS = {};        // { sectionTitle: [{code, text, line}] }
+let OPTIONS = {};        // { sectionTitle: [{code, label, note, line}] }
 let SECTION_ORDER = [];  // preserves order seen in Options.txt
 
 /* -------------------- UI refs -------------------- */
@@ -227,8 +227,14 @@ function parseOptions(text) {
     } else {
       body = line;
     }
-    const textOut = (code ? `${code} — ${body}` : body).replace(/\s+/g, " ").trim();
-    OPTIONS[current].push({ code, text: textOut, line });
+    const cleanBody = body.replace(/\s+/g, " ").trim();
+    const labelText = (code ? `${code} — ${cleanBody}` : cleanBody);
+    OPTIONS[current].push({
+      code,
+      label: labelText,
+      note: cleanBody,
+      line
+    });
   });
 }
 
@@ -255,11 +261,18 @@ function renderItemList() {
   const sect = els.srcSection.value || SECTION_ORDER[0];
   const query = (els.filter.value || '').toLowerCase();
   const list = OPTIONS[sect] || [];
-  const filtered = list.filter(x => x.text.toLowerCase().includes(query));
+  const filtered = list.filter(x => {
+    if (!query) return true;
+    const haystack = [x.label, x.code, x.note]
+      .filter(Boolean)
+      .join(" \u2022 ")
+      .toLowerCase();
+    return haystack.includes(query);
+  });
   els.items.innerHTML = filtered.map((x, i) => `
     <li>
-      <input type="checkbox" id="chk_${i}" data-text="${htmlAttr(x.text)}" />
-      <label for="chk_${i}">${escapeHtml(x.text)}</label>
+      <input type="checkbox" id="chk_${i}" data-text="${htmlAttr(x.note)}" data-code="${htmlAttr(x.code || '')}" />
+      <label for="chk_${i}">${escapeHtml(x.label)}</label>
     </li>
   `).join("");
 }

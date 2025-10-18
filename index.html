@@ -599,7 +599,20 @@ CA07 | Customer | Supply specified items
       });
     }
 
-    function lines(arr){ return (arr||[]).map(x=>x+';').join('\n'); }
+    function stripCodePrefix(str){
+      const text = String(str || '').trim();
+      if (!text) return '';
+      const cleaned = text.replace(/^[A-Z]{2,}\d{1,}(?:\s*[-–—:|]\s*|\s+)/i, '').trim();
+      return cleaned || text;
+    }
+
+    function lines(arr){
+      return (arr||[])
+        .map(stripCodePrefix)
+        .filter(Boolean)
+        .map(x=>x+';')
+        .join('\n');
+    }
 
     function generateOutputs(){
       if (!OPTIONS_READY) return;
