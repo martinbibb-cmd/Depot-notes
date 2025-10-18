@@ -52,6 +52,11 @@
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .grid .full{grid-column:1/-1}
     .copybox{display:flex;flex-direction:column;gap:8px}
+    .copybox-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .copybox-head label{font-weight:600;color:var(--ink)}
+    .copybox-head.natural label{color:var(--muted)}
+    .copybox-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .copybox textarea[readonly]{background:var(--panel);color:var(--ink);border-style:dashed}
 
     .credit{color:var(--muted);font-size:12px;margin-left:auto}
   </style>
@@ -90,14 +95,24 @@
     <div class="grid" id="copyBoxes"></div>
     <div class="grid" style="margin-top:12px">
       <div class="copybox">
-        <label>Customer Summary</label>
+        <div class="copybox-head">
+          <label for="customerSummary">Customer Summary</label>
+          <div class="copybox-actions">
+            <button class="btn small ghost" data-speak="customerSummary">🔊 Speak</button>
+            <button class="btn small" data-copy="customerSummary">Copy Customer Summary</button>
+          </div>
+        </div>
         <textarea id="customerSummary" class="tall" rows="8"></textarea>
-        <button class="btn small" data-copy="customerSummary">Copy Customer Summary</button>
       </div>
       <div class="copybox">
-        <label>Engineer Summary</label>
+        <div class="copybox-head">
+          <label for="engineerSummary">Engineer Summary</label>
+          <div class="copybox-actions">
+            <button class="btn small ghost" data-speak="engineerSummary">🔊 Speak</button>
+            <button class="btn small" data-copy="engineerSummary">Copy Engineer Summary</button>
+          </div>
+        </div>
         <textarea id="engineerSummary" class="tall" rows="8"></textarea>
-        <button class="btn small" data-copy="engineerSummary">Copy Engineer Summary</button>
       </div>
     </div>
   </section>
@@ -649,14 +664,48 @@ CA07 | Customer | Supply specified items
       // Render copy boxes in exact order
       const ORDER=['Need','Working at heights','System characteristics','Assistance','Restrictions','Hazards','Delivery','Office','Boiler/controls','Flue','Pipework','Disruption','Customer action','Additional'];
       const grid=document.getElementById('copyBoxes');
-      grid.innerHTML = ORDER.map(key=>`<div class=copybox><label>${key}</label><textarea class=tall id="box_${key.replace(/[^a-z0-9]+/gi,'_')}" rows=8>${out[key]||''}</textarea><button class="btn small" data-copy="box_${key.replace(/[^a-z0-9]+/gi,'_')}">Copy ${key}</button></div>`).join('');
+      const naturalOut={};
+      ORDER.forEach(key=>{ naturalOut[key]=toNaturalLanguage(out[key]||''); });
+      grid.innerHTML = ORDER.map(key=>{
+        const slug = key.replace(/[^a-z0-9]+/gi,'_');
+        const baseId = `box_${slug}`;
+        const naturalId = `${baseId}_natural`;
+        return `<div class="copybox">
+          <div class="copybox-head">
+            <label for="${baseId}">${key}</label>
+            <div class="copybox-actions">
+              <button class="btn small ghost" data-speak="${baseId}">🔊 Speak</button>
+              <button class="btn small" data-copy="${baseId}">Copy ${key}</button>
+            </div>
+          </div>
+          <textarea class="tall" id="${baseId}" rows="8">${out[key]||''}</textarea>
+          <div class="copybox-head natural">
+            <label for="${naturalId}">${key} — natural language</label>
+            <div class="copybox-actions">
+              <button class="btn small ghost" data-speak="${naturalId}">🔊 Speak</button>
+              <button class="btn small ghost" data-copy="${naturalId}">Copy natural</button>
+            </div>
+          </div>
+          <textarea class="tall" id="${naturalId}" rows="6" readonly>${naturalOut[key]||''}</textarea>
+        </div>`;
+      }).join('');
+      ORDER.forEach(key => {
+        const slug = key.replace(/[^a-z0-9]+/gi,'_');
+        const baseId = `box_${slug}`;
+        const naturalId = `${baseId}_natural`;
+        const raw = document.getElementById(baseId);
+        const naturalBox = document.getElementById(naturalId);
+        if (raw && naturalBox) {
+          raw.addEventListener('input', () => {
+            naturalBox.value = toNaturalLanguage(raw.value);
+          });
+        }
+      });
       document.getElementById('outputs').classList.remove('hidden');
       window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
 
       // Wire copy buttons
-      document.querySelectorAll('button[data-copy]').forEach(btn=>{
-        btn.addEventListener('click',()=>{ const id=btn.getAttribute('data-copy'); const ta=document.getElementById(id); ta.select(); try{ document.execCommand('copy'); btn.textContent='Copied ✓'; setTimeout(()=>btn.textContent=btn.textContent.replace('Copied ✓','Copy'),900);}catch(e){} });
-      });
+      setupCopyAndSpeakHandlers();
 
       // Generate summaries
       document.getElementById('genCustomer').onclick = ()=>{
@@ -701,6 +750,87 @@ CA07 | Customer | Supply specified items
       return parts.join('\n');
     }
 
+    function toNaturalLanguage(text){
+      return normalizeNewlines(String(text || ''))
+        .split('\n')
+        .map(line => line.replace(/^\s*(?:✅|↘️)?\s*/, '').replace(/\s*;\s*$/, '').trim())
+        .filter(Boolean)
+        .map(sentence => {
+          let clean = sentence.replace(/\s+/g,' ').trim();
+          if (!clean) return '';
+          clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+          if (!/[.!?]$/.test(clean)) clean += '.';
+          return clean;
+        })
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    function setupCopyAndSpeakHandlers(){
+      document.querySelectorAll('button[data-copy]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute('data-copy');
+          copyFromTextarea(id, btn);
+        };
+      });
+      document.querySelectorAll('button[data-speak]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute('data-speak');
+          speakTextArea(id);
+        };
+      });
+    }
+
+    function copyFromTextarea(id, btn){
+      const ta = document.getElementById(id);
+      if (!ta) return;
+      const text = ta.value;
+      const attemptWrite = navigator.clipboard && navigator.clipboard.writeText
+        ? navigator.clipboard.writeText(text)
+        : Promise.reject(new Error('Clipboard API unavailable'));
+      attemptWrite
+        .catch(() => {
+          const wasReadOnly = ta.readOnly;
+          if (wasReadOnly) ta.readOnly = false;
+          ta.focus();
+          ta.select();
+          try { document.execCommand('copy'); }
+          catch (err) { console.warn('Copy fallback failed', err); }
+          if (wasReadOnly) ta.readOnly = true;
+        })
+        .finally(() => {
+          showCopied(btn);
+        });
+    }
+
+    function showCopied(btn){
+      if (!btn) return;
+      const original = btn.dataset.originalLabel || btn.textContent;
+      btn.dataset.originalLabel = original;
+      btn.textContent = 'Copied ✓';
+      setTimeout(() => { btn.textContent = btn.dataset.originalLabel || original; }, 900);
+    }
+
+    function speakTextArea(id){
+      const ta = document.getElementById(id);
+      if (!ta) return;
+      const isNatural = ta.hasAttribute('readonly');
+      const base = isNatural ? ta.value : toNaturalLanguage(ta.value);
+      speakText(base || ta.placeholder || '');
+    }
+
+    function speakText(text){
+      const content = String(text || '').trim();
+      if (!content) return;
+      if (!('speechSynthesis' in window)) {
+        alert('Text to speech is not supported in this browser.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(content);
+      window.speechSynthesis.speak(utterance);
+    }
+
     // Nav controls
     document.getElementById('prevBtn').addEventListener('click',()=>{ if(!OPTIONS_READY) return; if(State.stepIndex>0){ State.stepIndex--; render(); }});
     document.getElementById('nextBtn').addEventListener('click',()=>{ if(!OPTIONS_READY) return; if(State.stepIndex<Steps.length-1){ State.stepIndex++; render(); } else { generateOutputs(); }});
@@ -709,6 +839,7 @@ CA07 | Customer | Supply specified items
     // First render
     render();
     loadOptions();
+    setupCopyAndSpeakHandlers();
   </script>
 </body>
 </html>

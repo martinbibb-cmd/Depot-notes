@@ -27,9 +27,14 @@
   ul.checks li{padding:8px 10px;border-bottom:1px solid #1f2630;display:flex;gap:8px}
   .split{display:grid;grid-template-columns: 1fr;gap:10px}
   .outbox{display:flex;flex-direction:column;gap:8px;height:100%;overflow:auto}
-  .out{display:flex;flex-direction:column;gap:6px;border:1px solid #243041;border-radius:12px;padding:10px;background:#0e141a}
+  .out{display:flex;flex-direction:column;gap:10px;border:1px solid #243041;border-radius:12px;padding:10px;background:#0e141a}
   .out header{display:flex;justify-content:space-between;align-items:center;background:transparent;border:0;padding:0}
   .out textarea{width:100%;min-height:120px;resize:vertical;background:#0a0f14;border:1px solid #1d2834;border-radius:8px;padding:8px;color:var(--ink);white-space:pre-wrap}
+  .out .alt{display:flex;flex-direction:column;gap:6px}
+  .out .alt-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .out .alt-head strong{color:var(--ink);font-size:13px}
+  .out .alt textarea{background:#0b1016;color:var(--ink)}
+  .out .actions{display:flex;gap:6px;flex-wrap:wrap}
   .grid2{display:grid;grid-template-columns: 1fr 1fr;gap:10px}
   .pill{padding:4px 8px;border:1px solid #2d3a49;border-radius:999px;background:#0c1117;color:#var(--muted);font-size:12px}
   .sticky{position:sticky;top:0;background:var(--panel);z-index:1}
@@ -122,6 +127,7 @@
         <div class="row" style="gap:8px">
           <button class="accent" id="genSummary">✨ Generate summary with GPT</button>
           <button id="copySummary">Copy (plain text)</button>
+          <button id="speakSummary">🔊 Speak</button>
         </div>
         <small class="muted" id="summaryStatus">Ready</small>
       </div>
@@ -171,6 +177,7 @@ const els = {
   // summary
   genSummary: document.getElementById('genSummary'),
   copySummary: document.getElementById('copySummary'),
+  speakSummary: document.getElementById('speakSummary'),
   summaryBox: document.getElementById('summaryBox'),
   summaryStatus: document.getElementById('summaryStatus'),
 };
@@ -279,6 +286,44 @@ function renderItemList() {
 
 function renderOutputs() {
   els.outputs.innerHTML = SECTION_ORDER.map(name => outTemplate(name)).join("");
+  SECTION_ORDER.forEach(name => {
+    const id = idify(name);
+    const raw = document.getElementById('out_' + id);
+    if (raw) {
+      raw.addEventListener('input', () => updateNatural(id));
+      updateNatural(id);
+    }
+  });
+}
+
+function setOutValue(id, text) {
+  const raw = document.getElementById('out_' + id);
+  if (!raw) return;
+  raw.value = text;
+  updateNatural(id);
+}
+
+function updateNatural(id) {
+  const raw = document.getElementById('out_' + id);
+  const natural = document.getElementById('out_' + id + '_natural');
+  if (!raw || !natural) return;
+  natural.value = toNaturalLanguage(raw.value);
+}
+
+function toNaturalLanguage(text) {
+  return normalizeNewlines(String(text || ''))
+    .split('\n')
+    .map(line => stripIconAndSemicolon(line).trim())
+    .filter(Boolean)
+    .map(sentence => {
+      let clean = sentence.replace(/\s+/g, ' ').trim();
+      if (!clean) return '';
+      clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+      if (!/[.!?]$/.test(clean)) clean += '.';
+      return clean;
+    })
+    .filter(Boolean)
+    .join(' ');
 }
 
 function outTemplate(name){
@@ -287,12 +332,23 @@ function outTemplate(name){
   <div class="out" data-section="${id}">
     <header>
       <strong>${escapeHtml(name)}</strong>
-      <span class="row">
+      <span class="actions">
+        <button onclick="speakOut('${id}', false)">🔊 Speak</button>
         <button onclick="copyOut('${id}')">Copy (plain text)</button>
         <button onclick="clearOut('${id}')">Clear</button>
       </span>
     </header>
     <textarea id="out_${id}" placeholder="Items you add to ‘${escapeHtml(name)}’ will appear here…"></textarea>
+    <div class="alt">
+      <div class="alt-head">
+        <strong>Natural language</strong>
+        <span class="actions">
+          <button onclick="speakOut('${id}', true)">🔊 Speak</button>
+          <button onclick="copyOutNatural('${id}')">Copy natural</button>
+        </span>
+      </div>
+      <textarea id="out_${id}_natural" readonly placeholder="Natural language version appears here automatically."></textarea>
+    </div>
   </div>`;
 }
 
@@ -310,32 +366,35 @@ els.clearAll.addEventListener('click', () => {
 
 els.send.addEventListener('click', () => {
   const dest = els.destSection.value;
-  const out = document.getElementById('out_' + idify(dest));
+  const outId = idify(dest);
+  const out = document.getElementById('out_' + outId);
   if (!out) return;
   const selected = Array.from(els.items.querySelectorAll('input[type=checkbox]:checked'))
     .map(chk => chk.dataset.text);
   if (selected.length === 0) { alert('Select at least one item.'); return; }
   const lines = selected.map(t => formatLine(t));
   const existing = normalizeNewlines(out.value).trim();
-  out.value = [existing, ...lines].filter(Boolean).join('\n');
+  setOutValue(outId, [existing, ...lines].filter(Boolean).join('\n'));
   els.items.querySelectorAll('input[type=checkbox]').forEach(chk => chk.checked = false);
   out.focus();
 });
 
 els.addNote.addEventListener('click', async () => {
   const dest = els.destSection.value;
-  const out = document.getElementById('out_' + idify(dest));
+  const outId = idify(dest);
+  const out = document.getElementById('out_' + outId);
   const note = prompt("Manual note to add to “" + dest + "”:");
   if (!note) return;
   const line = formatLine(note);
   const existing = normalizeNewlines(out.value).trim();
-  out.value = [existing, line].filter(Boolean).join('\n');
+  setOutValue(outId, [existing, line].filter(Boolean).join('\n'));
   out.focus();
 });
 
 els.removeDupes.addEventListener('click', () => {
   const dest = els.destSection.value;
-  const out = document.getElementById('out_' + idify(dest));
+  const outId = idify(dest);
+  const out = document.getElementById('out_' + outId);
   const seen = new Set();
   const cleaned = normalizeNewlines(out.value)
     .split('\n').map(s => s.trim()).filter(Boolean)
@@ -344,7 +403,7 @@ els.removeDupes.addEventListener('click', () => {
       if (seen.has(key)) return false;
       seen.add(key); return true;
     }).join('\n');
-  out.value = cleaned;
+  setOutValue(outId, cleaned);
   out.focus();
 });
 
@@ -360,12 +419,54 @@ function copyOut(id){
   text = text.replace(/%20/g, ' ').replace(/%0A/gi, '\n').replace(/\r\n/g, '\n');
   navigator.clipboard.writeText(text)
     .then(() => flash(ta, 'Copied ✓'))
-    .catch(() => { ta.value = text; ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
+    .catch(() => { ta.value = text; updateNatural(id); ta.focus(); ta.select(); document.execCommand('copy'); flash(ta,'Copied ✓'); });
+}
+
+function copyOutNatural(id){
+  const ta = document.getElementById('out_' + id + '_natural');
+  if (!ta) return;
+  const text = ta.value.trim();
+  if (!text) { flash(ta, 'Nothing to copy'); return; }
+  navigator.clipboard.writeText(text)
+    .then(() => flash(ta, 'Copied ✓'))
+    .catch(() => {
+      const wasReadOnly = ta.readOnly;
+      ta.readOnly = false;
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      ta.readOnly = wasReadOnly;
+      flash(ta,'Copied ✓');
+    });
 }
 
 function clearOut(id){
   const ta = document.getElementById('out_' + id);
-  if (ta) ta.value = '';
+  if (ta) setOutValue(id, '');
+}
+
+function speakOut(id, natural=false){
+  const ta = document.getElementById('out_' + id + (natural ? '_natural' : ''));
+  if (!ta) return;
+  const base = natural ? ta.value : normalizeNewlines(ta.value)
+    .split('\n')
+    .map(line => stripIconAndSemicolon(line).trim())
+    .filter(Boolean)
+    .join('\n');
+  const text = natural ? base : toNaturalLanguage(base);
+  speakText(text);
+}
+
+function speakText(text){
+  const content = String(text || '').trim();
+  if (!content) return;
+  if (!('speechSynthesis' in window)) {
+    alert('Text to speech is not supported in this browser.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(content);
+  window.speechSynthesis.speak(utterance);
 }
 
 /* -------------------- GPT SUMMARY -------------------- */
@@ -477,6 +578,12 @@ function copySummary(){
 /* Wire up summary buttons */
 els.genSummary.addEventListener('click', generateSummary);
 els.copySummary.addEventListener('click', copySummary);
+if (els.speakSummary) {
+  els.speakSummary.addEventListener('click', () => {
+    const text = normalizeNewlines(els.summaryBox.value).split('\n').map(s => s.trim()).filter(Boolean).join(' ');
+    speakText(text || els.summaryBox.placeholder || '');
+  });
+}
 
 /* -------------------- Helpers -------------------- */
 function idify(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
