@@ -516,7 +516,8 @@ async function generateSummary(){
 
   const payload = {
     task: 'customer_summary',
-    style: 'plain_english, concise, friendly, no jargon, UK spelling',
+    style: 'plain_english, concise, friendly, no jargon, UK spelling, reply as short sentences, no bullet points',
+    instructions: 'Provide a clear explanation made up of 2-4 plain English sentences. Avoid bullet points, numbering, headings, colons, or lists. Keep the tone warm and reassuring.',
     max_words: CONFIG.MAX_WORDS,
     sections,
     mode: 'summary'
@@ -558,28 +559,52 @@ function localFallbackSummary(sections){
     'Overview of proposed work','Needs','Boiler and controls','Flue','Pipe',
     'System characteristics','Restrictions','Hazards','Delivery','Office','Notes'
   ];
-  const lines = [];
+  const prefixes = {
+    'Overview of proposed work': 'The proposed work covers',
+    'Needs': 'We noted that',
+    'Boiler and controls': 'For the boiler and controls,',
+    'Flue': 'Flue considerations include',
+    'Pipe': 'Pipework points include',
+    'System characteristics': 'System characteristics show',
+    'Restrictions': 'Key restrictions are',
+    'Hazards': 'Safety points include',
+    'Delivery': 'Delivery arrangements involve',
+    'Office': 'Office follow-up needs',
+    'Notes': 'Additional notes mention'
+  };
+  const sentences = [];
   const seen = new Set();
 
-  const pushLines = (label, text) => {
-    const bits = text.split('\n').map(s => s.replace(/^[-•✅↘️]\s*/, '').replace(/;$/, '').trim()).filter(Boolean);
-    if (!bits.length) return;
-    lines.push(`${label}:`);
-    bits.slice(0,6).forEach(b => {
-      const k = b.toLowerCase();
-      if (seen.has(k)) return;
-      seen.add(k);
-      lines.push(`- ${b}`);
-    });
-    lines.push('');
+  const toSentence = (label, bits) => {
+    const body = bits.filter(Boolean).slice(0, 3).map(b => b.replace(/;$/, '').trim());
+    if (!body.length) return '';
+    const prefix = prefixes[label] || `Regarding ${label.toLowerCase()},`;
+    const message = `${prefix} ${body.join(', ')}`.replace(/\s+/g, ' ').trim();
+    if (!message) return '';
+    const finalMessage = /[.!?]$/.test(message) ? message : `${message}.`;
+    return finalMessage;
+  };
+
+  const pushSentence = (label, text) => {
+    const bits = text.split('\n')
+      .map(s => s.replace(/^[-•✅↘️]\s*/, '').trim())
+      .filter(Boolean)
+      .filter(b => {
+        const key = b.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    const sentence = toSentence(label, bits);
+    if (sentence) sentences.push(sentence);
   };
 
   const keys = Object.keys(sections);
   order.concat(keys.filter(k => !order.includes(k))).forEach(k => {
-    if (sections[k]) pushLines(k, sections[k]);
+    if (sections[k]) pushSentence(k, sections[k]);
   });
 
-  return lines.join('\n').trim();
+  return sentences.slice(0, 5).join(' ');
 }
 
 /* Copy summary as plain text */
