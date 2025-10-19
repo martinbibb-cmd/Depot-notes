@@ -1,5 +1,15 @@
 <!doctype html>
-<html><body>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Depot Notes – Resetting</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:#0b0d10;color:#e9eef5;text-align:center;padding:24px}
+  h3{font-size:18px;font-weight:600;margin:0}
+</style>
+</head>
+<body>
 <h3>Resetting caches & service workers…</h3>
 <script>
 (async () => {
@@ -12,4 +22,5 @@
   location.href = './?reset=' + Date.now();
 })();
 </script>
-</body></html>
+</body>
+</html>
