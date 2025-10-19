@@ -63,17 +63,6 @@ SC57 | Water Softeners | Worcester allows softened water through primary HX
 SC58 | Water Softeners | Vaillant/Ideal – bypass or hard-fill only (no softened water through HX)
 SC59 | Location | Loft installs require boarded area (≈1.5 m radius), fixed ladder & lighting
 SC60 | Condensate | External condensate must be insulated/frost-protected
-SC61 | shopping around | 🔍 Things to Consider When Shopping Around;
-	•	Who actually installs the boiler?;
-Some online companies and brokers sell the job on to independent fitters. With British Gas, your installation, warranty, and after-care are all handled by one trusted provider.
-	•	What does the warranty really cover?;
-Check whether it’s parts only or full parts and labour. Ours includes a comprehensive warranty and direct support for the lifetime of your boiler, not just the warranty period.
-	•	Who do you call if something goes wrong?;
-A single point of contact avoids being passed between a broker, installer, and manufacturer.;
-	•	What’s included in the price?;
-Make sure system flushes, safety checks, smart controls, and certification are clearly listed. All are included in a British Gas fixed-price installation.
-	•	Will they still be around in ten years?;
-Choosing a long-established company with nationwide coverage means help and spare parts are always available when you need them.
 
 [Arse_cover_notes]
 ARS01 | System | Sealing an old system may expose hidden leaks
@@ -374,3 +363,10 @@ CA04 | Customer | Remove cupboard
 CA05 | Customer | Rebuild cupboard
 CA06 | Customer | Remove old flue & weather seal
 CA07 | Customer | Supply specified items
+ | shopping around | 🔍 Things to Consider When Shopping Around;
+	•	Who actually installs the boiler?;Some online companies and brokers sell the job on to independent fitters. With British Gas, your installation, warranty, and after-care are all handled by one trusted provider.
+	•	What does the warranty really cover?;Check whether it’s parts only or full parts and labour. Ours includes a comprehensive warranty and direct support for the lifetime of your boiler, not just the warranty period.
+	•	Who do you call if something goes wrong?;A single point of contact avoids being passed between a broker, installer, and manufacturer.;
+	•	What’s included in the price?; Make sure system flushes, safety checks, smart controls, and certification are clearly listed. All are included in a British Gas fixed-price installation.
+	•	Will they still be around in ten years?; Choosing a long-established company with nationwide coverage means help and spare parts are always available when you need them.
+
