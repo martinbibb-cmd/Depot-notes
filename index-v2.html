@@ -9,10 +9,10 @@
 <style>
   :root { --bg:#0b0d10; --panel:#151a1f; --ink:#e9eef5; --muted:#98a5b3; --accent:#4aa3ff; }
   html,body{height:100%}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;min-height:100vh;display:flex;flex-direction:column}
-  header{padding:14px clamp(12px,4vw,24px);border-bottom:1px solid #1f2630;background:#0e1318;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  header{padding:14px 16px;border-bottom:1px solid #1f2630;background:#0e1318;display:flex;gap:12px;align-items:center}
   h1{font-size:16px;margin:0 8px 0 0;font-weight:600}
-  main{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr) minmax(0,420px);gap:clamp(12px,3vw,20px);padding:clamp(12px,3vw,20px);flex:1;width:clamp(320px,96%,1200px);margin:0 auto 24px;grid-auto-rows:minmax(0,auto)}
+  main{display:grid;grid-template-columns: 320px 1fr 420px;gap:14px;padding:14px;height:calc(100% - 58px);grid-auto-rows:minmax(0,auto)}
   .card{background:var(--panel);border:1px solid #1f2630;border-radius:14px;display:flex;flex-direction:column;min-height:0}
   .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2630;font-size:14px;font-weight:600}
   .pad{padding:12px 14px}
@@ -46,23 +46,6 @@
   a.home-link:hover{background:#152233;border-color:#355074}
   /* Let child flex items actually shrink inside grid/flex parents */
   main, .card, .pad { min-height: 0; }
-
-  @media (max-width: 1280px){
-    main{grid-template-columns:minmax(0,340px) minmax(0,1fr);}
-  }
-
-  @media (max-width: 960px){
-    header{justify-content:flex-start;}
-    a.home-link{margin-left:0;}
-    main{grid-template-columns:1fr;width:clamp(320px,94%,840px);margin-bottom:32px;}
-    .card{min-height:auto;}
-    .outbox{height:auto;max-height:none;}
-  }
-
-  @media (max-width: 640px){
-    header{position:static;}
-    main{padding:clamp(12px,5vw,20px);}
-  }
 
   /* Make “split” columns stack and allow the list to take remaining height */
   .split { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
