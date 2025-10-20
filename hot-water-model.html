@@ -114,6 +114,10 @@
 
   <div class="card" id="focusCard">
     <h2>Focused view <span id="focusName" class="badge"></span></h2>
+    <div class="no-print" style="margin:8px 0 12px">
+      <label for="focusSelect">Choose a system to inspect</label>
+      <select id="focusSelect"></select>
+    </div>
     <div class="kpi">
       <div class="pill"><div class="muted">Energy</div><div><b id="kwhDay">—</b> kWh/day</div><small id="kwhYear">—</small></div>
       <div class="pill"><div class="muted">Running cost</div><div>£<b id="costDay">—</b> / day</div><small id="costYear">—</small></div>
@@ -282,6 +286,7 @@ const els = {
   uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
   eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
   echo:$('#echo'), compareBody:$('#compareBody'), copyBtn:$('#copy'),
+  focusSelect:$('#focusSelect'),
   recalcBtn:$('#recalc'), presetBudget:$('#presetBudget'),
   presetComfort:$('#presetComfort'), presetFuture:$('#presetFuture'), presetReset:$('#presetReset'),
   errorbar:$('#errorbar')
@@ -304,12 +309,24 @@ function getState(){
   };
 }
 
+let currentScored = [];
+
+function updateFocusOptions(list){
+  if(!els.focusSelect) return;
+  const prev = els.focusSelect.value;
+  els.focusSelect.innerHTML = list.map(r=>`<option value="${r.sysKey}">${r.sysKey}</option>`).join('');
+  const target = list.find(r=>r.sysKey===prev) ? prev : (list[0]?.sysKey || '');
+  if(target) els.focusSelect.value = target;
+}
+
 function runAll(){
   try{
     els.errorbar.style.display='none';
     const st = getState();
     const results = Object.keys(PRE.systems).map(sysKey => calcOne({sysKey, ...st}));
     const scored = scoreAll(results, st.weights).sort((a,b)=>b.utilities.score - a.utilities.score);
+    currentScored = scored;
+    updateFocusOptions(scored);
 
     // Fill table
     els.compareBody.innerHTML = scored.map(r=>`
@@ -329,8 +346,10 @@ function runAll(){
       tr.onclick = ()=> focus(scored.find(x=>x.sysKey===tr.dataset.sys));
     }
 
-    // Focus top result
-    focus(scored[0]);
+    // Focus top result or currently selected option
+    const targetKey = els.focusSelect?.value;
+    const focusTarget = scored.find(r=>r.sysKey===targetKey) || scored[0];
+    focus(focusTarget);
     return {scored, st};
   }catch(e){
     console.error(e);
@@ -341,6 +360,9 @@ function runAll(){
 function focus(r){
   if(!r) return;
   els.focusName.textContent = r.sysKey;
+  if(els.focusSelect && els.focusSelect.value !== r.sysKey){
+    els.focusSelect.value = r.sysKey;
+  }
   els.kwhDay.textContent    = r.kWh;
   els.kwhYear.textContent   = "≈ " + r.kWh_year + " kWh / yr";
   els.costDay.textContent   = r.cost.toFixed(2);
@@ -360,6 +382,14 @@ function focus(r){
   els.echo.textContent      = r.usageKey + " • " + r.mainsKey + " • " + r.layoutKey;
 
   els.copyBtn.onclick = ()=> navigator.clipboard.writeText(JSON.stringify(r, null, 2));
+}
+
+if(els.focusSelect){
+  els.focusSelect.addEventListener('change', ()=>{
+    const key = els.focusSelect.value;
+    const target = currentScored.find(r=>r.sysKey===key);
+    focus(target);
+  });
 }
 
 // Presets
