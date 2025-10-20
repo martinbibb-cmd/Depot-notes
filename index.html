@@ -841,5 +841,151 @@ CA07 | Customer | Supply specified items
     loadOptions();
     setupCopyAndSpeakHandlers();
   </script>
+  <!-- 🔥 HOT WATER MODEL ADD-ON (FAST-SURVEY / DEPOT / QUOTE TOOL) -->
+  <!-- Paste anywhere inside <body>. Creates window.FastSurveyHotWater for global use. -->
+  <div id="hw-demo"></div>
+  <script type="module">
+  /* ============================================================
+     HOT WATER MODEL SNAP-TO — physics, cost & customer weighting
+     v1.0 — works in Fast-Survey / Depot / Quote Tool
+     ============================================================ */
+  const CP_KWH_PER_LK = 0.001163; // specific heat of water in kWh/L·K
+
+  const HW_PRESETS = {
+    usage: {
+      "Low (1–2 ppl)": { Vd:80, draws:12 },
+      "Med (3–4 ppl)": { Vd:130, draws:18 },
+      "High (5–6 ppl)":{ Vd:180, draws:24 },
+    },
+    mains: {
+      "Winter":8, "Spring/Autumn":12, "Summer":16
+    },
+    layout: {
+      "Central":0.35, "Typical":0.7, "Remote":1.2 // L waiting water per draw
+    },
+    system: {
+      "Stored Gold (Worcester+Mixergy)":{
+        type:"stored", standby:1.0, ctrl:0.95, Tret:48,
+        comfort:92,future:95,maint:85
+      },
+      "Stored Standard":{
+        type:"stored", standby:1.4, ctrl:1.0, Tret:52,
+        comfort:88,future:80,maint:82
+      },
+      "Combi Standard":{
+        type:"combi", start:0.01, scale:1.05, Tret:55,
+        comfort:72,future:50,maint:70
+      },
+      "Combi Premium":{
+        type:"combi", start:0.008, scale:1.0, Tret:52,
+        comfort:78,future:55,maint:78
+      }
+    },
+    price:{ gas:0.07, elec:0.22, water:0.0003 }, // £/kWh, £/L
+    weight:{ energy:3,cost:5,comfort:4,future:4,maint:2 },
+    Tuse:40
+  };
+
+  // --- helpers ---
+  function etaFromReturn(T){return T<=30?0.98:T>=55?0.88:0.98-0.004*(T-30);}
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  const invU=(val,best)=>clamp(100*(best/val),10,100);
+  const rnd=(n,d=2)=>Math.round(n*10**d)/10**d;
+
+  function energyCost(U,M,L,S){
+    const Tu = HW_PRESETS.Tuse;
+    const Vd = U.Vd;
+    const Euse = Vd*CP_KWH_PER_LK*(Tu-M);
+    const Vwait = L*U.draws;
+    const Ewait = Vwait*CP_KWH_PER_LK*(Tu-M);
+    const eta = etaFromReturn(S.Tret);
+    let EkWh, pounds;
+    if (S.type === "stored") {
+      const Egas = ((Euse+Ewait)/eta)*S.ctrl;
+      EkWh = Egas + S.standby;
+      pounds = (EkWh*HW_PRESETS.price.gas)+(Vwait*HW_PRESETS.price.water);
+    } else {
+      const etaEff = eta/(S.scale || 1);
+      const Eover = U.draws*(S.start || 0.01);
+      EkWh = ((Euse+Ewait)/etaEff)+Eover;
+      pounds = (EkWh*HW_PRESETS.price.gas)+(Vwait*HW_PRESETS.price.water);
+    }
+    return {
+      raw:{kWh:EkWh,cost:pounds,wasteL:Vwait,eta},
+      view:{kWh:rnd(EkWh,3),cost:rnd(pounds,2),wasteL:rnd(Vwait,1),eta:rnd(eta,3)}
+    };
+  }
+
+  // --- core compute ---
+  function hwCompute({usage="Med (3–4 ppl)",mains="Spring/Autumn",layout="Central",system="Stored Gold (Worcester+Mixergy)"}={}){
+    const U = HW_PRESETS.usage[usage] || HW_PRESETS.usage["Med (3–4 ppl)"];
+    const M = HW_PRESETS.mains[mains];
+    const L = HW_PRESETS.layout[layout];
+    const S = HW_PRESETS.system[system] || HW_PRESETS.system["Stored Gold (Worcester+Mixergy)"];
+    if (typeof M === "undefined" || typeof L === "undefined") {
+      throw new Error("Unknown mains temperature or layout preset");
+    }
+
+    const base = energyCost(U,M,L,S);
+    const gold = system === "Stored Gold (Worcester+Mixergy)"
+      ? base
+      : energyCost(U,M,L,HW_PRESETS.system["Stored Gold (Worcester+Mixergy)"]);
+    const combi = system === "Combi Premium"
+      ? base
+      : energyCost(U,M,L,HW_PRESETS.system["Combi Premium"]);
+
+    const bestkWh = Math.min(gold.raw.kWh, combi.raw.kWh);
+    const bestCost = Math.min(gold.raw.cost, combi.raw.cost);
+    const Ue = invU(base.raw.kWh, bestkWh);
+    const Uc = invU(base.raw.cost, bestCost);
+    const Up = clamp(S.comfort-(layout==="Central"?0:layout==="Typical"?6:12),10,100);
+    const Uf = clamp(S.future,10,100);
+    const Um = clamp(S.maint,10,100);
+    const W = HW_PRESETS.weight;
+    const score=(W.energy*Ue+W.cost*Uc+W.comfort*Up+W.future*Uf+W.maint*Um)/
+                (W.energy+W.cost+W.comfort+W.future+W.maint);
+
+    return {
+      usage,mains,layout,system,
+      kWh:base.view.kWh, cost:base.view.cost,
+      wasteL:base.view.wasteL,
+      utilities:{energy:Ue,cost:Uc,comfort:Up,future:Uf,maint:Um,score:rnd(score,0)},
+      η:base.view.eta
+    };
+  }
+
+  // --- quick render card ---
+  window.FastSurveyHotWater={
+    compute:hwCompute,
+    render:(div,opts={})=>{
+      if(!div) return null;
+      const r=hwCompute(opts);
+      div.innerHTML=`<div class="hw-card">
+        <strong>${r.system}</strong><br>
+        ${r.usage} • ${r.mains} • ${r.layout}<hr>
+        <b>${r.kWh}</b> kWh/day (£${r.cost}/day)<br>
+        <small>≈${Math.round(r.kWh*365)} kWh/yr • £${Math.round(r.cost*365)} /yr</small><br>
+        Wasted water ${r.wasteL} L/day<br>
+        <b>Customer score ${r.utilities.score}/100</b><br>
+        <small>η ${r.η}</small>
+      </div>`;
+      return r;
+    }
+  };
+  const css=document.createElement('style');
+  css.textContent=`.hw-card{border:1px solid #ccc;padding:10px;border-radius:8px;font:14px/1.4 -apple-system,Segoe UI,Roboto;}
+  .hw-card hr{border:none;border-top:1px solid #eee;margin:6px 0}`;
+  document.head.appendChild(css);
+
+  // optional live demo card
+  const demoTarget=document.getElementById('hw-demo');
+  if(demoTarget){
+    window.FastSurveyHotWater.render(
+      demoTarget,
+      {usage:"Med (3–4 ppl)",mains:"Spring/Autumn",layout:"Central",system:"Stored Gold (Worcester+Mixergy)"}
+    );
+  }
+  </script>
+  <!-- 🔥 END HOT WATER MODEL ADD-ON -->
 </body>
 </html>
