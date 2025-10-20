@@ -261,7 +261,7 @@ function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices}){
     cost_year: Math.round(GBP*365),
     wasteL: rd(Vw,1),
     breakdown: { E_use: rd(Eu,3), E_wait: rd(Ew,3), standby: rd(standby,3), eta: rd(etaVal,3), starts },
-    capexBase: PRE.systems[sysKey].capex
+    capexBase: realisticFitCost(sysKey, 'swap')
   };
 }
 
@@ -293,6 +293,30 @@ function annuityPayment(capex, ratePct, years){
   const n = Math.max(1, years||1);
   const f = r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); // capital recovery factor
   return capex * f;
+}
+
+// Approximate installed cost for a given system. Scenario lets us nudge for conversions.
+function realisticFitCost(sysKey, scenario="swap"){
+  let cost = 4000; // baseline
+  if(sysKey.includes("Combi • Standard")) cost = 3300;
+  if(sysKey.includes("Combi • Premium")) cost = 3800;
+  if(sysKey.includes("System • Unvented")) cost = 4600;
+  if(sysKey.includes("Regular")) cost = 4000;
+  if(sysKey.includes("Mixergy")) cost = 5500;
+
+  if((scenario||"").includes("conversion")) cost += 1200;
+  return cost;
+}
+
+// Describe the scenario (swap vs conversion) based on current vs target system families.
+function scenarioLabel(existingKey="", targetKey=""){
+  const parseType = key => (key.split('•')[0]||'').trim().toLowerCase();
+  const existingType = parseType(existingKey);
+  const targetType = parseType(targetKey);
+  if(!existingType || !targetType) return 'swap';
+  if(existingType === targetType) return 'swap';
+  if(targetType === 'combi') return 'conversion-to-combi';
+  return 'conversion';
 }
 
 /* ===== UI Wiring ===== */
@@ -364,7 +388,9 @@ function runAll(){
 
   // Add capex/payback to each
   const results = resultsRaw.map(r=>{
-    const capex = (PRE.systems[r.sysKey].capex||0) * st.capexMult;
+    const scenario = scenarioLabel(st.existingKey, r.sysKey);
+    const fitCost = realisticFitCost(r.sysKey, scenario);
+    const capex = fitCost * st.capexMult;
     const runYr = r.cost_year;
     const year1 = capex + runYr;
     const annualised = annuityPayment(capex, st.financeRate, st.financeYears);
@@ -379,6 +405,8 @@ function runAll(){
 
     return {
       ...r,
+      scenario,
+      fitCost: Math.round(fitCost),
       capex: Math.round(capex),
       year1: Math.round(year1),
       runYr: Math.round(runYr),
