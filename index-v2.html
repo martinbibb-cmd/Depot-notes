@@ -60,6 +60,18 @@
 
   /* Optional: tiny right padding so the scrollbar doesn’t cover labels */
   ul.checks { padding-right: 6px; }
+
+  .hw-panel{display:flex;flex-direction:column;gap:12px}
+  .hw-panel p{margin:0;color:var(--muted);font-size:13px}
+  .hw-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .hw-controls label{display:flex;flex-direction:column;gap:6px;font-weight:600;color:var(--ink)}
+  .hw-controls select{background:#0f141a;border:1px solid #2a3644;color:var(--ink);padding:8px;border-radius:10px;font:inherit}
+  .hw-summary{color:var(--muted);font-size:13px}
+  .hw-summary strong{color:var(--ink)}
+  .hw-footnote{color:var(--muted);font-size:12px;margin:0}
+  .hw-preview .hw-card{background:#0e141a;border-color:#243041;color:var(--ink)}
+  .hw-preview .hw-card small{color:var(--muted)}
+  .col3{grid-column:3}
 </style>
 </head>
 <body>
@@ -117,6 +129,22 @@
   <section class="card">
     <h2 class="sticky">Depot Sections — Copy as Plain Text</h2>
     <div class="pad outbox" id="outputs"></div>
+  </section>
+
+  <section class="card col3">
+    <h2 class="sticky">Hot water model quick compare</h2>
+    <div class="pad hw-panel" data-hot-water-widget>
+      <p>Combine typical usage, mains temperature, pipe layout and boiler type to see cost, wasted water and customer score.</p>
+      <div class="hw-controls">
+        <label>Usage<select data-hw-control="usage"></select></label>
+        <label>Mains temperature<select data-hw-control="mains"></select></label>
+        <label>Layout<select data-hw-control="layout"></select></label>
+        <label>System<select data-hw-control="system"></select></label>
+      </div>
+      <div class="hw-preview" data-hw-preview></div>
+      <div class="hw-summary" data-hw-summary></div>
+      <p class="hw-footnote">Fast Survey and Quote Tool use the same physics-backed defaults for parity.</p>
+    </div>
   </section>
 
   <!-- FULL-WIDTH: Customer Summary via GPT -->
@@ -637,7 +665,6 @@ loadOptionsTxt();
 </script>
 <!-- 🔥 HOT WATER MODEL ADD-ON (FAST-SURVEY / DEPOT / QUOTE TOOL) -->
 <!-- Paste anywhere inside <body>. Creates window.FastSurveyHotWater for global use. -->
-<div id="hw-demo"></div>
 <script type="module">
 /* ============================================================
    HOT WATER MODEL SNAP-TO — physics, cost & customer weighting
@@ -771,14 +798,67 @@ css.textContent=`.hw-card{border:1px solid #ccc;padding:10px;border-radius:8px;f
 .hw-card hr{border:none;border-top:1px solid #eee;margin:6px 0}`;
 document.head.appendChild(css);
 
-// optional live demo card
-const demoTarget=document.getElementById('hw-demo');
-if(demoTarget){
-  window.FastSurveyHotWater.render(
-    demoTarget,
-    {usage:"Med (3–4 ppl)",mains:"Spring/Autumn",layout:"Central",system:"Stored Gold (Worcester+Mixergy)"}
-  );
+function initHotWaterWidget(){
+  const panel=document.querySelector('[data-hot-water-widget]');
+  if(!panel) return;
+  const usageSel=panel.querySelector('[data-hw-control="usage"]');
+  const mainsSel=panel.querySelector('[data-hw-control="mains"]');
+  const layoutSel=panel.querySelector('[data-hw-control="layout"]');
+  const systemSel=panel.querySelector('[data-hw-control="system"]');
+  const preview=panel.querySelector('[data-hw-preview]');
+  const summary=panel.querySelector('[data-hw-summary]');
+
+  const fillSelect=(select, entries, preferred)=>{
+    if(!select) return;
+    select.innerHTML=entries.map(key=>`<option value="${key}">${key}</option>`).join('');
+    if(preferred && entries.includes(preferred)){
+      select.value=preferred;
+    }
+  };
+
+  fillSelect(usageSel, Object.keys(HW_PRESETS.usage), 'Med (3–4 ppl)');
+  fillSelect(mainsSel, Object.keys(HW_PRESETS.mains), 'Spring/Autumn');
+  fillSelect(layoutSel, Object.keys(HW_PRESETS.layout), 'Typical');
+  fillSelect(systemSel, Object.keys(HW_PRESETS.system), 'Stored Gold (Worcester+Mixergy)');
+
+  const describeDelta=(value, unit)=>{
+    const amount=Math.abs(value).toFixed(2);
+    if(Number.isNaN(value) || !isFinite(value) || amount==='0.00') return `similar ${unit}`;
+    return value>0 ? `${amount} ${unit} more` : `${amount} ${unit} less`;
+  };
+
+  const update=()=>{
+    const opts={
+      usage:usageSel?.value,
+      mains:mainsSel?.value,
+      layout:layoutSel?.value,
+      system:systemSel?.value
+    };
+    const result=window.FastSurveyHotWater.render(preview, opts);
+    if(!result || !summary) return;
+    const compareSystem=opts.system && opts.system.startsWith('Combi')
+      ? 'Stored Gold (Worcester+Mixergy)'
+      : 'Combi Premium';
+    const alt=window.FastSurveyHotWater.compute({...opts, system:compareSystem});
+    const costDelta=alt.cost - result.cost;
+    const kwhDelta=alt.kWh - result.kWh;
+    const costText=costDelta>0
+      ? `${compareSystem} saves about £${Math.abs(costDelta).toFixed(2)} per day versus this pick.`
+      : costDelta<0
+        ? `${compareSystem} costs about £${Math.abs(costDelta).toFixed(2)} per day more than this pick.`
+        : `${compareSystem} has a similar daily cost.`;
+    const energyText=`Energy use is ${describeDelta(kwhDelta,'kWh/day')} compared with ${compareSystem}.`;
+    summary.innerHTML=`<strong>${result.utilities.score}/100</strong> customer score · ${result.kWh.toFixed(2)} kWh/day (£${result.cost.toFixed(2)}/day) · ${result.wasteL.toFixed(1)} L waiting water/day.<br>${energyText} ${costText}`;
+  };
+
+  [usageSel,mainsSel,layoutSel,systemSel].forEach(sel=>{
+    if(sel) sel.addEventListener('change',update);
+  });
+
+  update();
 }
+
+initHotWaterWidget();
 </script>
 <!-- 🔥 END HOT WATER MODEL ADD-ON -->
 </body>
