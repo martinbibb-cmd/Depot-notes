@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hot Water Model — Full Scope, Existing System & Emoji</title>
+<title>Hot Water Model — Full Scope + Capex & Payback</title>
 <style>
   :root{--fg:#111;--bg:#fff;--muted:#666;--b:#e5e7eb;--pri:#0b84ff;--hl:#fff7cc}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu;color:var(--fg);background:var(--bg)}
   header{padding:14px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   h1{font-size:16px;margin:0}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .wrap{max-width:1150px;margin:0 auto;padding:16px}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  @media (max-width:1020px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
   @media (max-width:560px){.grid{grid-template-columns:1fr}}
   label{font-weight:600;font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
   select,input[type="number"],input[type="range"]{width:100%}
@@ -31,11 +31,12 @@
   .slrow{display:flex;align-items:center;gap:10px}
   .slrow output{min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{border:1px solid var(--b);padding:8px 10px;text-align:left}
+  th,td{border:1px solid var(--b);padding:8px 10px;text-align:left;vertical-align:top}
   th{background:#fafafa}
   .right{text-align:right}
   .badge{display:inline-block;padding:2px 6px;border:1px solid var(--b);border-radius:999px;font-size:12px;color:#444}
   .exist{background:var(--hl)}
+  .nowrap{white-space:nowrap}
   @media print{
     header,.no-print{display:none!important}
     body{background:#fff}
@@ -50,7 +51,7 @@
 <body>
 <header class="no-print">
   <h1>Hot Water Model</h1>
-  <span class="muted">Physics • Cost • Customer-weighted score • Printable</span>
+  <span class="muted">Physics • Cost • Customer-weighted score • Capex & Payback • Printable</span>
   <div style="margin-left:auto" class="actions">
     <button onclick="window.print()">🖨️ Print</button>
   </div>
@@ -94,7 +95,30 @@
       <div style="grid-column:1/-1">
         <label>🧰 Existing system (choose current setup)</label>
         <select id="existing"></select>
-        <div class="sub">The selected system will be highlighted in the table and auto-focused.</div>
+        <div class="sub">The selected system will be highlighted and used for payback calculations.</div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>🏗️ Capex multiplier (×)</label>
+        <input id="capexMult" type="number" step="0.05" value="1.00">
+        <div class="sub">Quickly adjust all installed costs (e.g. region, access).</div>
+      </div>
+      <div>
+        <label>🧾 Existing keep-cost (£)</label>
+        <input id="capexKeep" type="number" step="50" value="0">
+        <div class="sub">Cost to keep the current system (repairs, upgrades). Defaults to 0.</div>
+      </div>
+      <div>
+        <label>💷 Finance rate (%)</label>
+        <input id="financeRate" type="number" step="0.1" value="0">
+        <div class="sub">If >0, shows annualised cost (annuity) for capex too.</div>
+      </div>
+      <div>
+        <label>Term (years)</label>
+        <input id="financeYears" type="number" step="1" value="10">
+        <div class="sub">Used only if finance rate > 0.</div>
       </div>
     </div>
 
@@ -126,16 +150,21 @@
       <div class="pill"><div class="muted">Waiting water</div><div><b id="wasteL">—</b> L/day</div><small>layout + draws</small></div>
     </div>
     <div class="grid">
-      <div class="pill"><div class="muted">Customer score</div><div class="score" id="score">—</div>
+      <div class="pill">
+        <div class="muted">Customer score</div>
+        <div class="score" id="score">—</div>
         <small>🔋 <span id="uE">—</span> • 💷 <span id="uP">—</span> • 🛁 <span id="uC">—</span> • 🌱 <span id="uF">—</span> • 🔧 <span id="uM">—</span></small>
       </div>
-      <div class="pill"><div class="muted">Breakdown</div>
+      <div class="pill">
+        <div class="muted">Breakdown</div>
         <div>Useful <b id="eUse">—</b> kWh/day</div>
         <div>Waiting <b id="eWait">—</b> kWh/day</div>
         <div>Standby <b id="standby">—</b> kWh/day</div>
         <div>η <b id="eta">—</b> • Starts <b id="starts">—</b></div>
+        <div class="muted" style="margin-top:6px">Capex £<span id="capexFocus">—</span> • Payback <span id="paybackFocus">—</span></div>
       </div>
-      <div class="pill"><div class="muted">Selections</div>
+      <div class="pill">
+        <div class="muted">Selections</div>
         <div id="echo">—</div>
         <div class="actions no-print" style="margin-top:8px">
           <button id="copy">Copy JSON (focused)</button>
@@ -147,18 +176,22 @@
   <!-- Compare All Systems -->
   <div class="card" id="compareCard">
     <h2>Compare all systems</h2>
-    <div class="sub">Sorted by Customer score (highest first). Click a row to focus. The existing system is highlighted.</div>
+    <div class="sub">Sorted by Customer score. Click a row to focus. Existing is highlighted.</div>
     <div style="overflow:auto">
       <table id="compareTable">
         <thead>
           <tr>
             <th>System</th>
-            <th class="right">kWh/day</th>
-            <th class="right">£/day</th>
-            <th class="right">Waste L/day</th>
-            <th class="right">Score</th>
-            <th class="right">η</th>
-            <th class="right">Standby</th>
+            <th class="right nowrap">kWh/day</th>
+            <th class="right nowrap">£/day</th>
+            <th class="right nowrap">Waste L/day</th>
+            <th class="right nowrap">Score</th>
+            <th class="right nowrap">η</th>
+            <th class="right nowrap">Standby</th>
+            <th class="right nowrap">Capex £</th>
+            <th class="right nowrap">Run £/yr</th>
+            <th class="right nowrap">Year-1 £</th>
+            <th class="right nowrap">Payback (yrs)</th>
           </tr>
         </thead>
         <tbody id="compareBody"></tbody>
@@ -166,7 +199,7 @@
     </div>
   </div>
 
-  <footer class="muted">© Hot Water Model — full-scope (existing system + emoji) printable build</footer>
+  <footer class="muted">© Hot Water Model — full scope + capex/payback, printable</footer>
 </div>
 
 <script type="module">
@@ -180,26 +213,26 @@ const PRE={
   mains:{"Winter":8,"Spring/Autumn":12,"Summer":16},
   layout:{"Central":.35,"Typical":.7,"Remote":1.2},
   systems:{
-    "Regular • Open CH + Open-vented cyl":      {t:"s", sb:1.8, cf:1.00, Tr:54, C:86, F:65, M:72},
-    "Regular • Sealed CH + Open-vented cyl":    {t:"s", sb:1.7, cf:1.00, Tr:52, C:87, F:70, M:74},
-    "Regular • Open CH + Unvented cyl":         {t:"s", sb:1.5, cf:1.00, Tr:52, C:88, F:82, M:80},
-    "Regular • Sealed CH + Unvented cyl":       {t:"s", sb:1.4, cf:1.00, Tr:50, C:89, F:84, M:82},
+    "Regular • Open CH + Open-vented cyl":      {t:"s", sb:1.8, cf:1.00, Tr:54, C:86, F:65, M:72, capex:2200},
+    "Regular • Sealed CH + Open-vented cyl":    {t:"s", sb:1.7, cf:1.00, Tr:52, C:87, F:70, M:74, capex:2400},
+    "Regular • Open CH + Unvented cyl":         {t:"s", sb:1.5, cf:1.00, Tr:52, C:88, F:82, M:80, capex:2800},
+    "Regular • Sealed CH + Unvented cyl":       {t:"s", sb:1.4, cf:1.00, Tr:50, C:89, F:84, M:82, capex:3000},
 
-    "System • Open-vented cyl":                 {t:"s", sb:1.6, cf:1.00, Tr:51, C:90, F:75, M:78},
-    "System • Unvented cyl":                    {t:"s", sb:1.3, cf:1.00, Tr:49, C:91, F:86, M:84},
+    "System • Open-vented cyl":                 {t:"s", sb:1.6, cf:1.00, Tr:51, C:90, F:75, M:78, capex:2600},
+    "System • Unvented cyl":                    {t:"s", sb:1.3, cf:1.00, Tr:49, C:91, F:86, M:84, capex:3200},
 
-    "System • Mixergy Unvented (indirect)":     {t:"s", sb:1.0, cf:.95, Tr:48, C:92, F:95, M:85},
-    "System • Mixergy Vented (open-vented)":    {t:"s", sb:1.1, cf:.96, Tr:49, C:91, F:88, M:83},
+    "System • Mixergy Unvented (indirect)":     {t:"s", sb:1.0, cf:.95, Tr:48, C:92, F:95, M:85, capex:3800},
+    "System • Mixergy Vented (open-vented)":    {t:"s", sb:1.1, cf:.96, Tr:49, C:91, F:88, M:83, capex:3500},
 
-    "Combi • Standard":                         {t:"c", st:.01,  sc:1.05, Tr:55, C:72, F:50, M:70},
-    "Combi • Premium (conditioned/central)":    {t:"c", st:.008, sc:1.00, Tr:52, C:78, F:55, M:78},
+    "Combi • Standard":                         {t:"c", st:.01,  sc:1.05, Tr:55, C:72, F:50, M:70, capex:1800},
+    "Combi • Premium (conditioned/central)":    {t:"c", st:.008, sc:1.00, Tr:52, C:78, F:55, M:78, capex:2300},
   },
   Tuse:40,
   price:{ gas:.07, water:.0003 }
 };
 
 /* Core calc */
-function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices, weights}){
+function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices}){
   const U=PRE.usage[usageKey], M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
   const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
   const Eu = U.Vd*CP*(Tu-Tm);
@@ -227,7 +260,8 @@ function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices, weights}){
     kWh_year: Math.round(E*365),
     cost_year: Math.round(GBP*365),
     wasteL: rd(Vw,1),
-    breakdown: { E_use: rd(Eu,3), E_wait: rd(Ew,3), standby: rd(standby,3), eta: rd(etaVal,3), starts }
+    breakdown: { E_use: rd(Eu,3), E_wait: rd(Ew,3), standby: rd(standby,3), eta: rd(etaVal,3), starts },
+    capexBase: PRE.systems[sysKey].capex
   };
 }
 
@@ -252,11 +286,22 @@ function scoreAll(results, weights){
   });
 }
 
+/* Finance helpers */
+function annuityPayment(capex, ratePct, years){
+  const r = (ratePct||0)/100;
+  if(r<=0) return 0;           // no financing cost included
+  const n = Math.max(1, years||1);
+  const f = r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); // capital recovery factor
+  return capex * f;
+}
+
 /* ===== UI Wiring ===== */
 const $=s=>document.querySelector(s);
 const els={
   usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'),
   existing:$('#existing'),
+  capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
+  financeRate:$('#financeRate'), financeYears:$('#financeYears'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
   focusName:$('#focusName'), existTag:$('#existTag'),
   kwhDay:$('#kwhDay'), kwhYear:$('#kwhYear'),
@@ -264,6 +309,7 @@ const els={
   wasteL:$('#wasteL'), score:$('#score'),
   uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
   eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
+  capexFocus:$('#capexFocus'), paybackFocus:$('#paybackFocus'),
   echo:$('#echo'),
   compareBody:$('#compareBody'),
   copyBtn:$('#copy'),
@@ -287,17 +333,65 @@ function getState(){
     layoutKey: els.layout.value,
     existingKey: els.existing.value,
     prices: { gas: parseFloat(els.gas.value||"0.07"), water: 0.0003 },
-    weights: { e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value }
+    weights: { e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value },
+    capexMult: parseFloat(els.capexMult.value||"1"),
+    capexKeep: parseFloat(els.capexKeep.value||"0"),
+    financeRate: parseFloat(els.financeRate.value||"0"),
+    financeYears: parseInt(els.financeYears.value||"10",10)
   };
 }
 
 function runAll(){
   const st = getState();
-  const allKeys = Object.keys(PRE.systems);
-  const results = allKeys.map(sysKey => calcOne({sysKey, ...st}));
+
+  // Calculate baseline (existing) first for payback
+  const existing = calcOne({
+    sysKey: st.existingKey,
+    usageKey: st.usageKey,
+    mainsKey: st.mainsKey,
+    layoutKey: st.layoutKey,
+    prices: st.prices
+  });
+  const existingRunYr = existing.cost_year;
+  const existingCapex = existing.capexBase * st.capexMult;
+  const keepCost = st.capexKeep; // cost to keep existing (repairs/upgrades)
+  const existingAnnualised = annuityPayment(existingCapex, st.financeRate, st.financeYears);
+
+  // Compute all systems
+  const resultsRaw = Object.keys(PRE.systems).map(sysKey => calcOne({
+    sysKey, usageKey: st.usageKey, mainsKey: st.mainsKey, layoutKey: st.layoutKey, prices: st.prices
+  }));
+
+  // Add capex/payback to each
+  const results = resultsRaw.map(r=>{
+    const capex = (PRE.systems[r.sysKey].capex||0) * st.capexMult;
+    const runYr = r.cost_year;
+    const year1 = capex + runYr;
+    const annualised = annuityPayment(capex, st.financeRate, st.financeYears);
+
+    // Incremental capex vs existing: (new capex - keep existing cost)
+    const incrCapex = Math.max(0, capex - keepCost);
+    const annualSaving = Math.max(0, existingRunYr - runYr);
+    const payback = annualSaving>0 ? (incrCapex/annualSaving) : Infinity;
+
+    // Also report a "total annual cost" if finance used: runYr + annualised
+    const totalAnnualWithFinance = runYr + annualised;
+
+    return {
+      ...r,
+      capex: Math.round(capex),
+      year1: Math.round(year1),
+      runYr: Math.round(runYr),
+      payback: (payback===Infinity? "—" : (payback>99? "99+" : payback.toFixed(1))),
+      annualised: Math.round(annualised),
+      totalAnnualWithFinance: Math.round(totalAnnualWithFinance)
+    };
+  });
+
+  // Score and sort
   const scored = scoreAll(results, st.weights).sort((a,b)=>b.utilities.score - a.utilities.score);
 
-  // Table render with existing highlight
+  // Render table
   els.compareBody.innerHTML = scored.map(r=>`
     <tr data-sys="${r.sysKey}" class="${r.sysKey===st.existingKey?'exist':''}">
       <td>${r.sysKey}${r.sysKey===st.existingKey?' <span class="badge">Existing</span>':''}</td>
@@ -307,6 +401,10 @@ function runAll(){
       <td class="right"><b>${r.utilities.score}</b></td>
       <td class="right">${r.breakdown.eta}</td>
       <td class="right">${r.breakdown.standby}</td>
+      <td class="right">£${r.capex.toLocaleString()}</td>
+      <td class="right">£${r.runYr.toLocaleString()}</td>
+      <td class="right">£${r.year1.toLocaleString()}</td>
+      <td class="right">${r.payback}</td>
     </tr>
   `).join('');
 
@@ -314,13 +412,13 @@ function runAll(){
     tr.onclick = ()=> focus(scored.find(x=>x.sysKey===tr.dataset.sys), st.existingKey);
   }
 
-  // Focus existing if present; otherwise focus top
+  // Focus existing by default
   const existingRow = scored.find(x=>x.sysKey===st.existingKey);
-  focus(existingRow || scored[0], st.existingKey);
+  focus(existingRow || scored[0], st.existingKey, st);
   return {scored, st};
 }
 
-function focus(r, existingKey){
+function focus(r, existingKey, st){
   if(!r) return;
   els.focusName.textContent = r.sysKey;
   els.existTag.style.display = (r.sysKey===existingKey) ? '' : 'none';
@@ -343,12 +441,17 @@ function focus(r, existingKey){
   els.standby.textContent   = r.breakdown.standby;
   els.eta.textContent       = r.breakdown.eta;
   els.starts.textContent    = r.breakdown.starts;
+
+  els.capexFocus.textContent = r.capex.toLocaleString();
+  const paybackLabel = (r.payback==="—"?"—" : `${r.payback} yrs`);
+  els.paybackFocus.textContent = paybackLabel;
+
   els.echo.textContent      = `${r.usageKey} • ${r.mainsKey} • ${r.layoutKey}`;
 
   els.copyBtn.onclick = ()=> navigator.clipboard.writeText(JSON.stringify(r, null, 2));
 }
 
-// Presets with emojis
+// Presets (emoji)
 els.presetBudget.onclick  = ()=>{ els.wE.value=3; els.wCost.value=8; els.wC.value=2; els.wF.value=2; els.wM.value=2; runAll(); };
 els.presetComfort.onclick = ()=>{ els.wE.value=3; els.wCost.value=3; els.wC.value=8; els.wF.value=3; els.wM.value=3; runAll(); };
 els.presetFuture.onclick  = ()=>{ els.wE.value=5; els.wCost.value=4; els.wC.value=3; els.wF.value=8; els.wM.value=2; runAll(); };
