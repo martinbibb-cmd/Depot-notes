@@ -3,38 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hot Water Model — Standalone</title>
+<title>Hot Water Model — Preset Sliders</title>
 <style>
   :root{--fg:#111;--bg:#fff;--muted:#666;--b:#e5e7eb;--pri:#0b84ff}
   *{box-sizing:border-box}
   body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu;color:var(--fg);background:var(--bg)}
   header{padding:14px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   h1{font-size:16px;margin:0}
-  .wrap{max-width:900px;margin:0 auto;padding:16px}
+  .wrap{max-width:940px;margin:0 auto;padding:16px}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   @media (max-width:920px){.grid{grid-template-columns:repeat(2,1fr)}}
-  @media (max-width:520px){.grid{grid-template-columns:1fr}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
   label{font-weight:600;font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
-  select,input{width:100%;padding:8px 10px;border:1px solid var(--b);border-radius:8px;background:#fff}
+  select,input[type="number"],input[type="range"]{width:100%}
+  input[type="number"],select{padding:8px 10px;border:1px solid var(--b);border-radius:8px;background:#fff}
   .row{margin:10px 0 4px}
   .card{border:1px solid var(--b);border-radius:12px;padding:14px}
   .card h2{margin:0 0 8px;font-size:16px}
-  .card small{color:var(--muted)}
+  .sub{color:var(--muted);font-size:12px;margin-top:-4px}
   .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
-  @media(max-width:520px){.kpi{grid-template-columns:1fr}}
+  @media(max-width:560px){.kpi{grid-template-columns:1fr}}
   .pill{border:1px solid var(--b);border-radius:10px;padding:10px}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
   button{padding:9px 12px;border:1px solid var(--b);background:#fff;border-radius:10px;cursor:pointer}
   button.primary{background:var(--pri);border-color:var(--pri);color:#fff}
   .score{font:600 28px/1.1 system-ui;margin:4px 0}
   .muted{color:var(--muted)}
+  .slrow{display:flex;align-items:center;gap:10px}
+  .slrow output{min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
   footer{padding:16px;text-align:center;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
 <header>
   <h1>Hot Water Model</h1>
-  <span class="muted">Physics • Cost • Customer score</span>
+  <span class="muted">Physics • Cost • Customer-weighted score</span>
 </header>
 
 <div class="wrap">
@@ -85,264 +88,325 @@
         <label>Water price ( £ / L )</label>
         <input id="water" type="number" step="0.00001" value="0.0003">
       </div>
-      <div>
-        <label>Weights: Comfort</label>
-        <input id="wC" type="number" step="1" value="4">
-      </div>
-      <div>
-        <label>Weights: Future • Maint</label>
-        <div style="display:flex;gap:8px">
-          <input id="wF" type="number" step="1" value="4" style="flex:1">
-          <input id="wM" type="number" step="1" value="2" style="flex:1">
-        </div>
-      </div>
     </div>
 
-    <div class="actions">
-      <button class="primary" id="recalc">Recalculate</button>
-      <button id="copy">Copy JSON</button>
-      <button id="link">Copy Sharable Link</button>
-      <span class="muted" id="status"></span>
+    <div class="card" style="margin-top:12px">
+      <div class="sub">Adjust what matters most to your customer:</div>
+      <div class="grid" style="margin-top:8px">
+        <div class="slrow"><label style="flex:1">🔋 Energy</label><input id="wE" type="range" min="0" max="10" step="1" value="3"><output id="wEVal">3</output></div>
+        <div class="slrow"><label style="flex:1">💷 Cost</label><input id="wCost" type="range" min="0" max="10" step="1" value="5"><output id="wCostVal">5</output></div>
+        <div class="slrow"><label style="flex:1">🛁 Comfort</label><input id="wC" type="range" min="0" max="10" step="1" value="4"><output id="wCVal">4</output></div>
+        <div class="slrow"><label style="flex:1">🌱 Future-proof</label><input id="wF" type="range" min="0" max="10" step="1" value="4"><output id="wFVal">4</output></div>
+        <div class="slrow"><label style="flex:1">🔧 Maintenance</label><input id="wM" type="range" min="0" max="10" step="1" value="2"><output id="wMVal">2</output></div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button id="presetBudget">💰 Budget-led</button>
+        <button id="presetComfort">🛁 Comfort-led</button>
+        <button id="presetFuture">🌱 Future-ready</button>
+        <button id="presetReset">♻️ Reset</button>
+      </div>
     </div>
   </div>
 
-  <div class="row"></div>
-
-  <div class="card" id="results">
+  <div class="card" id="results" style="margin-top:16px">
     <h2>Results</h2>
     <div class="kpi">
-      <div class="pill">
-        <div class="muted">Energy</div>
-        <div><b id="kwhDay">—</b> kWh/day</div>
-        <small id="kwhYear">—</small>
-      </div>
-      <div class="pill">
-        <div class="muted">Running cost</div>
-        <div>£<b id="costDay">—</b> / day</div>
-        <small id="costYear">—</small>
-      </div>
-      <div class="pill">
-        <div class="muted">Waiting water</div>
-        <div><b id="wasteL">—</b> L / day</div>
-        <small>from layout + draws</small>
-      </div>
+      <div class="pill"><div class="muted">Energy</div><div><b id="kwhDay">—</b> kWh/day</div><small id="kwhYear">—</small></div>
+      <div class="pill"><div class="muted">Running cost</div><div>£<b id="costDay">—</b>/day</div><small id="costYear">—</small></div>
+      <div class="pill"><div class="muted">Waiting water</div><div><b id="wasteL">—</b> L/day</div><small>from layout + draws</small></div>
     </div>
 
     <div class="grid">
-      <div class="pill">
-        <div class="muted">Customer score</div>
-        <div class="score" id="score">—</div>
-        <small>Energy&nbsp;<span id="uE">—</span> • Cost&nbsp;<span id="uP">—</span> • Comfort&nbsp;<span id="uC">—</span> • Future&nbsp;<span id="uF">—</span> • Maint&nbsp;<span id="uM">—</span></small>
+      <div class="pill"><div class="muted">Customer score</div><div class="score" id="score">—</div><small>Energy <span id="uE">—</span> • Cost <span id="uP">—</span> • Comfort <span id="uC">—</span> • Future <span id="uF">—</span> • Maint <span id="uM">—</span></small></div>
+      <div class="pill"><div class="muted">Breakdown</div>
+        <div>Useful <b id="eUse">—</b> kWh/day</div>
+        <div>Waiting <b id="eWait">—</b> kWh/day</div>
+        <div>Standby <b id="standby">—</b> kWh/day</div>
+        <div>η <b id="eta">—</b> Starts <b id="starts">—</b></div>
       </div>
-      <div class="pill">
-        <div class="muted">Breakdown</div>
-        <div>Useful heat: <b id="eUse">—</b> kWh/day</div>
-        <div>Waiting heat: <b id="eWait">—</b> kWh/day</div>
-        <div>Standby: <b id="standby">—</b> kWh/day</div>
-        <div>Boiler η (assumed): <b id="eta">—</b></div>
-        <div>Starts/day (combi): <b id="starts">—</b></div>
-      </div>
-      <div class="pill">
-        <div class="muted">Selections</div>
+      <div class="pill"><div class="muted">Selections</div>
         <div id="echo">—</div>
-        <small class="muted">Change any input and press Recalculate.</small>
+        <div class="actions" style="margin-top:8px">
+          <button id="copy">Copy JSON</button>
+          <button id="link">Share Link</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <footer>© Hot Water Model — standalone build</footer>
+  <footer>© Hot Water Model – preset sliders build</footer>
 </div>
 
 <script type="module">
-/* ====== MODEL CORE (snap-to) ====== */
-const CP_KWH_PER_LK = 0.001163;
+const CP=0.001163;
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const round=(n,d=2)=>Math.round(n*10**d)/10**d;
+const etaFromReturn=t=>t<=30?0.98:t>=55?0.88:0.98-0.004*(t-30);
+const invUtility=(val,best)=>clamp(100*(best/val),10,100);
+const toNumber=(val,fallback)=>{
+  const n=parseFloat(val);
+  return Number.isFinite(n)?n:fallback;
+};
+const toInteger=(val,fallback)=>{
+  const n=parseInt(val,10);
+  return Number.isFinite(n)?n:fallback;
+};
 
-const PRESETS = {
-  usage: {
-    "Low (1–2 ppl)": { Vd:80, draws:12 },
-    "Med (3–4 ppl)": { Vd:130, draws:18 },
-    "High (5–6 ppl)":{ Vd:180, draws:24 },
+const PRE={
+  usage:{
+    "Low (1–2 ppl)":{Vd:80,dr:12},
+    "Med (3–4 ppl)":{Vd:130,dr:18},
+    "High (5–6 ppl)":{Vd:180,dr:24}
   },
-  mains: { "Winter":8, "Spring/Autumn":12, "Summer":16 },
-  layout: { "Central":0.35, "Typical":0.7, "Remote":1.2 }, // L per draw
-  system: {
-    "Stored Gold (Worcester+Mixergy)":{
-      type:"stored", standby:1.0, ctrl:0.95, Tret:48,
-      comfort:92,future:95,maint:85
-    },
-    "Stored Standard":{
-      type:"stored", standby:1.4, ctrl:1.0, Tret:52,
-      comfort:88,future:80,maint:82
-    },
-    "Combi Standard":{
-      type:"combi", start:0.01, scale:1.05, Tret:55,
-      comfort:72,future:50,maint:70
-    },
-    "Combi Premium":{
-      type:"combi", start:0.008, scale:1.0, Tret:52,
-      comfort:78,future:55,maint:78
-    }
+  mains:{"Winter":8,"Spring/Autumn":12,"Summer":16},
+  layout:{"Central":0.35,"Typical":0.7,"Remote":1.2},
+  system:{
+    "Stored Gold (Worcester+Mixergy)":{t:"s",sb:1,cf:0.95,Tr:48,C:92,F:95,M:85},
+    "Stored Standard":{t:"s",sb:1.4,cf:1,Tr:52,C:88,F:80,M:82},
+    "Combi Standard":{t:"c",st:0.01,sc:1.05,Tr:55,C:72,F:50,M:70},
+    "Combi Premium":{t:"c",st:0.008,sc:1,Tr:52,C:78,F:55,M:78}
   },
-  price:{ gas:0.07, water:0.0003 },
-  weights:{ energy:3,cost:5,comfort:4,future:4,maintenance:2 },
+  price:{gas:0.07,water:0.0003},
+  weights:{energy:3,cost:5,comfort:4,future:4,maintenance:2},
   Tuse:40
 };
 
-const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
-const rnd=(n,d=2)=>Math.round(n*10**d)/10**d;
-function etaFromReturn(T){ return T<=30?0.98:T>=55?0.88:0.98-0.004*(T-30); }
-function invU(val,best){ return clamp(100*(best/val),10,100); }
-
-function baseCompute({usage,mains,layout,system,price}){
-  const U=PRESETS.usage[usage], M=PRESETS.mains[mains],
-        L=PRESETS.layout[layout], S=PRESETS.system[system];
-  const P={...PRESETS.price,...price};
-  const Tu=PRESETS.Tuse, Tm=M;
-  const Euse = U.Vd*CP_KWH_PER_LK*(Tu-Tm);
-  const Vwait = L*U.draws;
-  const Ewait = Vwait*CP_KWH_PER_LK*(Tu-Tm);
-  const eta = etaFromReturn(S.Tret);
-
-  let EkWh, cost, standby=0, starts=0;
-  if(S.type==="stored"){
-    const Egas=((Euse+Ewait)/eta)*S.ctrl;
-    standby=S.standby; EkWh=Egas+standby;
-    cost = EkWh*P.gas + Vwait*P.water;
-  } else {
-    const etaEff = eta/(S.scale||1.0);
-    starts = U.draws;
-    const Eover = starts*(S.start||0.01);
-    EkWh = ((Euse+Ewait)/etaEff) + Eover;
-    cost = EkWh*P.gas + Vwait*P.water;
+function baseCalc({usage,mains,layout,system,price}){
+  const U=PRE.usage[usage];
+  const M=PRE.mains[mains];
+  const L=PRE.layout[layout];
+  const S=PRE.system[system];
+  const Tu=PRE.Tuse;
+  const Tm=M;
+  const Eu=U.Vd*CP*(Tu-Tm);
+  const Vw=L*U.dr;
+  const Ew=Vw*CP*(Tu-Tm);
+  const eta=etaFromReturn(S.Tr);
+  let E=0, cost=0, standby=0, starts=0;
+  if(S.t==="s"){
+    const Eg=((Eu+Ew)/eta)*S.cf;
+    standby=S.sb||0;
+    E=Eg+standby;
+    cost=E*price.gas+Vw*price.water;
+  }else{
+    const etaEff=eta/(S.sc||1);
+    starts=U.dr;
+    const Eover=starts*(S.st||0.01);
+    E=((Eu+Ew)/etaEff)+Eover;
+    cost=E*price.gas+Vw*price.water;
   }
-
   return {
-    selections:{usage,mains,layout,system},
-    kWh_day:rnd(EkWh,3),
-    cost_day:rnd(cost,2),
-    kWh_year:Math.round(EkWh*365),
-    cost_year:Math.round(cost*365),
-    wasteL_day:rnd(Vwait,1),
-    breakdown:{E_use:rnd(Euse,3),E_wait:rnd(Ewait,3),standby:rnd(standby,3),eta:rnd(eta,3),starts}
+    energy:E,
+    cost,
+    waitLitres:Vw,
+    breakdown:{Eu,Ew,standby,eta,starts}
   };
 }
 
-function compute({usage,mains,layout,system,price,weights}){
-  const P={...PRESETS.price,...price};
-  const W={...PRESETS.weights,...weights};
-
-  const result = baseCompute({usage,mains,layout,system,price:P});
-  const refGold = baseCompute({usage,mains,layout,system:"Stored Gold (Worcester+Mixergy)",price:P});
-  const refCombi= baseCompute({usage,mains,layout,system:"Combi Premium",price:P});
-  const bestkWh = Math.min(refGold.kWh_day, refCombi.kWh_day);
-  const bestCost = Math.min(refGold.cost_day, refCombi.cost_day);
-
-  const Ue = invU(result.kWh_day, bestkWh);
-  const Up = invU(result.cost_day, bestCost);
-  const comfortPenalty = layout==="Central"?0:layout==="Typical"?6:12;
-  const S=PRESETS.system[system];
-  const Uc = clamp((S.comfort||75)-comfortPenalty,10,100);
-  const Uf = clamp(S.future||60,10,100);
-  const Um = clamp(S.maint||70,10,100);
-  const score = (W.energy*Ue + W.cost*Up + W.comfort*Uc + W.future*Uf + W.maintenance*Um) /
-                (W.energy + W.cost + W.comfort + W.future + W.maintenance);
-
+function compute(state){
+  const price={gas:state.pgas,water:state.pw};
+  const base=baseCalc({usage:state.u,mains:state.m,layout:state.l,system:state.s,price});
+  const refGold=baseCalc({usage:state.u,mains:state.m,layout:state.l,system:"Stored Gold (Worcester+Mixergy)",price});
+  const refCombi=baseCalc({usage:state.u,mains:state.m,layout:state.l,system:"Combi Premium",price});
+  const bestEnergy=Math.min(refGold.energy,refCombi.energy);
+  const bestCost=Math.min(refGold.cost,refCombi.cost);
+  const W=state.w;
+  const Ue=invUtility(base.energy,bestEnergy);
+  const Up=invUtility(base.cost,bestCost);
+  const layoutPenalty=state.l==="Central"?0:state.l==="Typical"?6:12;
+  const S=PRE.system[state.s];
+  const Uc=clamp((S.C||75)-layoutPenalty,10,100);
+  const Uf=clamp(S.F||60,10,100);
+  const Um=clamp(S.M||70,10,100);
+  const totalW=W.e+W.c+W.C+W.F+W.M;
+  const score=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/Math.max(totalW,1);
   return {
-    ...result,
-    utilities:{energy:Math.round(Ue),cost:Math.round(Up),comfort:Math.round(Uc),future:Math.round(Uf),maint:Math.round(Um),score:Math.round(score)}
+    totals:base,
+    utilities:{
+      energy:Math.round(Ue),
+      cost:Math.round(Up),
+      comfort:Math.round(Uc),
+      future:Math.round(Uf),
+      maintenance:Math.round(Um),
+      score:Math.round(score)
+    }
   };
 }
 
-/* ====== UI WIRING ====== */
-const $ = s => document.querySelector(s);
-const els = {
-  usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), system:$('#system'),
-  gas:$('#gas'), water:$('#water'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
-  kwhDay:$('#kwhDay'), kwhYear:$('#kwhYear'), costDay:$('#costDay'), costYear:$('#costYear'),
-  wasteL:$('#wasteL'), score:$('#score'), uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
-  eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
-  echo:$('#echo'), status:$('#status')
-};
+const $=sel=>document.querySelector(sel);
 
 function getState(){
   return {
-    usage:els.usage.value,
-    mains:els.mains.value,
-    layout:els.layout.value,
-    system:els.system.value,
-    price:{gas:parseFloat(els.gas.value||"0.07"),water:parseFloat(els.water.value||"0.0003")},
-    weights:{comfort:parseInt(els.wC.value||"4",10),future:parseInt(els.wF.value||"4",10),maintenance:parseInt(els.wM.value||"2",10)}
+    u:$('#usage').value,
+    m:$('#mains').value,
+    l:$('#layout').value,
+    s:$('#system').value,
+    pgas:toNumber($('#gas').value,PRE.price.gas),
+    pw:toNumber($('#water').value,PRE.price.water),
+    w:{
+      e:toInteger($('#wE').value,PRE.weights.energy),
+      c:toInteger($('#wCost').value,PRE.weights.cost),
+      C:toInteger($('#wC').value,PRE.weights.comfort),
+      F:toInteger($('#wF').value,PRE.weights.future),
+      M:toInteger($('#wM').value,PRE.weights.maintenance)
+    }
   };
 }
 
-function apply(state){
-  const weightsMerged = {
-    energy:PRESETS.weights.energy,
-    cost:PRESETS.weights.cost,
-    comfort:state.weights.comfort,
-    future:state.weights.future,
-    maintenance:state.weights.maintenance
-  };
-  const r = compute({
-    usage:state.usage, mains:state.mains, layout:state.layout, system:state.system,
-    price:state.price, weights:weightsMerged
+function updateOutputs(state,computed){
+  const tot=computed.totals;
+  $('#kwhDay').textContent=round(tot.energy,3);
+  $('#kwhYear').textContent=`≈ ${Math.round(tot.energy*365)} kWh/yr`;
+  $('#costDay').textContent=tot.cost.toFixed(2);
+  $('#costYear').textContent=`≈ £${Math.round(tot.cost*365)} /yr`;
+  $('#wasteL').textContent=tot.waitLitres.toFixed(1);
+  $('#score').textContent=computed.utilities.score;
+  $('#uE').textContent=computed.utilities.energy;
+  $('#uP').textContent=computed.utilities.cost;
+  $('#uC').textContent=computed.utilities.comfort;
+  $('#uF').textContent=computed.utilities.future;
+  $('#uM').textContent=computed.utilities.maintenance;
+  $('#eUse').textContent=round(tot.breakdown.Eu,3);
+  $('#eWait').textContent=round(tot.breakdown.Ew,3);
+  $('#standby').textContent=round(tot.breakdown.standby,3);
+  $('#eta').textContent=round(tot.breakdown.eta,3);
+  $('#starts').textContent=tot.breakdown.starts;
+  $('#echo').textContent=`${state.u} • ${state.m} • ${state.l} • ${state.s}`;
+}
+
+function refresh(){
+  const s=getState();
+  const c=compute(s);
+  updateOutputs(s,c);
+  return {state:s,computed:c};
+}
+
+function setSlider(id,val){
+  const el=$(`#${id}`);
+  if(!el) return;
+  el.value=val;
+  const out=$(`#${id}Val`);
+  if(out) out.textContent=val;
+}
+
+function applyState(s){
+  $('#usage').value=s.u;
+  $('#mains').value=s.m;
+  $('#layout').value=s.l;
+  $('#system').value=s.s;
+  $('#gas').value=s.pgas;
+  $('#water').value=s.pw;
+  setSlider('wE',s.w.e);
+  setSlider('wCost',s.w.c);
+  setSlider('wC',s.w.C);
+  setSlider('wF',s.w.F);
+  setSlider('wM',s.w.M);
+  refresh();
+}
+
+function preset(values){
+  const current=getState();
+  applyState({
+    ...current,
+    w:{
+      e:values.wE ?? current.w.e,
+      c:values.wCost ?? current.w.c,
+      C:values.wC ?? current.w.C,
+      F:values.wF ?? current.w.F,
+      M:values.wM ?? current.w.M
+    }
   });
-  els.kwhDay.textContent = r.kWh_day;
-  els.kwhYear.textContent = `≈ ${r.kWh_year} kWh / yr`;
-  els.costDay.textContent = r.cost_day.toFixed(2);
-  els.costYear.textContent = `≈ £${r.cost_year} / yr`;
-  els.wasteL.textContent = r.wasteL_day;
-  els.score.textContent = r.utilities.score;
-  els.uE.textContent = r.utilities.energy;
-  els.uP.textContent = r.utilities.cost;
-  els.uC.textContent = r.utilities.comfort;
-  els.uF.textContent = r.utilities.future;
-  els.uM.textContent = r.utilities.maint;
-  els.eUse.textContent = r.breakdown.E_use;
-  els.eWait.textContent = r.breakdown.E_wait;
-  els.standby.textContent = r.breakdown.standby;
-  els.eta.textContent = r.breakdown.eta;
-  els.starts.textContent = r.breakdown.starts;
-  els.echo.textContent = `${r.selections.usage} • ${r.selections.mains} • ${r.selections.layout} • ${r.selections.system}`;
-  return r;
 }
 
-// copy helpers
-async function copyText(txt){
-  try{ await navigator.clipboard.writeText(txt); status("Copied!"); }
-  catch{ status("Copy failed"); }
-}
-function status(msg){ els.status.textContent=msg; setTimeout(()=>els.status.textContent="",1500); }
-
-// shareable link (hash params)
-function toHash(state){
+function toParams(state){
   const p=new URLSearchParams();
-  p.set("u",state.usage); p.set("m",state.mains); p.set("l",state.layout); p.set("s",state.system);
-  p.set("g",state.price.gas); p.set("w",state.price.water);
-  p.set("c",state.weights.comfort); p.set("f",state.weights.future); p.set("mm",state.weights.maintenance);
-  return "#"+p.toString();
+  p.set('u',state.u);
+  p.set('m',state.m);
+  p.set('l',state.l);
+  p.set('s',state.s);
+  p.set('g',state.pgas);
+  p.set('w',state.pw);
+  p.set('we',state.w.e);
+  p.set('wc',state.w.c);
+  p.set('c',state.w.C);
+  p.set('f',state.w.F);
+  p.set('mm',state.w.M);
+  return p;
 }
-function fromHash(){
+
+function fromParams(){
+  if(!location.hash) return null;
   const q=new URLSearchParams(location.hash.slice(1));
-  if(!q.has("u")) return;
-  els.usage.value=q.get("u")||els.usage.value;
-  els.mains.value=q.get("m")||els.mains.value;
-  els.layout.value=q.get("l")||els.layout.value;
-  els.system.value=q.get("s")||els.system.value;
-  els.gas.value=q.get("g")||els.gas.value;
-  els.water.value=q.get("w")||els.water.value;
-  els.wC.value=q.get("c")||els.wC.value;
-  els.wF.value=q.get("f")||els.wF.value;
-  els.wM.value=q.get("mm")||els.wM.value;
+  if(!q.has('u')) return null;
+  return {
+    u:q.get('u')||$('#usage').value,
+    m:q.get('m')||$('#mains').value,
+    l:q.get('l')||$('#layout').value,
+    s:q.get('s')||$('#system').value,
+    pgas:toNumber(q.get('g'),toNumber($('#gas').value,PRE.price.gas)),
+    pw:toNumber(q.get('w'),toNumber($('#water').value,PRE.price.water)),
+    w:{
+      e:toInteger(q.get('we'),toInteger($('#wE').value,PRE.weights.energy)),
+      c:toInteger(q.get('wc'),toInteger($('#wCost').value,PRE.weights.cost)),
+      C:toInteger(q.get('c'),toInteger($('#wC').value,PRE.weights.comfort)),
+      F:toInteger(q.get('f'),toInteger($('#wF').value,PRE.weights.future)),
+      M:toInteger(q.get('mm'),toInteger($('#wM').value,PRE.weights.maintenance))
+    }
+  };
 }
 
-// events
-$('#recalc').addEventListener('click',()=>{ const r=apply(getState()); history.replaceState(null,"",toHash(getState())); });
-$('#copy').addEventListener('click',()=>{ const r=apply(getState()); copyText(JSON.stringify(r,null,2)); });
-$('#link').addEventListener('click',()=>{ const s=getState(); const h=toHash(s); history.replaceState(null,"",h); copyText(location.href); });
+async function copyText(txt){
+  try{
+    await navigator.clipboard.writeText(txt);
+  }catch(err){
+    console.error('Copy failed',err);
+  }
+}
 
-// init
-fromHash(); apply(getState());
+$('#presetBudget').addEventListener('click',()=>preset({wE:3,wCost:8,wC:2,wF:2,wM:2}));
+$('#presetComfort').addEventListener('click',()=>preset({wE:3,wCost:3,wC:8,wF:3,wM:3}));
+$('#presetFuture').addEventListener('click',()=>preset({wE:5,wCost:4,wC:3,wF:8,wM:2}));
+$('#presetReset').addEventListener('click',()=>preset({wE:3,wCost:5,wC:4,wF:4,wM:2}));
+$('#copy').addEventListener('click',()=>{
+  const {computed}=refresh();
+  copyText(JSON.stringify({
+    energy_kWh_day:round(computed.totals.energy,3),
+    cost_per_day:round(computed.totals.cost,2),
+    wait_litres_day:round(computed.totals.waitLitres,1),
+    breakdown:{
+      useful_kWh_day:round(computed.totals.breakdown.Eu,3),
+      waiting_kWh_day:round(computed.totals.breakdown.Ew,3),
+      standby_kWh_day:round(computed.totals.breakdown.standby,3),
+      eta:round(computed.totals.breakdown.eta,3),
+      starts:computed.totals.breakdown.starts
+    },
+    utilities:computed.utilities
+  },null,2));
+});
+$('#link').addEventListener('click',()=>{
+  const {state}=refresh();
+  const params=toParams(state);
+  const url=`${location.origin}${location.pathname}#${params.toString()}`;
+  history.replaceState(null,'',`#${params.toString()}`);
+  copyText(url);
+});
+
+for(const input of document.querySelectorAll('input,select')){
+  input.addEventListener('input',evt=>{
+    if(evt.target.type==='range'){
+      const out=$(`#${evt.target.id}Val`);
+      if(out) out.textContent=evt.target.value;
+    }
+    refresh();
+  });
+}
+
+const initial=fromParams();
+if(initial){
+  applyState(initial);
+}else{
+  refresh();
+}
 </script>
 </body>
 </html>
