@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hot Water Model — Full Scope & Printable</title>
+<title>Hot Water Model — Full Scope & Printable (ASCII-safe)</title>
 <style>
   :root{--fg:#111;--bg:#fff;--muted:#666;--b:#e5e7eb;--pri:#0b84ff}
   *{box-sizing:border-box}
@@ -35,7 +35,7 @@
   th{background:#fafafa}
   .right{text-align:right}
   .badge{display:inline-block;padding:2px 6px;border:1px solid var(--b);border-radius:999px;font-size:12px;color:#444}
-  /* Print-friendly */
+  .errorbar{display:none;background:#fee;border:1px solid #fbb;color:#900;padding:8px;border-radius:8px;margin:12px 0}
   @media print{
     header,.no-print{display:none!important}
     body{background:#fff}
@@ -52,11 +52,14 @@
   <h1>Hot Water Model — Full Scope</h1>
   <span class="muted">Physics • Cost • Customer-weighted score • Printable</span>
   <div style="margin-left:auto" class="actions">
+    <button onclick="window.location.href='welcome.html'">← Back to Welcome</button>
     <button onclick="window.print()">🖨️ Print</button>
   </div>
 </header>
 
 <div class="wrap">
+  <div id="errorbar" class="errorbar"></div>
+
   <div class="card no-print">
     <h2>Inputs</h2>
     <div class="grid">
@@ -93,23 +96,22 @@
     <div class="card" style="margin-top:12px">
       <div class="sub">Adjust what matters most:</div>
       <div class="grid" style="margin-top:8px">
-        <div class="slrow"><label style="flex:1">🔋 Energy</label><input id="wE" type="range" min="0" max="10" step="1" value="3" oninput="wEVal.value=this.value"><output id="wEVal">3</output></div>
-        <div class="slrow"><label style="flex:1">💷 Cost</label><input id="wCost" type="range" min="0" max="10" step="1" value="5" oninput="wCostVal.value=this.value"><output id="wCostVal">5</output></div>
-        <div class="slrow"><label style="flex:1">🛁 Comfort</label><input id="wC" type="range" min="0" max="10" step="1" value="4" oninput="wCVal.value=this.value"><output id="wCVal">4</output></div>
-        <div class="slrow"><label style="flex:1">🌱 Future-proof</label><input id="wF" type="range" min="0" max="10" step="1" value="4" oninput="wFVal.value=this.value"><output id="wFVal">4</output></div>
-        <div class="slrow"><label style="flex:1">🔧 Maintenance</label><input id="wM" type="range" min="0" max="10" step="1" value="2" oninput="wMVal.value=this.value"><output id="wMVal">2</output></div>
+        <div class="slrow"><label style="flex:1">Energy</label><input id="wE" type="range" min="0" max="10" step="1" value="3" oninput="wEVal.value=this.value"><output id="wEVal">3</output></div>
+        <div class="slrow"><label style="flex:1">Cost</label><input id="wCost" type="range" min="0" max="10" step="1" value="5" oninput="wCostVal.value=this.value"><output id="wCostVal">5</output></div>
+        <div class="slrow"><label style="flex:1">Comfort</label><input id="wC" type="range" min="0" max="10" step="1" value="4" oninput="wCVal.value=this.value"><output id="wCVal">4</output></div>
+        <div class="slrow"><label style="flex:1">Future-proof</label><input id="wF" type="range" min="0" max="10" step="1" value="4" oninput="wFVal.value=this.value"><output id="wFVal">4</output></div>
+        <div class="slrow"><label style="flex:1">Maintenance</label><input id="wM" type="range" min="0" max="10" step="1" value="2" oninput="wMVal.value=this.value"><output id="wMVal">2</output></div>
       </div>
       <div class="actions" style="margin-top:10px">
-        <button id="presetBudget">💰 Budget-led</button>
-        <button id="presetComfort">🛁 Comfort-led</button>
-        <button id="presetFuture">🌱 Future-ready</button>
-        <button id="presetReset">♻️ Reset</button>
+        <button id="presetBudget">Budget-led</button>
+        <button id="presetComfort">Comfort-led</button>
+        <button id="presetFuture">Future-ready</button>
+        <button id="presetReset">Reset</button>
         <button id="recalc" class="primary">Recalculate</button>
       </div>
     </div>
   </div>
 
-  <!-- Summary for currently highlighted system (you can toggle which one) -->
   <div class="card" id="focusCard">
     <h2>Focused view <span id="focusName" class="badge"></span></h2>
     <div class="kpi">
@@ -125,7 +127,7 @@
         <div>Useful <b id="eUse">—</b> kWh/day</div>
         <div>Waiting <b id="eWait">—</b> kWh/day</div>
         <div>Standby <b id="standby">—</b> kWh/day</div>
-        <div>η <b id="eta">—</b> • Starts <b id="starts">—</b></div>
+        <div>Boiler eta <b id="eta">—</b> • Starts <b id="starts">—</b></div>
       </div>
       <div class="pill"><div class="muted">Selections</div>
         <div id="echo">—</div>
@@ -136,7 +138,6 @@
     </div>
   </div>
 
-  <!-- Compare All Systems -->
   <div class="card" id="compareCard">
     <h2>Compare all systems</h2>
     <div class="sub">Sorted by Customer score (highest first). Click a row to focus.</div>
@@ -149,7 +150,7 @@
             <th class="right">£/day</th>
             <th class="right">Waste L/day</th>
             <th class="right">Score</th>
-            <th class="right">η</th>
+            <th class="right">eta</th>
             <th class="right">Standby</th>
           </tr>
         </thead>
@@ -162,113 +163,134 @@
 </div>
 
 <script type="module">
-/* === MODEL CORE === */
-const CP=0.001163,cl=(v,a,b)=>Math.max(a,Math.min(b,v)),rd=(n,d=2)=>Math.round(n*10**d)/10**d;
-const eta=t=>t<=30?0.98:t>=55?0.88:0.98-0.004*(t-30),invU=(v,b)=>cl(100*(b/v),10,100);
+/* === MODEL CORE (ASCII identifiers only) === */
+const CP = 0.001163;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const round = (n,d=2)=>Math.round(n*10**d)/10**d;
+const etaFromReturn = t => (t<=30?0.98 : t>=55?0.88 : 0.98 - 0.004*(t-30));
+const invUtility = (val,best)=>clamp(100*(best/val),10,100);
 
-/* Snap-to presets */
-const PRE={
-  usage:{"Low (1–2 ppl)":{Vd:80,dr:12},"Med (3–4 ppl)":{Vd:130,dr:18},"High (5–6 ppl)":{Vd:180,dr:24}},
-  mains:{"Winter":8,"Spring/Autumn":12,"Summer":16},
-  layout:{"Central":.35,"Typical":.7,"Remote":1.2}, // L per draw
-  /* Systems — full scope + both Mixergy variants. t: 's' stored, 'c' combi */
-  systems: {
-    "Regular • Open CH + Open-vented cyl":      {t:"s", sb:1.8, cf:1.00, Tr:54, C:86, F:65, M:72},
-    "Regular • Sealed CH + Open-vented cyl":    {t:"s", sb:1.7, cf:1.00, Tr:52, C:87, F:70, M:74},
-    "Regular • Open CH + Unvented cyl":         {t:"s", sb:1.5, cf:1.00, Tr:52, C:88, F:82, M:80},
-    "Regular • Sealed CH + Unvented cyl":       {t:"s", sb:1.4, cf:1.00, Tr:50, C:89, F:84, M:82},
-
-    "System • Open-vented cyl":                 {t:"s", sb:1.6, cf:1.00, Tr:51, C:90, F:75, M:78},
-    "System • Unvented cyl":                    {t:"s", sb:1.3, cf:1.00, Tr:49, C:91, F:86, M:84},
-
-    "System • Mixergy Unvented (indirect)":     {t:"s", sb:1.0, cf:.95, Tr:48, C:92, F:95, M:85},
-    "System • Mixergy Vented (open-vented)":    {t:"s", sb:1.1, cf:.96, Tr:49, C:91, F:88, M:83},
-
-    /* Optional combi baselines for context */
-    "Combi • Standard":                         {t:"c", st:.01, sc:1.05, Tr:55, C:72, F:50, M:70},
-    "Combi • Premium (conditioned/central)":    {t:"c", st:.008, sc:1.00, Tr:52, C:78, F:55, M:78},
+// Snap-to presets
+const PRE = {
+  usage: {
+    "Low (1–2 ppl)": { Vd:80, draws:12 },
+    "Med (3–4 ppl)": { Vd:130, draws:18 },
+    "High (5–6 ppl)": { Vd:180, draws:24 }
   },
-  Tuse:40,
-  price:{ gas:.07, water:.0003 },
-  defaultWeights:{ e:3, c:5, C:4, F:4, M:2 }
+  mains: { "Winter":8, "Spring/Autumn":12, "Summer":16 },
+  layout: { "Central":0.35, "Typical":0.7, "Remote":1.2 }, // L per draw
+  systems: {
+    // Regular + cylinder variants
+    "Regular • Open CH + Open-vented cyl":      { kind:"stored", standby:1.8, ctrl:1.00, Tret:54, comfort:86, future:65, maint:72 },
+    "Regular • Sealed CH + Open-vented cyl":    { kind:"stored", standby:1.7, ctrl:1.00, Tret:52, comfort:87, future:70, maint:74 },
+    "Regular • Open CH + Unvented cyl":         { kind:"stored", standby:1.5, ctrl:1.00, Tret:52, comfort:88, future:82, maint:80 },
+    "Regular • Sealed CH + Unvented cyl":       { kind:"stored", standby:1.4, ctrl:1.00, Tret:50, comfort:89, future:84, maint:82 },
+    // System + cylinder variants
+    "System • Open-vented cyl":                 { kind:"stored", standby:1.6, ctrl:1.00, Tret:51, comfort:90, future:75, maint:78 },
+    "System • Unvented cyl":                    { kind:"stored", standby:1.3, ctrl:1.00, Tret:49, comfort:91, future:86, maint:84 },
+    // Mixergy (both types)
+    "System • Mixergy Unvented (indirect)":     { kind:"stored", standby:1.0, ctrl:0.95, Tret:48, comfort:92, future:95, maint:85 },
+    "System • Mixergy Vented (open-vented)":    { kind:"stored", standby:1.1, ctrl:0.96, Tret:49, comfort:91, future:88, maint:83 },
+    // Combi baselines (context)
+    "Combi • Standard":                         { kind:"combi", start:0.01, scale:1.05, Tret:55, comfort:72, future:50, maint:70 },
+    "Combi • Premium (conditioned/central)":    { kind:"combi", start:0.008, scale:1.00, Tret:52, comfort:78, future:55, maint:78 }
+  },
+  Tuse: 40,
+  price: { gas:0.07, water:0.0003 },
+  defaultWeights: { wE:3, wCost:5, wC:4, wF:4, wM:2 }
 };
 
-/* Core calc for one system */
-function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices, weights}){
-  const U=PRE.usage[usageKey], M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
-  const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
-  const Eu = U.Vd*CP*(Tu-Tm);          // useful kWh/day
-  const Vw = L*U.dr;                   // waiting water L/day
-  const Ew = Vw*CP*(Tu-Tm);            // waiting heat kWh/day
-  const η  = eta(S.Tr);
+// Calculate one system
+function calcOne({sysKey, usageKey, mainsKey, layoutKey, prices}){
+  const U = PRE.usage[usageKey];
+  const M = PRE.mains[mainsKey];
+  const L = PRE.layout[layoutKey];
+  const S = PRE.systems[sysKey];
+  const Tuse = PRE.Tuse, Tmains = M;
 
-  let E, GBP, standby=0, starts=0;
-  if(S.t==="s"){                       // stored
-    const Egas=((Eu+Ew)/η)*S.cf;
-    standby=S.sb; E=Egas+standby;
-    GBP = E*pgas + Vw*pw;
-  }else{                                // combi
-    const ηe=η/(S.sc||1);
-    starts = U.dr;
-    const Eover = starts*(S.st||.01);
-    E = ((Eu+Ew)/ηe) + Eover;
-    GBP = E*pgas + Vw*pw;
+  const E_use  = U.Vd * CP * (Tuse - Tmains);
+  const V_wait = L * U.draws;
+  const E_wait = V_wait * CP * (Tuse - Tmains);
+  const etaVal = etaFromReturn(S.Tret);
+
+  let E_total, GBP, standby = 0, starts = 0;
+  if (S.kind === "stored"){
+    const E_gas = ((E_use + E_wait) / etaVal) * S.ctrl;
+    standby = S.standby;
+    E_total = E_gas + standby;
+    GBP = E_total * prices.gas + V_wait * prices.water;
+  } else {
+    const etaEff = etaVal / (S.scale || 1.0);
+    starts = U.draws;
+    const E_over = starts * (S.start || 0.01);
+    E_total = ((E_use + E_wait) / etaEff) + E_over;
+    GBP = E_total * prices.gas + V_wait * prices.water;
   }
 
   return {
     sysKey, usageKey, mainsKey, layoutKey,
-    kWh: rd(E,3),
-    cost: rd(GBP,2),
-    kWh_year: Math.round(E*365),
+    kWh: round(E_total,3),
+    cost: round(GBP,2),
+    kWh_year: Math.round(E_total*365),
     cost_year: Math.round(GBP*365),
-    wasteL: rd(Vw,1),
-    breakdown: { E_use: rd(Eu,3), E_wait: rd(Ew,3), standby: rd(standby,3), eta: rd(η,3), starts }
+    wasteL: round(V_wait,1),
+    breakdown: {
+      E_use: round(E_use,3),
+      E_wait: round(E_wait,3),
+      standby: round(standby,3),
+      eta: round(etaVal,3),
+      starts
+    }
   };
 }
 
-/* Utilities & scoring for ALL systems relative to “best-of-two” reference */
+// Score relative to reference baselines (best-of-two)
 function scoreAll(results, weights){
-  // Reference best among Mixergy Unvented vs Combi Premium for energy & cost baselines:
   const refKeys = ["System • Mixergy Unvented (indirect)", "Combi • Premium (conditioned/central)"];
-  const refs = results.filter(r=>refKeys.includes(r.sysKey));
-  const bestkWh = Math.min(...refs.map(r=>r.kWh));
-  const best£   = Math.min(...refs.map(r=>r.cost));
+  const refs = results.filter(r => refKeys.includes(r.sysKey));
+  const bestKWh = Math.min(...refs.map(r => r.kWh));
+  const bestGBP = Math.min(...refs.map(r => r.cost));
 
-  return results.map(r=>{
-    const S=PRE.systems[r.sysKey];
-    const pen = r.layoutKey==="Central"?0 : r.layoutKey==="Typical"?6 : 12;
-    const Ue = invU(r.kWh, bestkWh);
-    const Up = invU(r.cost, best£);
-    const Uc = cl((S.C||75)-pen,10,100);
-    const Uf = cl(S.F||60,10,100);
-    const Um = cl(S.M||70,10,100);
+  return results.map(r => {
+    const S = PRE.systems[r.sysKey];
+    const penalty = r.layoutKey==="Central" ? 0 : (r.layoutKey==="Typical" ? 6 : 12);
+    const Ue = invUtility(r.kWh, bestKWh);
+    const Up = invUtility(r.cost, bestGBP);
+    const Uc = clamp((S.comfort||75) - penalty, 10, 100);
+    const Uf = clamp(S.future||60, 10, 100);
+    const Um = clamp(S.maint||70, 10, 100);
     const W  = weights;
-    const score = (W.e*Ue + W.c*Up + W.C*Uc + W.F*Uf + W.M*Um) / (W.e+W.c+W.C+W.F+W.M);
-    return {...r, utilities:{ Ue:Math.round(Ue), Up:Math.round(Up), Uc:Math.round(Uc), Uf:Math.round(Uf), Um:Math.round(Um), score:Math.round(score) }};
+    const score =
+      (W.wE*Ue + W.wCost*Up + W.wC*Uc + W.wF*Uf + W.wM*Um) /
+      (W.wE + W.wCost + W.wC + W.wF + W.wM);
+    return { ...r, utilities: {
+      Ue: Math.round(Ue), Up: Math.round(Up), Uc: Math.round(Uc),
+      Uf: Math.round(Uf), Um: Math.round(Um), score: Math.round(score)
+    }};
   });
 }
 
-/* ===== UI Wiring ===== */
-const $=s=>document.querySelector(s);
-const els={
+/* === UI wiring & error guard === */
+const $ = s => document.querySelector(s);
+const els = {
   usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
-  // Focused view
   focusName:$('#focusName'),
   kwhDay:$('#kwhDay'), kwhYear:$('#kwhYear'),
   costDay:$('#costDay'), costYear:$('#costYear'),
   wasteL:$('#wasteL'), score:$('#score'),
   uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
   eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
-  echo:$('#echo'),
-  compareBody:$('#compareBody'),
-  copyBtn:$('#copy'),
-  recalcBtn:$('#recalc'),
-  presetBudget:$('#presetBudget'),
-  presetComfort:$('#presetComfort'),
-  presetFuture:$('#presetFuture'),
-  presetReset:$('#presetReset')
+  echo:$('#echo'), compareBody:$('#compareBody'), copyBtn:$('#copy'),
+  recalcBtn:$('#recalc'), presetBudget:$('#presetBudget'),
+  presetComfort:$('#presetComfort'), presetFuture:$('#presetFuture'), presetReset:$('#presetReset'),
+  errorbar:$('#errorbar')
 };
+
+function showError(msg){
+  els.errorbar.textContent = "Error: " + msg;
+  els.errorbar.style.display = 'block';
+}
 
 function getState(){
   return {
@@ -277,49 +299,52 @@ function getState(){
     layoutKey: els.layout.value,
     prices: { gas: parseFloat(els.gas.value||"0.07"), water: 0.0003 },
     weights: {
-      e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value
+      wE:+els.wE.value, wCost:+els.wCost.value, wC:+els.wC.value, wF:+els.wF.value, wM:+els.wM.value
     }
   };
 }
 
 function runAll(){
-  const st = getState();
-  const results = Object.keys(PRE.systems).map(sysKey =>
-    calcOne({sysKey, ...st})
-  );
-  const scored = scoreAll(results, st.weights)
-    .sort((a,b)=>b.utilities.score - a.utilities.score);
+  try{
+    els.errorbar.style.display='none';
+    const st = getState();
+    const results = Object.keys(PRE.systems).map(sysKey => calcOne({sysKey, ...st}));
+    const scored = scoreAll(results, st.weights).sort((a,b)=>b.utilities.score - a.utilities.score);
 
-  // Fill compare table
-  els.compareBody.innerHTML = scored.map(r=>`
-    <tr data-sys="${r.sysKey}">
-      <td>${r.sysKey}</td>
-      <td class="right">${r.kWh}</td>
-      <td class="right">£${r.cost.toFixed(2)}</td>
-      <td class="right">${r.wasteL}</td>
-      <td class="right"><b>${r.utilities.score}</b></td>
-      <td class="right">${r.breakdown.eta}</td>
-      <td class="right">${r.breakdown.standby}</td>
-    </tr>
-  `).join('');
+    // Fill table
+    els.compareBody.innerHTML = scored.map(r=>`
+      <tr data-sys="${r.sysKey}">
+        <td>${r.sysKey}</td>
+        <td class="right">${r.kWh}</td>
+        <td class="right">£${r.cost.toFixed(2)}</td>
+        <td class="right">${r.wasteL}</td>
+        <td class="right"><b>${r.utilities.score}</b></td>
+        <td class="right">${r.breakdown.eta}</td>
+        <td class="right">${r.breakdown.standby}</td>
+      </tr>
+    `).join('');
 
-  // Row click to focus
-  for(const tr of els.compareBody.querySelectorAll('tr')){
-    tr.onclick = ()=> focus(scored.find(x=>x.sysKey===tr.dataset.sys));
+    // Row click to focus
+    for(const tr of els.compareBody.querySelectorAll('tr')){
+      tr.onclick = ()=> focus(scored.find(x=>x.sysKey===tr.dataset.sys));
+    }
+
+    // Focus top result
+    focus(scored[0]);
+    return {scored, st};
+  }catch(e){
+    console.error(e);
+    showError(e.message || String(e));
   }
-
-  // Focus top result by default
-  focus(scored[0]);
-  return {scored, st};
 }
 
 function focus(r){
   if(!r) return;
   els.focusName.textContent = r.sysKey;
   els.kwhDay.textContent    = r.kWh;
-  els.kwhYear.textContent   = `≈ ${r.kWh_year} kWh / yr`;
+  els.kwhYear.textContent   = "≈ " + r.kWh_year + " kWh / yr";
   els.costDay.textContent   = r.cost.toFixed(2);
-  els.costYear.textContent  = `≈ £${r.cost_year} / yr`;
+  els.costYear.textContent  = "≈ £" + r.cost_year + " / yr";
   els.wasteL.textContent    = r.wasteL;
   els.score.textContent     = r.utilities.score;
   els.uE.textContent        = r.utilities.Ue;
@@ -332,10 +357,8 @@ function focus(r){
   els.standby.textContent   = r.breakdown.standby;
   els.eta.textContent       = r.breakdown.eta;
   els.starts.textContent    = r.breakdown.starts;
-  const echo = `${r.usageKey} • ${r.mainsKey} • ${r.layoutKey}`;
-  els.echo.textContent      = echo;
+  els.echo.textContent      = r.usageKey + " • " + r.mainsKey + " • " + r.layoutKey;
 
-  // Copy JSON for focused row
   els.copyBtn.onclick = ()=> navigator.clipboard.writeText(JSON.stringify(r, null, 2));
 }
 
