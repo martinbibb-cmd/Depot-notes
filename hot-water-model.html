@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hot Water Model — Standalone</title>
+<style>
+  :root{--fg:#111;--bg:#fff;--muted:#666;--b:#e5e7eb;--pri:#0b84ff}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu;color:var(--fg);background:var(--bg)}
+  header{padding:14px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:16px;margin:0}
+  .wrap{max-width:900px;margin:0 auto;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media (max-width:920px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:520px){.grid{grid-template-columns:1fr}}
+  label{font-weight:600;font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
+  select,input{width:100%;padding:8px 10px;border:1px solid var(--b);border-radius:8px;background:#fff}
+  .row{margin:10px 0 4px}
+  .card{border:1px solid var(--b);border-radius:12px;padding:14px}
+  .card h2{margin:0 0 8px;font-size:16px}
+  .card small{color:var(--muted)}
+  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+  @media(max-width:520px){.kpi{grid-template-columns:1fr}}
+  .pill{border:1px solid var(--b);border-radius:10px;padding:10px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  button{padding:9px 12px;border:1px solid var(--b);background:#fff;border-radius:10px;cursor:pointer}
+  button.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  .score{font:600 28px/1.1 system-ui;margin:4px 0}
+  .muted{color:var(--muted)}
+  footer{padding:16px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hot Water Model</h1>
+  <span class="muted">Physics • Cost • Customer score</span>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Inputs</h2>
+    <div class="grid">
+      <div>
+        <label>Usage</label>
+        <select id="usage">
+          <option>Low (1–2 ppl)</option>
+          <option selected>Med (3–4 ppl)</option>
+          <option>High (5–6 ppl)</option>
+        </select>
+      </div>
+      <div>
+        <label>Season (UK mains temp)</label>
+        <select id="mains">
+          <option>Winter</option>
+          <option selected>Spring/Autumn</option>
+          <option>Summer</option>
+        </select>
+      </div>
+      <div>
+        <label>Pipe layout (waiting water)</label>
+        <select id="layout">
+          <option selected>Central</option>
+          <option>Typical</option>
+          <option>Remote</option>
+        </select>
+      </div>
+      <div>
+        <label>System</label>
+        <select id="system">
+          <option selected>Stored Gold (Worcester+Mixergy)</option>
+          <option>Stored Standard</option>
+          <option>Combi Standard</option>
+          <option>Combi Premium</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Gas price ( £ / kWh )</label>
+        <input id="gas" type="number" step="0.001" value="0.07">
+      </div>
+      <div>
+        <label>Water price ( £ / L )</label>
+        <input id="water" type="number" step="0.00001" value="0.0003">
+      </div>
+      <div>
+        <label>Weights: Comfort</label>
+        <input id="wC" type="number" step="1" value="4">
+      </div>
+      <div>
+        <label>Weights: Future • Maint</label>
+        <div style="display:flex;gap:8px">
+          <input id="wF" type="number" step="1" value="4" style="flex:1">
+          <input id="wM" type="number" step="1" value="2" style="flex:1">
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="recalc">Recalculate</button>
+      <button id="copy">Copy JSON</button>
+      <button id="link">Copy Sharable Link</button>
+      <span class="muted" id="status"></span>
+    </div>
+  </div>
+
+  <div class="row"></div>
+
+  <div class="card" id="results">
+    <h2>Results</h2>
+    <div class="kpi">
+      <div class="pill">
+        <div class="muted">Energy</div>
+        <div><b id="kwhDay">—</b> kWh/day</div>
+        <small id="kwhYear">—</small>
+      </div>
+      <div class="pill">
+        <div class="muted">Running cost</div>
+        <div>£<b id="costDay">—</b> / day</div>
+        <small id="costYear">—</small>
+      </div>
+      <div class="pill">
+        <div class="muted">Waiting water</div>
+        <div><b id="wasteL">—</b> L / day</div>
+        <small>from layout + draws</small>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="pill">
+        <div class="muted">Customer score</div>
+        <div class="score" id="score">—</div>
+        <small>Energy&nbsp;<span id="uE">—</span> • Cost&nbsp;<span id="uP">—</span> • Comfort&nbsp;<span id="uC">—</span> • Future&nbsp;<span id="uF">—</span> • Maint&nbsp;<span id="uM">—</span></small>
+      </div>
+      <div class="pill">
+        <div class="muted">Breakdown</div>
+        <div>Useful heat: <b id="eUse">—</b> kWh/day</div>
+        <div>Waiting heat: <b id="eWait">—</b> kWh/day</div>
+        <div>Standby: <b id="standby">—</b> kWh/day</div>
+        <div>Boiler η (assumed): <b id="eta">—</b></div>
+        <div>Starts/day (combi): <b id="starts">—</b></div>
+      </div>
+      <div class="pill">
+        <div class="muted">Selections</div>
+        <div id="echo">—</div>
+        <small class="muted">Change any input and press Recalculate.</small>
+      </div>
+    </div>
+  </div>
+
+  <footer>© Hot Water Model — standalone build</footer>
+</div>
+
+<script type="module">
+/* ====== MODEL CORE (snap-to) ====== */
+const CP_KWH_PER_LK = 0.001163;
+
+const PRESETS = {
+  usage: {
+    "Low (1–2 ppl)": { Vd:80, draws:12 },
+    "Med (3–4 ppl)": { Vd:130, draws:18 },
+    "High (5–6 ppl)":{ Vd:180, draws:24 },
+  },
+  mains: { "Winter":8, "Spring/Autumn":12, "Summer":16 },
+  layout: { "Central":0.35, "Typical":0.7, "Remote":1.2 }, // L per draw
+  system: {
+    "Stored Gold (Worcester+Mixergy)":{
+      type:"stored", standby:1.0, ctrl:0.95, Tret:48,
+      comfort:92,future:95,maint:85
+    },
+    "Stored Standard":{
+      type:"stored", standby:1.4, ctrl:1.0, Tret:52,
+      comfort:88,future:80,maint:82
+    },
+    "Combi Standard":{
+      type:"combi", start:0.01, scale:1.05, Tret:55,
+      comfort:72,future:50,maint:70
+    },
+    "Combi Premium":{
+      type:"combi", start:0.008, scale:1.0, Tret:52,
+      comfort:78,future:55,maint:78
+    }
+  },
+  price:{ gas:0.07, water:0.0003 },
+  weights:{ energy:3,cost:5,comfort:4,future:4,maintenance:2 },
+  Tuse:40
+};
+
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const rnd=(n,d=2)=>Math.round(n*10**d)/10**d;
+function etaFromReturn(T){ return T<=30?0.98:T>=55?0.88:0.98-0.004*(T-30); }
+function invU(val,best){ return clamp(100*(best/val),10,100); }
+
+function baseCompute({usage,mains,layout,system,price}){
+  const U=PRESETS.usage[usage], M=PRESETS.mains[mains],
+        L=PRESETS.layout[layout], S=PRESETS.system[system];
+  const P={...PRESETS.price,...price};
+  const Tu=PRESETS.Tuse, Tm=M;
+  const Euse = U.Vd*CP_KWH_PER_LK*(Tu-Tm);
+  const Vwait = L*U.draws;
+  const Ewait = Vwait*CP_KWH_PER_LK*(Tu-Tm);
+  const eta = etaFromReturn(S.Tret);
+
+  let EkWh, cost, standby=0, starts=0;
+  if(S.type==="stored"){
+    const Egas=((Euse+Ewait)/eta)*S.ctrl;
+    standby=S.standby; EkWh=Egas+standby;
+    cost = EkWh*P.gas + Vwait*P.water;
+  } else {
+    const etaEff = eta/(S.scale||1.0);
+    starts = U.draws;
+    const Eover = starts*(S.start||0.01);
+    EkWh = ((Euse+Ewait)/etaEff) + Eover;
+    cost = EkWh*P.gas + Vwait*P.water;
+  }
+
+  return {
+    selections:{usage,mains,layout,system},
+    kWh_day:rnd(EkWh,3),
+    cost_day:rnd(cost,2),
+    kWh_year:Math.round(EkWh*365),
+    cost_year:Math.round(cost*365),
+    wasteL_day:rnd(Vwait,1),
+    breakdown:{E_use:rnd(Euse,3),E_wait:rnd(Ewait,3),standby:rnd(standby,3),eta:rnd(eta,3),starts}
+  };
+}
+
+function compute({usage,mains,layout,system,price,weights}){
+  const P={...PRESETS.price,...price};
+  const W={...PRESETS.weights,...weights};
+
+  const result = baseCompute({usage,mains,layout,system,price:P});
+  const refGold = baseCompute({usage,mains,layout,system:"Stored Gold (Worcester+Mixergy)",price:P});
+  const refCombi= baseCompute({usage,mains,layout,system:"Combi Premium",price:P});
+  const bestkWh = Math.min(refGold.kWh_day, refCombi.kWh_day);
+  const bestCost = Math.min(refGold.cost_day, refCombi.cost_day);
+
+  const Ue = invU(result.kWh_day, bestkWh);
+  const Up = invU(result.cost_day, bestCost);
+  const comfortPenalty = layout==="Central"?0:layout==="Typical"?6:12;
+  const S=PRESETS.system[system];
+  const Uc = clamp((S.comfort||75)-comfortPenalty,10,100);
+  const Uf = clamp(S.future||60,10,100);
+  const Um = clamp(S.maint||70,10,100);
+  const score = (W.energy*Ue + W.cost*Up + W.comfort*Uc + W.future*Uf + W.maintenance*Um) /
+                (W.energy + W.cost + W.comfort + W.future + W.maintenance);
+
+  return {
+    ...result,
+    utilities:{energy:Math.round(Ue),cost:Math.round(Up),comfort:Math.round(Uc),future:Math.round(Uf),maint:Math.round(Um),score:Math.round(score)}
+  };
+}
+
+/* ====== UI WIRING ====== */
+const $ = s => document.querySelector(s);
+const els = {
+  usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), system:$('#system'),
+  gas:$('#gas'), water:$('#water'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
+  kwhDay:$('#kwhDay'), kwhYear:$('#kwhYear'), costDay:$('#costDay'), costYear:$('#costYear'),
+  wasteL:$('#wasteL'), score:$('#score'), uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
+  eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
+  echo:$('#echo'), status:$('#status')
+};
+
+function getState(){
+  return {
+    usage:els.usage.value,
+    mains:els.mains.value,
+    layout:els.layout.value,
+    system:els.system.value,
+    price:{gas:parseFloat(els.gas.value||"0.07"),water:parseFloat(els.water.value||"0.0003")},
+    weights:{comfort:parseInt(els.wC.value||"4",10),future:parseInt(els.wF.value||"4",10),maintenance:parseInt(els.wM.value||"2",10)}
+  };
+}
+
+function apply(state){
+  const weightsMerged = {
+    energy:PRESETS.weights.energy,
+    cost:PRESETS.weights.cost,
+    comfort:state.weights.comfort,
+    future:state.weights.future,
+    maintenance:state.weights.maintenance
+  };
+  const r = compute({
+    usage:state.usage, mains:state.mains, layout:state.layout, system:state.system,
+    price:state.price, weights:weightsMerged
+  });
+  els.kwhDay.textContent = r.kWh_day;
+  els.kwhYear.textContent = `≈ ${r.kWh_year} kWh / yr`;
+  els.costDay.textContent = r.cost_day.toFixed(2);
+  els.costYear.textContent = `≈ £${r.cost_year} / yr`;
+  els.wasteL.textContent = r.wasteL_day;
+  els.score.textContent = r.utilities.score;
+  els.uE.textContent = r.utilities.energy;
+  els.uP.textContent = r.utilities.cost;
+  els.uC.textContent = r.utilities.comfort;
+  els.uF.textContent = r.utilities.future;
+  els.uM.textContent = r.utilities.maint;
+  els.eUse.textContent = r.breakdown.E_use;
+  els.eWait.textContent = r.breakdown.E_wait;
+  els.standby.textContent = r.breakdown.standby;
+  els.eta.textContent = r.breakdown.eta;
+  els.starts.textContent = r.breakdown.starts;
+  els.echo.textContent = `${r.selections.usage} • ${r.selections.mains} • ${r.selections.layout} • ${r.selections.system}`;
+  return r;
+}
+
+// copy helpers
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); status("Copied!"); }
+  catch{ status("Copy failed"); }
+}
+function status(msg){ els.status.textContent=msg; setTimeout(()=>els.status.textContent="",1500); }
+
+// shareable link (hash params)
+function toHash(state){
+  const p=new URLSearchParams();
+  p.set("u",state.usage); p.set("m",state.mains); p.set("l",state.layout); p.set("s",state.system);
+  p.set("g",state.price.gas); p.set("w",state.price.water);
+  p.set("c",state.weights.comfort); p.set("f",state.weights.future); p.set("mm",state.weights.maintenance);
+  return "#"+p.toString();
+}
+function fromHash(){
+  const q=new URLSearchParams(location.hash.slice(1));
+  if(!q.has("u")) return;
+  els.usage.value=q.get("u")||els.usage.value;
+  els.mains.value=q.get("m")||els.mains.value;
+  els.layout.value=q.get("l")||els.layout.value;
+  els.system.value=q.get("s")||els.system.value;
+  els.gas.value=q.get("g")||els.gas.value;
+  els.water.value=q.get("w")||els.water.value;
+  els.wC.value=q.get("c")||els.wC.value;
+  els.wF.value=q.get("f")||els.wF.value;
+  els.wM.value=q.get("mm")||els.wM.value;
+}
+
+// events
+$('#recalc').addEventListener('click',()=>{ const r=apply(getState()); history.replaceState(null,"",toHash(getState())); });
+$('#copy').addEventListener('click',()=>{ const r=apply(getState()); copyText(JSON.stringify(r,null,2)); });
+$('#link').addEventListener('click',()=>{ const s=getState(); const h=toHash(s); history.replaceState(null,"",h); copyText(location.href); });
+
+// init
+fromHash(); apply(getState());
+</script>
+</body>
+</html>
