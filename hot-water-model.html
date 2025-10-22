@@ -211,7 +211,7 @@
             <div>Heating input <b id="existHeatInput">—</b> kWh/day</div>
             <div>Heating delivered <b id="existHeatDelivered">—</b> kWh/day</div>
             <div>η <b id="existEta">—</b> • Starts <b id="existStarts">—</b></div>
-            <div class="muted" style="margin-top:6px">Keep £<span id="existCapex">—</span> • Payback <span id="existPayback">—</span></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="existPayback">—</span></div>
           </div>
         </div>
       </div>
@@ -243,7 +243,7 @@
             <div>Heating input <b id="likeHeatInput">—</b> kWh/day</div>
             <div>Heating delivered <b id="likeHeatDelivered">—</b> kWh/day</div>
             <div>η <b id="likeEta">—</b> • Starts <b id="likeStarts">—</b></div>
-            <div class="muted" style="margin-top:6px">Capex £<span id="likeCapex">—</span> • Payback <span id="likePayback">—</span></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="likePayback">—</span></div>
           </div>
         </div>
       </div>
@@ -278,7 +278,7 @@
             <div>Heating input <b id="focusHeatInput">—</b> kWh/day</div>
             <div>Heating delivered <b id="focusHeatDelivered">—</b> kWh/day</div>
             <div>η <b id="focusEta">—</b> • Starts <b id="focusStarts">—</b></div>
-            <div class="muted" style="margin-top:6px">Capex £<span id="focusCapex">—</span> • Payback <span id="focusPayback">—</span></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="focusPayback">—</span></div>
           </div>
         </div>
       </div>
@@ -299,7 +299,6 @@
             <th class="right nowrap">Score</th>
             <th class="right nowrap">η</th>
             <th class="right nowrap">Standby</th>
-            <th class="right nowrap">Capex £</th>
             <th class="right nowrap">Annual saving £/yr</th>
             <th class="right nowrap">Year-1 £</th>
             <th class="right nowrap">Payback (yrs)</th>
@@ -568,7 +567,7 @@ const els={
   focusUE:$('#focusUE'), focusUP:$('#focusUP'), focusUC:$('#focusUC'), focusUF:$('#focusUF'), focusUM:$('#focusUM'),
   focusEUse:$('#focusEUse'), focusEWait:$('#focusEWait'), focusStandby:$('#focusStandby'), focusEta:$('#focusEta'), focusStarts:$('#focusStarts'),
   focusHeatInput:$('#focusHeatInput'), focusHeatDelivered:$('#focusHeatDelivered'),
-  focusCapex:$('#focusCapex'), focusPayback:$('#focusPayback'),
+  focusPayback:$('#focusPayback'),
   existName:$('#existName'), existEcho:$('#existEcho'),
   existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
   existSaving:$('#existSaving'),
@@ -576,14 +575,14 @@ const els={
   existUE:$('#existUE'), existUP:$('#existUP'), existUC:$('#existUC'), existUF:$('#existUF'), existUM:$('#existUM'),
   existEUse:$('#existEUse'), existEWait:$('#existEWait'), existStandby:$('#existStandby'), existEta:$('#existEta'), existStarts:$('#existStarts'),
   existHeatInput:$('#existHeatInput'), existHeatDelivered:$('#existHeatDelivered'),
-  existCapex:$('#existCapex'), existPayback:$('#existPayback'),
+  existPayback:$('#existPayback'),
   likeTag:$('#likeTag'), likeName:$('#likeName'), likeEcho:$('#likeEcho'), likeWarn:$('#likeWarn'),
   likeKwhDay:$('#likeKwhDay'), likeKwhYear:$('#likeKwhYear'), likeSaving:$('#likeSaving'),
   likeWasteL:$('#likeWasteL'), likeScore:$('#likeScore'),
   likeUE:$('#likeUE'), likeUP:$('#likeUP'), likeUC:$('#likeUC'), likeUF:$('#likeUF'), likeUM:$('#likeUM'),
   likeEUse:$('#likeEUse'), likeEWait:$('#likeEWait'), likeStandby:$('#likeStandby'), likeEta:$('#likeEta'), likeStarts:$('#likeStarts'),
   likeHeatInput:$('#likeHeatInput'), likeHeatDelivered:$('#likeHeatDelivered'),
-  likeCapex:$('#likeCapex'), likePayback:$('#likePayback'),
+  likePayback:$('#likePayback'),
   pipeScreed:$('#pipeScreed'),
   compareBody:$('#compareBody'),
   copyBtn:$('#copy'), recalcBtn:$('#recalc'),
@@ -614,7 +613,6 @@ const focusColumns={
     Starts:els.focusStarts,
     HeatInput:els.focusHeatInput,
     HeatDelivered:els.focusHeatDelivered,
-    Capex:els.focusCapex,
     Payback:els.focusPayback
   },
   like:{
@@ -639,7 +637,6 @@ const focusColumns={
     Starts:els.likeStarts,
     HeatInput:els.likeHeatInput,
     HeatDelivered:els.likeHeatDelivered,
-    Capex:els.likeCapex,
     Payback:els.likePayback
   },
   existing:{
@@ -664,7 +661,6 @@ const focusColumns={
     Starts:els.existStarts,
     HeatInput:els.existHeatInput,
     HeatDelivered:els.existHeatDelivered,
-    Capex:els.existCapex,
     Payback:els.existPayback
   }
 };
@@ -701,7 +697,6 @@ function fillFocusColumn(key, data, options={}){
     setText(col.HeatDelivered, placeholder);
     setText(col.Eta, placeholder);
     setText(col.Starts, placeholder);
-    setText(col.Capex, placeholder);
     setText(col.Payback, placeholder);
     return;
   }
@@ -712,7 +707,6 @@ function fillFocusColumn(key, data, options={}){
   const waste=Number.isFinite(data.wasteL)?String(data.wasteL):placeholder;
   const utilities=data.utilities||{};
   const breakdown=data.breakdown||{};
-  const capexText=Number.isFinite(data.capex)?data.capex.toLocaleString():placeholder;
   const paybackText=(data.payback==='—'||data.payback===undefined)?'—':`${data.payback} yrs`;
   const buildWarnText=()=>{
     const notes=[];
@@ -742,7 +736,6 @@ function fillFocusColumn(key, data, options={}){
   setText(col.HeatDelivered, breakdown.heating_delivered!==undefined?String(breakdown.heating_delivered):placeholder);
   setText(col.Eta, breakdown.eta!==undefined?String(breakdown.eta):placeholder);
   setText(col.Starts, breakdown.starts!==undefined?String(breakdown.starts):placeholder);
-  setText(col.Capex, capexText);
   setText(col.Payback, paybackText);
 }
 
@@ -897,7 +890,6 @@ function runAll(){
       <td class="right"><b>${r.utilities.score}</b></td>
       <td class="right">${r.breakdown.eta}</td>
       <td class="right">${r.breakdown.standby}</td>
-      <td class="right">£${r.capex.toLocaleString()}</td>
       <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
       <td class="right">£${r.year1.toLocaleString()}</td>
       <td class="right">${r.payback}</td>
