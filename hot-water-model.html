@@ -38,6 +38,15 @@
   .badge.warn{background:#fff4e5;border-color:#f59e0b;color:#92400e}
   .exist{background:var(--hl)}
   .nowrap{white-space:nowrap}
+  .focus-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:12px}
+  @media(max-width:900px){.focus-cols{grid-template-columns:1fr}}
+  .focus-col{border:1px solid var(--b);border-radius:10px;padding:12px;background:#fff}
+  .focus-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .focus-title h3{margin:4px 0 0;font-size:16px}
+  .focus-note{margin-top:6px;color:var(--muted);font-size:13px}
+  .focus-warn{margin-top:4px;color:#92400e;font-size:13px}
+  .focus-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+  .badge.primary{background:var(--pri);border-color:var(--pri);color:#fff}
   @media print{
     header,.no-print{display:none!important}
     body{background:#fff}
@@ -152,32 +161,69 @@
 
   <!-- Focused view -->
   <div class="card" id="focusCard">
-    <h2>Focused view <span id="focusName" class="badge"></span> <span id="existTag" class="badge" style="display:none">Existing</span></h2>
-    <div class="kpi">
-      <div class="pill"><div class="muted">Energy</div><div><b id="kwhDay">—</b> kWh/day</div><small id="kwhYear">—</small></div>
-      <div class="pill"><div class="muted">Running cost</div><div>£<b id="costDay">—</b> / day</div><small id="costYear">—</small></div>
-      <div class="pill"><div class="muted">Waiting water</div><div><b id="wasteL">—</b> L/day</div><small>layout + draws</small></div>
-    </div>
-    <div class="grid">
-      <div class="pill">
-        <div class="muted">Customer score</div>
-        <div class="score" id="score">—</div>
-        <small>🔋 <span id="uE">—</span> • 💷 <span id="uP">—</span> • 🛁 <span id="uC">—</span> • 🌱 <span id="uF">—</span> • 🔧 <span id="uM">—</span></small>
+    <h2>Focused comparison</h2>
+    <div class="sub">Top pick against your current system (SEDBUK-adjusted).</div>
+    <div class="focus-cols">
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge primary" id="focusTag">Top pick</span>
+            <h3 id="focusName">—</h3>
+          </div>
+          <div class="actions no-print">
+            <button id="copy">Copy JSON (focused)</button>
+          </div>
+        </div>
+        <div class="focus-note" id="focusEcho">—</div>
+        <div class="focus-warn" id="focusWarn"></div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="focusKwhDay">—</b> kWh/day</div><small id="focusKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Running cost</div><div>£<b id="focusCostDay">—</b> / day</div><small id="focusCostYear">—</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="focusWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="focusScore">—</div>
+            <small>🔋 <span id="focusUE">—</span> • 💷 <span id="focusUP">—</span> • 🛁 <span id="focusUC">—</span> • 🌱 <span id="focusUF">—</span> • 🔧 <span id="focusUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="focusEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="focusEWait">—</b> kWh/day</div>
+            <div>Standby <b id="focusStandby">—</b> kWh/day</div>
+            <div>η <b id="focusEta">—</b> • Starts <b id="focusStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Capex £<span id="focusCapex">—</span> • Payback <span id="focusPayback">—</span></div>
+          </div>
+        </div>
       </div>
-      <div class="pill">
-        <div class="muted">Breakdown</div>
-        <div>Useful <b id="eUse">—</b> kWh/day</div>
-        <div>Waiting <b id="eWait">—</b> kWh/day</div>
-        <div>Standby <b id="standby">—</b> kWh/day</div>
-        <div>η <b id="eta">—</b> • Starts <b id="starts">—</b></div>
-        <div class="muted" style="margin-top:6px">Capex £<span id="capexFocus">—</span> • Payback <span id="paybackFocus">—</span></div>
-      </div>
-      <div class="pill">
-        <div class="muted">Selections</div>
-        <div id="echo">—</div>
-        <div id="echoWarn" class="muted" style="margin-top:4px"></div>
-        <div class="actions no-print" style="margin-top:8px">
-          <button id="copy">Copy JSON (focused)</button>
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge" id="existTag">Existing (SEDBUK <span id="existSedbuk">—</span>%)</span>
+            <h3 id="existName">—</h3>
+          </div>
+        </div>
+        <div class="focus-note" id="existEcho">—</div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="existKwhDay">—</b> kWh/day</div><small id="existKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Running cost</div><div>£<b id="existCostDay">—</b> / day</div><small id="existCostYear">—</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="existWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="existScore">—</div>
+            <small>🔋 <span id="existUE">—</span> • 💷 <span id="existUP">—</span> • 🛁 <span id="existUC">—</span> • 🌱 <span id="existUF">—</span> • 🔧 <span id="existUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="existEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="existEWait">—</b> kWh/day</div>
+            <div>Standby <b id="existStandby">—</b> kWh/day</div>
+            <div>η <b id="existEta">—</b> • Starts <b id="existStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Keep £<span id="existCapex">—</span> • Payback <span id="existPayback">—</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -304,11 +350,32 @@ function calcExistingRun({existingKey, sedbukPct, usageKey, mainsKey, layoutKey,
     cost_year: Math.round(cost_day*365),
     eta_effective: rd(eff,3),
     standby: rd(standby,3),
-    starts
+    starts,
+    wasteL: rd(Vwait,1),
+    breakdown:{
+      E_use:rd(Euse,3),
+      E_wait:rd(Ewait,3),
+      standby:rd(standby,3),
+      eta:rd(eff,3),
+      starts
+    }
   };
 }
 
 /* ==== SCORING (unchanged, best-of-two reference) ==== */
+function baseUtilities(r, weights, bestKWh, bestGBP){
+  const S=PRE.systems[r.sysKey];
+  const pen=r.layoutKey==="Central"?0:r.layoutKey==="Typical"?6:12;
+  const Ue=invU(r.kWh,bestKWh);
+  const Up=invU(r.cost,bestGBP);
+  const Uc=cl((S.C||75)-pen,10,100);
+  const Uf=cl(S.F||60,10,100);
+  const Um=cl(S.M||70,10,100);
+  const W=weights;
+  const scoreRaw=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/(W.e+W.c+W.C+W.F+W.M);
+  return {Ue,Up,Uc,Uf,Um,scoreRaw};
+}
+
 function scoreAll(results, weights, ctx={}){
   const refKeys=["System • Mixergy Unvented (indirect)","Combi • Premium (conditioned/central)"];
   const refs=results.filter(r=>refKeys.includes(r.sysKey));
@@ -318,15 +385,10 @@ function scoreAll(results, weights, ctx={}){
 
   return results.map(r=>{
     const S=PRE.systems[r.sysKey];
-    const pen=r.layoutKey==="Central"?0:r.layoutKey==="Typical"?6:12;
-    const Ue=invU(r.kWh,bestKWh);
-    const Up=invU(r.cost,bestGBP);
-    const Uc=cl((S.C||75)-pen,10,100), Uf=cl(S.F||60,10,100), Um=cl(S.M||70,10,100);
-    const W=weights;
-    const scoreRaw=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/(W.e+W.c+W.C+W.F+W.M);
+    const base=baseUtilities(r, weights, bestKWh, bestGBP);
     const minFlow=S.minFlow||0;
     const flowOk=flowLpm>=minFlow;
-    let finalScore=scoreRaw;
+    let finalScore=base.scoreRaw;
     let flowWarning;
     if(!flowOk && minFlow>0){
       finalScore=0;
@@ -334,7 +396,14 @@ function scoreAll(results, weights, ctx={}){
     }
     return {
       ...r,
-      utilities:{Ue:Math.round(Ue),Up:Math.round(Up),Uc:Math.round(Uc),Uf:Math.round(Uf),Um:Math.round(Um),score:Math.round(finalScore)},
+      utilities:{
+        Ue:Math.round(base.Ue),
+        Up:Math.round(base.Up),
+        Uc:Math.round(base.Uc),
+        Uf:Math.round(base.Uf),
+        Um:Math.round(base.Um),
+        score:Math.round(finalScore)
+      },
       flowWarning:flowWarning||undefined,
       flowOk
     };
@@ -357,14 +426,22 @@ const els={
   capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
   financeRate:$('#financeRate'), financeYears:$('#financeYears'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
-  focusName:$('#focusName'), existTag:$('#existTag'),
-  kwhDay:$('#kwhDay'), kwhYear:$('#kwhYear'),
-  costDay:$('#costDay'), costYear:$('#costYear'),
-  wasteL:$('#wasteL'), score:$('#score'),
-  uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
-  eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
-  capexFocus:$('#capexFocus'), paybackFocus:$('#paybackFocus'),
-  echo:$('#echo'), echoWarn:$('#echoWarn'), compareBody:$('#compareBody'),
+  focusTag:$('#focusTag'), focusName:$('#focusName'),
+  focusEcho:$('#focusEcho'), focusWarn:$('#focusWarn'),
+  focusKwhDay:$('#focusKwhDay'), focusKwhYear:$('#focusKwhYear'),
+  focusCostDay:$('#focusCostDay'), focusCostYear:$('#focusCostYear'),
+  focusWasteL:$('#focusWasteL'), focusScore:$('#focusScore'),
+  focusUE:$('#focusUE'), focusUP:$('#focusUP'), focusUC:$('#focusUC'), focusUF:$('#focusUF'), focusUM:$('#focusUM'),
+  focusEUse:$('#focusEUse'), focusEWait:$('#focusEWait'), focusStandby:$('#focusStandby'), focusEta:$('#focusEta'), focusStarts:$('#focusStarts'),
+  focusCapex:$('#focusCapex'), focusPayback:$('#focusPayback'),
+  existName:$('#existName'), existSedbuk:$('#existSedbuk'), existEcho:$('#existEcho'),
+  existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
+  existCostDay:$('#existCostDay'), existCostYear:$('#existCostYear'),
+  existWasteL:$('#existWasteL'), existScore:$('#existScore'),
+  existUE:$('#existUE'), existUP:$('#existUP'), existUC:$('#existUC'), existUF:$('#existUF'), existUM:$('#existUM'),
+  existEUse:$('#existEUse'), existEWait:$('#existEWait'), existStandby:$('#existStandby'), existEta:$('#existEta'), existStarts:$('#existStarts'),
+  existCapex:$('#existCapex'), existPayback:$('#existPayback'),
+  compareBody:$('#compareBody'),
   copyBtn:$('#copy'), recalcBtn:$('#recalc'),
   presetBudget:$('#presetBudget'), presetComfort:$('#presetComfort'),
   presetFuture:$('#presetFuture'), presetReset:$('#presetReset')
@@ -398,8 +475,6 @@ function runAll(){
     existingKey:st.existingKey, sedbukPct:st.sedbukPct,
     usageKey:st.usageKey, mainsKey:st.mainsKey, layoutKey:st.layoutKey, prices:st.prices
   });
-  const existingCapex=(PRE.systems[st.existingKey].capex||0)*st.capexMult;
-  const existingAnnualised=annuityPayment(existingCapex, st.financeRate, st.financeYears);
 
   // All candidate options (new/proposed)
   const baseResults=Object.keys(PRE.systems).map(sysKey=>calcOption({
@@ -433,10 +508,35 @@ function runAll(){
       payback:(payback===Infinity?"—":(payback>99?"99+":payback.toFixed(1))),
       baseline:existingRun
     };
+  }).map(r=>{
+    if(r.sysKey!==st.existingKey) return r;
+    const keepCost=Math.max(0, st.capexKeep);
+    const capexKeep=Math.round(keepCost);
+    const annualisedKeep=annuityPayment(keepCost, st.financeRate, st.financeYears);
+    return {
+      ...r,
+      kWh: rd(existingRun.kWh_day,3),
+      cost: rd(existingRun.cost_day,2),
+      kWh_year: existingRun.kWh_year,
+      cost_year: existingRun.cost_year,
+      wasteL: existingRun.wasteL,
+      breakdown: existingRun.breakdown,
+      capex: capexKeep,
+      runYr: Math.round(existingRun.cost_year),
+      year1: Math.round(capexKeep + existingRun.cost_year),
+      annualised: Math.round(annualisedKeep),
+      totalAnnualWithFinance: Math.round(existingRun.cost_year + annualisedKeep),
+      annualSaving: 0,
+      payback: '—',
+      sedbuk: st.sedbukPct
+    };
   });
 
   // Score & sort (by score)
   const scored=scoreAll(results, st.weights, {flowLpm:st.flowLpm}).sort((a,b)=>b.utilities.score - a.utilities.score);
+  const existingScored=scored.find(x=>x.sysKey===st.existingKey) || null;
+  const bestCandidate=scored.find(x=>x.sysKey!==st.existingKey) || scored[0];
+  const bestKey=bestCandidate?.sysKey;
 
   // Render table
   els.compareBody.innerHTML=scored.map(r=>`
@@ -456,35 +556,69 @@ function runAll(){
   `).join('');
 
   for(const tr of els.compareBody.querySelectorAll('tr')){
-    tr.onclick=()=>focus(scored.find(x=>x.sysKey===tr.dataset.sys), st);
+    tr.onclick=()=>focus(scored.find(x=>x.sysKey===tr.dataset.sys), st, existingScored, bestKey);
   }
 
-  // Focus existing by default
-  focus(scored.find(x=>x.sysKey===st.existingKey) || scored[0], st);
+  // Focus best option by default
+  const defaultFocus=bestCandidate;
+  focus(defaultFocus, st, existingScored, bestKey);
   return {scored, st, existingRun};
 }
 
-function focus(r, st){
-  if(!r) return;
-  els.focusName.textContent=r.sysKey;
-  els.existTag.style.display=(r.sysKey===st.existingKey)?'':'none';
-  els.kwhDay.textContent=r.kWh;
-  els.kwhYear.textContent=`≈ ${r.kWh_year} kWh / yr`;
-  els.costDay.textContent=r.cost.toFixed(2);
-  els.costYear.textContent=`≈ £${r.cost_year} / yr`;
-  els.wasteL.textContent=r.wasteL;
-  els.score.textContent=r.utilities.score;
-  els.uE.textContent=r.utilities.Ue; els.uP.textContent=r.utilities.Up;
-  els.uC.textContent=r.utilities.Uc; els.uF.textContent=r.utilities.Uf; els.uM.textContent=r.utilities.Um;
-  els.eUse.textContent=r.breakdown.E_use; els.eWait.textContent=r.breakdown.E_wait;
-  els.standby.textContent=r.breakdown.standby; els.eta.textContent=r.breakdown.eta; els.starts.textContent=r.breakdown.starts;
-  els.capexFocus.textContent=r.capex.toLocaleString();
-  els.paybackFocus.textContent= (r.payback==="—" ? "—" : (r.payback+" yrs"));
-  const flowSummary = Number.isFinite(st.flowLpm) ? `${rd(st.flowLpm,1)} L/min` : '—';
-  els.echo.textContent = `${r.usageKey} • ${r.mainsKey} • ${r.layoutKey} • Flow ${flowSummary}`;
-  els.echoWarn.textContent = r.flowWarning ? `⚠️ ${r.flowWarning}` : '';
+function focus(candidate, st, existing, bestKey){
+  if(!candidate) return;
+  const isExisting=candidate.sysKey===st.existingKey;
+  const isBest=!isExisting && candidate.sysKey===bestKey;
+  els.focusName.textContent=candidate.sysKey;
+  els.focusTag.textContent=isExisting? 'Existing selection' : (isBest? 'Top pick' : 'Selected option');
+  els.focusTag.classList.toggle('primary', !isExisting && isBest);
+  els.focusKwhDay.textContent=candidate.kWh;
+  els.focusKwhYear.textContent=`≈ ${candidate.kWh_year.toLocaleString()} kWh / yr`;
+  els.focusCostDay.textContent=candidate.cost.toFixed(2);
+  els.focusCostYear.textContent=`≈ £${candidate.cost_year.toLocaleString()} / yr`;
+  els.focusWasteL.textContent=candidate.wasteL;
+  els.focusScore.textContent=candidate.utilities.score;
+  els.focusUE.textContent=candidate.utilities.Ue;
+  els.focusUP.textContent=candidate.utilities.Up;
+  els.focusUC.textContent=candidate.utilities.Uc;
+  els.focusUF.textContent=candidate.utilities.Uf;
+  els.focusUM.textContent=candidate.utilities.Um;
+  els.focusEUse.textContent=candidate.breakdown.E_use;
+  els.focusEWait.textContent=candidate.breakdown.E_wait;
+  els.focusStandby.textContent=candidate.breakdown.standby;
+  els.focusEta.textContent=candidate.breakdown.eta;
+  els.focusStarts.textContent=candidate.breakdown.starts;
+  els.focusCapex.textContent=candidate.capex.toLocaleString();
+  els.focusPayback.textContent=(candidate.payback==='—' ? '—' : `${candidate.payback} yrs`);
+  const flowSummary=Number.isFinite(st.flowLpm)?`${rd(st.flowLpm,1)} L/min`:'—';
+  els.focusEcho.textContent=`${candidate.usageKey} • ${candidate.mainsKey} • ${candidate.layoutKey} • Flow ${flowSummary}`;
+  els.focusWarn.textContent=candidate.flowWarning?`⚠️ ${candidate.flowWarning}`:'';
 
-  els.copyBtn.onclick=()=>navigator.clipboard.writeText(JSON.stringify(r,null,2));
+  if(existing){
+    els.existName.textContent=existing.sysKey;
+    els.existSedbuk.textContent=existing.sedbuk||st.sedbukPct;
+    els.existKwhDay.textContent=existing.kWh;
+    els.existKwhYear.textContent=`≈ ${existing.kWh_year.toLocaleString()} kWh / yr`;
+    els.existCostDay.textContent=existing.cost.toFixed(2);
+    els.existCostYear.textContent=`≈ £${existing.cost_year.toLocaleString()} / yr`;
+    els.existWasteL.textContent=existing.wasteL;
+    els.existScore.textContent=existing.utilities.score;
+    els.existUE.textContent=existing.utilities.Ue;
+    els.existUP.textContent=existing.utilities.Up;
+    els.existUC.textContent=existing.utilities.Uc;
+    els.existUF.textContent=existing.utilities.Uf;
+    els.existUM.textContent=existing.utilities.Um;
+    els.existEUse.textContent=existing.breakdown.E_use;
+    els.existEWait.textContent=existing.breakdown.E_wait;
+    els.existStandby.textContent=existing.breakdown.standby;
+    els.existEta.textContent=existing.breakdown.eta;
+    els.existStarts.textContent=existing.breakdown.starts;
+    els.existCapex.textContent=(existing.capex||0).toLocaleString();
+    els.existPayback.textContent=(existing.payback==='—' ? '—' : `${existing.payback} yrs`);
+    els.existEcho.textContent=`${existing.usageKey} • ${existing.mainsKey} • ${existing.layoutKey} • Flow ${flowSummary} • SEDBUK ${(existing.sedbuk||st.sedbukPct)}%`;
+  }
+
+  els.copyBtn.onclick=()=>navigator.clipboard.writeText(JSON.stringify(candidate,null,2));
 }
 
 /* Presets */
