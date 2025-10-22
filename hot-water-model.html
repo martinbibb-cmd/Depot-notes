@@ -30,6 +30,10 @@
   .muted{color:var(--muted)}
   .slrow{display:flex;align-items:center;gap:10px}
   .slrow output{min-width:3ch;text-align:right;font-variant-numeric:tabular-nums}
+  .usage-label{min-width:160px;text-align:left;font-weight:600;font-size:13px;color:var(--fg)}
+  .field-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg)}
+  .field-check input{width:auto;margin:0}
+  .field-check span{flex:1}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border:1px solid var(--b);padding:8px 10px;text-align:left;vertical-align:top}
   th{background:#fafafa}
@@ -73,12 +77,11 @@
     <h2>Inputs</h2>
     <div class="grid">
       <div>
-        <label>👨‍👩‍👧 Usage</label>
-        <select id="usage">
-          <option>Low (1–2 ppl)</option>
-          <option selected>Med (3–4 ppl)</option>
-          <option>High (5–6 ppl)</option>
-        </select>
+        <label for="usage">👨‍👩‍👧 Usage</label>
+        <div class="slrow">
+          <input id="usage" type="range" min="0" max="2" step="1" value="1">
+          <output id="usageLabel" class="usage-label">Average (3–4 ppl)</output>
+        </div>
       </div>
       <div>
         <label>🗓️ Season (UK mains temp)</label>
@@ -95,6 +98,14 @@
           <option>Typical</option>
           <option>Remote</option>
         </select>
+      </div>
+      <div>
+        <label for="pipeScreed">🧱 Pipe work in screed</label>
+        <div class="field-check">
+          <input id="pipeScreed" type="checkbox">
+          <span>Reduce suitability for system &amp; combi</span>
+        </div>
+        <div class="sub">Applies a penalty to system and combi options.</div>
       </div>
       <div>
         <label>⛽ Gas price ( £ / kWh )</label>
@@ -330,9 +341,22 @@ const PRE={
   price:{ gas:.07, water:.0003 }
 };
 
+const USAGE_LEVELS=[
+  {key:"Low (1–2 ppl)", label:"Low (1–2 ppl)"},
+  {key:"Med (3–4 ppl)", label:"Average (3–4 ppl)"},
+  {key:"High (5–6 ppl)", label:"High (5–6 ppl)"}
+];
+const DEFAULT_USAGE_INDEX=1;
+const usageSelectionFromIndex=index=>USAGE_LEVELS[index]||USAGE_LEVELS[DEFAULT_USAGE_INDEX];
+const usageLabelFromKey=key=>{
+  const match=USAGE_LEVELS.find(u=>u.key===key);
+  return (match||USAGE_LEVELS[DEFAULT_USAGE_INDEX]).label;
+};
+
 /* ==== THERMAL MODEL (NEW/PROPOSED OPTION) ==== */
 function calcOption({sysKey, usageKey, mainsKey, layoutKey, prices, heatingYear}){
-  const U=PRE.usage[usageKey], M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
+  const usagePreset=PRE.usage[usageKey]||PRE.usage[usageSelectionFromIndex(DEFAULT_USAGE_INDEX).key];
+  const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
   const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
   const Euse = U.Vd*CP*(Tu-Tm);
   const Vwait= L*U.dr;
@@ -361,6 +385,7 @@ function calcOption({sysKey, usageKey, mainsKey, layoutKey, prices, heatingYear}
 
   return {
     sysKey, usageKey, mainsKey, layoutKey,
+    usageLabel: usageLabelFromKey(usageKey),
     kWh: rd(E_kWh,3),
     cost: rd(cost_day,2),
     kWh_year: Math.round(E_kWh*365),
@@ -383,7 +408,8 @@ function calcOption({sysKey, usageKey, mainsKey, layoutKey, prices, heatingYear}
 
 /* ==== EXISTING SYSTEM BASELINE USING SEDBUK ==== */
 function calcExistingRun({existingKey, sedbukPct, usageKey, mainsKey, layoutKey, prices, heatingYear}){
-  const U=PRE.usage[usageKey], M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[existingKey];
+  const usagePreset=PRE.usage[usageKey]||PRE.usage[usageSelectionFromIndex(DEFAULT_USAGE_INDEX).key];
+  const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[existingKey];
   const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
   const eff = cl((sedbukPct||75)/100, 0.40, 0.99);
   const Euse = U.Vd*CP*(Tu-Tm);
@@ -450,13 +476,27 @@ function scoreAll(results, weights, ctx={}){
   const bestKWh=Math.min(...refs.map(r=>r.kWh));
   const bestGBP=Math.min(...refs.map(r=>r.cost));
   const flowLpm=Number.isFinite(ctx.flowLpm)?ctx.flowLpm:Infinity;
+  const pipeInScreed=!!ctx.pipeScreed;
 
   return results.map(r=>{
-    const S=PRE.systems[r.sysKey];
+    const sysKey=r.sysKey||'';
+    const S=PRE.systems[sysKey]||{};
     const base=baseUtilities(r, weights, bestKWh, bestGBP);
     const minFlow=S.minFlow||0;
     const flowOk=flowLpm>=minFlow;
-    let finalScore=base.scoreRaw;
+    const W=weights||{};
+    const weightSum=Math.max(1,(W.e||0)+(W.c||0)+(W.C||0)+(W.F||0)+(W.M||0));
+    let {Ue,Up,Uc,Uf,Um}=base;
+    let finalScore=( (W.e||0)*Ue + (W.c||0)*Up + (W.C||0)*Uc + (W.F||0)*Uf + (W.M||0)*Um )/weightSum;
+    let pipePenaltyApplied=false;
+    let pipePenaltyNote;
+    if(pipeInScreed && (sysKey.startsWith('System') || sysKey.startsWith('Combi'))){
+      pipePenaltyApplied=true;
+      Uc=cl(Uc-20,10,100);
+      finalScore=( (W.e||0)*Ue + (W.c||0)*Up + (W.C||0)*Uc + (W.F||0)*Uf + (W.M||0)*Um )/weightSum;
+      pipePenaltyNote='Pipe work in screed reduces suitability';
+    }
+    finalScore=Math.max(0, finalScore);
     let flowWarning;
     if(!flowOk && minFlow>0){
       finalScore=0;
@@ -465,15 +505,17 @@ function scoreAll(results, weights, ctx={}){
     return {
       ...r,
       utilities:{
-        Ue:Math.round(base.Ue),
-        Up:Math.round(base.Up),
-        Uc:Math.round(base.Uc),
-        Uf:Math.round(base.Uf),
-        Um:Math.round(base.Um),
+        Ue:Math.round(Ue),
+        Up:Math.round(Up),
+        Uc:Math.round(Uc),
+        Uf:Math.round(Uf),
+        Um:Math.round(Um),
         score:Math.round(finalScore)
       },
       flowWarning:flowWarning||undefined,
-      flowOk
+      flowOk,
+      pipePenaltyApplied:pipePenaltyApplied||undefined,
+      pipePenaltyNote:pipePenaltyApplied?pipePenaltyNote:undefined
     };
   });
 }
@@ -489,7 +531,7 @@ function annuityPayment(capex, ratePct, years){
 /* ==== UI WIRING ==== */
 const $=s=>document.querySelector(s);
 const els={
-  usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'), heating:$('#heating'), flow:$('#flow'),
+  usage:$('#usage'), usageLabel:$('#usageLabel'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'), heating:$('#heating'), flow:$('#flow'),
   existing:$('#existing'), sedbuk:$('#sedbuk'),
   capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
   financeRate:$('#financeRate'), financeYears:$('#financeYears'),
@@ -518,6 +560,7 @@ const els={
   likeEUse:$('#likeEUse'), likeEWait:$('#likeEWait'), likeStandby:$('#likeStandby'), likeEta:$('#likeEta'), likeStarts:$('#likeStarts'),
   likeHeatInput:$('#likeHeatInput'), likeHeatDelivered:$('#likeHeatDelivered'),
   likeCapex:$('#likeCapex'), likePayback:$('#likePayback'),
+  pipeScreed:$('#pipeScreed'),
   compareBody:$('#compareBody'),
   copyBtn:$('#copy'), recalcBtn:$('#recalc'),
   presetBudget:$('#presetBudget'), presetComfort:$('#presetComfort'),
@@ -652,7 +695,13 @@ function fillFocusColumn(key, data, options={}){
   const breakdown=data.breakdown||{};
   const capexText=Number.isFinite(data.capex)?data.capex.toLocaleString():placeholder;
   const paybackText=(data.payback==='—'||data.payback===undefined)?'—':`${data.payback} yrs`;
-  const warnText = options.warnText!==undefined?options.warnText:(data.flowWarning?`⚠️ ${data.flowWarning}`:'');
+  const buildWarnText=()=>{
+    const notes=[];
+    if(data.flowWarning) notes.push(`⚠️ ${data.flowWarning}`);
+    if(data.pipePenaltyApplied && data.pipePenaltyNote) notes.push(`⚠️ ${data.pipePenaltyNote}`);
+    return notes.join(' ');
+  };
+  const warnText = options.warnText!==undefined?options.warnText:buildWarnText();
 
   setText(col.name, data.label||data.sysKey||placeholder);
   setText(col.echo, options.echoText||placeholder);
@@ -685,18 +734,32 @@ function fillFocusColumn(key, data, options={}){
   els.existing.innerHTML=keys.map(k=>`<option ${k.includes('Combi • Standard')?'selected':''}>${k}</option>`).join('');
 })();
 
+function getUsageSelection(){
+  const idx=parseInt(els.usage?.value||String(DEFAULT_USAGE_INDEX),10);
+  return usageSelectionFromIndex(Number.isNaN(idx)?DEFAULT_USAGE_INDEX:idx);
+}
+
+function refreshUsageLabel(){
+  const selection=getUsageSelection();
+  if(els.usageLabel) els.usageLabel.textContent=selection.label;
+  return selection;
+}
+
 function getState(){
+  const usageSelection=refreshUsageLabel();
   const flowVal=parseFloat(els.flow.value);
   const flowLpm=Number.isFinite(flowVal)?Math.max(0, flowVal):14;
   return {
-    usageKey:els.usage.value, mainsKey:els.mains.value, layoutKey:els.layout.value,
+    usageKey:usageSelection.key, mainsKey:els.mains.value, layoutKey:els.layout.value,
+    usageLabel:usageSelection.label,
     flowLpm,
     heatingYear:Math.max(0, parseFloat(els.heating.value||"0")),
     prices:{gas:parseFloat(els.gas.value||"0.07"), water:0.0003},
     existingKey:els.existing.value, sedbukPct:+els.sedbuk.value,
     weights:{e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value},
     capexMult:parseFloat(els.capexMult.value||"1"), capexKeep:parseFloat(els.capexKeep.value||"0"),
-    financeRate:parseFloat(els.financeRate.value||"0"), financeYears:parseInt(els.financeYears.value||"10",10)
+    financeRate:parseFloat(els.financeRate.value||"0"), financeYears:parseInt(els.financeYears.value||"10",10),
+    pipeScreed:!!els.pipeScreed?.checked
   };
 }
 
@@ -759,6 +822,7 @@ function runAll(){
     label:`${st.existingKey} (Current)`,
     sysKey:st.existingKey,
     usageKey:st.usageKey,
+    usageLabel: usageLabelFromKey(st.usageKey),
     mainsKey:st.mainsKey,
     layoutKey:st.layoutKey,
     kWh: rd(existingRun.kWh_day,3),
@@ -781,7 +845,7 @@ function runAll(){
   const results=[...modernResults, existingVariant];
 
   // Score & sort (by score)
-  const scored=scoreAll(results, st.weights, {flowLpm:st.flowLpm}).sort((a,b)=>b.utilities.score - a.utilities.score);
+  const scored=scoreAll(results, st.weights, {flowLpm:st.flowLpm, pipeScreed:st.pipeScreed}).sort((a,b)=>b.utilities.score - a.utilities.score);
   const existingScored=scored.find(x=>x.variant==='existing') || null;
   const likeScored=scored.find(x=>x.variant==='like') || null;
   const bestCandidate=scored.find(x=>x.variant!=='existing') || scored[0];
@@ -792,7 +856,8 @@ function runAll(){
     const badges=[
       r.variant==='existing'?'<span class="badge">Existing</span>':'',
       r.variant==='like'?`<span class="badge">Like for like</span>${Number.isFinite(r.erpPct)?` <span class="badge">ERP ${r.erpPct}%</span>`:''}`:'',
-      r.flowWarning?'<span class="badge warn">⚠️ Flow limit</span>':''
+      r.flowWarning?'<span class="badge warn">⚠️ Flow limit</span>':'',
+      r.pipePenaltyApplied?`<span class="badge warn" title="${r.pipePenaltyNote||'Pipe work in screed reduces suitability'}">⚠️ Screed</span>`:''
     ].filter(Boolean).join(' ');
     return `
     <tr data-id="${r.id}" class="${r.variant==='existing'?'exist':''}">
@@ -830,7 +895,8 @@ function focus(candidate, ctx){
   const heatingSummary=Number.isFinite(st?.heatingYear)?`${Math.round(st.heatingYear).toLocaleString()} kWh/yr`:'—';
   const buildEcho=(data, extras=[])=>{
     if(!data) return '—';
-    const base=[data.usageKey||'—', data.mainsKey||'—', data.layoutKey||'—', `Flow ${flowSummary}`, `Heating ${heatingSummary}`];
+    const usageDisplay=data.usageLabel||usageLabelFromKey(data.usageKey);
+    const base=[usageDisplay||'—', data.mainsKey||'—', data.layoutKey||'—', `Flow ${flowSummary}`, `Heating ${heatingSummary}`];
     return base.concat(extras.filter(Boolean)).join(' • ');
   };
 
@@ -843,22 +909,22 @@ function focus(candidate, ctx){
   else if(isDefaultBest) bestTag=isLike?'Best overall (like for like)':'Best overall';
   else if(isLike) bestTag='Like-for-like selection';
 
+  const screedNote=st?.pipeScreed?'Pipework in screed':null;
+
   fillFocusColumn('best', selected, {
     tagText:bestTag,
     primaryTag:!isExisting && isDefaultBest,
-    echoText:buildEcho(selected, [Number.isFinite(selected.erpPct)?`ERP ${selected.erpPct}%`:null]),
-    warnText:selected.flowWarning?`⚠️ ${selected.flowWarning}`:''
+    echoText:buildEcho(selected, [Number.isFinite(selected.erpPct)?`ERP ${selected.erpPct}%`:null, screedNote])
   });
 
   fillFocusColumn('existing', existing, {
     tagText:existing?`Existing (SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%)`:'Existing',
-    echoText:buildEcho(existing, [existing?`SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%`:null])
+    echoText:buildEcho(existing, [existing?`SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%`:null, screedNote]),
   });
 
   fillFocusColumn('like', like, {
     tagText:like?`Like for like${Number.isFinite(like.erpPct)?` (ERP ${like.erpPct}%)`:''}`:'Like for like',
-    echoText:buildEcho(like, [like&&Number.isFinite(like.erpPct)?`ERP ${like.erpPct}%`:null]),
-    warnText:like?.flowWarning?`⚠️ ${like.flowWarning}`:''
+    echoText:buildEcho(like, [like&&Number.isFinite(like.erpPct)?`ERP ${like.erpPct}%`:null, screedNote])
   });
 
   const copyTarget=selected;
@@ -873,6 +939,10 @@ els.presetComfort.onclick= ()=>{ els.wE.value=3; els.wCost.value=3; els.wC.value
 els.presetFuture.onclick = ()=>{ els.wE.value=5; els.wCost.value=4; els.wC.value=3; els.wF.value=8; els.wM.value=2; runAll(); };
 els.presetReset.onclick  = ()=>{ els.wE.value=3; els.wCost.value=5; els.wC.value=4; els.wF.value=4; els.wM.value=2; runAll(); };
 
+if(els.usage){
+  els.usage.addEventListener('input', ()=>{ refreshUsageLabel(); runAll(); });
+}
+
 els.recalcBtn.onclick=runAll;
 for(const el of document.querySelectorAll('input,select')) el.addEventListener('change', runAll);
 
@@ -881,6 +951,7 @@ for(const el of document.querySelectorAll('input,select')) el.addEventListener('
   const keys=Object.keys(PRE.systems);
   els.existing.innerHTML=keys.map(k=>`<option ${k.includes('Combi • Standard')?'selected':''}>${k}</option>`).join('');
 })();
+refreshUsageLabel();
 runAll();
 </script>
 </body>
