@@ -35,6 +35,7 @@
   th{background:#fafafa}
   .right{text-align:right}
   .badge{display:inline-block;padding:2px 6px;border:1px solid var(--b);border-radius:999px;font-size:12px;color:#444}
+  .badge.warn{background:#fff4e5;border-color:#f59e0b;color:#92400e}
   .exist{background:var(--hl)}
   .nowrap{white-space:nowrap}
   @media print{
@@ -88,6 +89,11 @@
       <div>
         <label>⛽ Gas price ( £ / kWh )</label>
         <input id="gas" type="number" step="0.001" value="0.07">
+      </div>
+      <div>
+        <label>🚿 Water flow (L/min)</label>
+        <input id="flow" type="number" step="0.5" value="14">
+        <div class="sub">Estimate mains flow. Below 12 L/min we avoid combis.</div>
       </div>
     </div>
 
@@ -169,6 +175,7 @@
       <div class="pill">
         <div class="muted">Selections</div>
         <div id="echo">—</div>
+        <div id="echoWarn" class="muted" style="margin-top:4px"></div>
         <div class="actions no-print" style="margin-top:8px">
           <button id="copy">Copy JSON (focused)</button>
         </div>
@@ -228,8 +235,8 @@ const PRE={
     "System • Mixergy Unvented (indirect)":     {t:"s", sb:1.0, cf:.95, Tr:48, C:92, F:95, M:85, capex:5500},
     "System • Mixergy Vented (open-vented)":    {t:"s", sb:1.1, cf:.96, Tr:49, C:91, F:88, M:83, capex:5200},
 
-    "Combi • Standard":                         {t:"c", st:.012, sc:1.08, Tr:55, C:72, F:50, M:70, capex:3300},
-    "Combi • Premium (conditioned/central)":    {t:"c", st:.009, sc:1.02, Tr:52, C:78, F:55, M:78, capex:3800},
+    "Combi • Standard":                         {t:"c", st:.012, sc:1.08, Tr:55, C:72, F:50, M:70, capex:3300, minFlow:12},
+    "Combi • Premium (conditioned/central)":    {t:"c", st:.009, sc:1.02, Tr:52, C:78, F:55, M:78, capex:3800, minFlow:12},
   },
   Tuse:40,
   price:{ gas:.07, water:.0003 }
@@ -302,11 +309,12 @@ function calcExistingRun({existingKey, sedbukPct, usageKey, mainsKey, layoutKey,
 }
 
 /* ==== SCORING (unchanged, best-of-two reference) ==== */
-function scoreAll(results, weights){
+function scoreAll(results, weights, ctx={}){
   const refKeys=["System • Mixergy Unvented (indirect)","Combi • Premium (conditioned/central)"];
   const refs=results.filter(r=>refKeys.includes(r.sysKey));
   const bestKWh=Math.min(...refs.map(r=>r.kWh));
   const bestGBP=Math.min(...refs.map(r=>r.cost));
+  const flowLpm=Number.isFinite(ctx.flowLpm)?ctx.flowLpm:Infinity;
 
   return results.map(r=>{
     const S=PRE.systems[r.sysKey];
@@ -315,8 +323,21 @@ function scoreAll(results, weights){
     const Up=invU(r.cost,bestGBP);
     const Uc=cl((S.C||75)-pen,10,100), Uf=cl(S.F||60,10,100), Um=cl(S.M||70,10,100);
     const W=weights;
-    const score=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/(W.e+W.c+W.C+W.F+W.M);
-    return {...r, utilities:{Ue:Math.round(Ue),Up:Math.round(Up),Uc:Math.round(Uc),Uf:Math.round(Uf),Um:Math.round(Um),score:Math.round(score)}};
+    const scoreRaw=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/(W.e+W.c+W.C+W.F+W.M);
+    const minFlow=S.minFlow||0;
+    const flowOk=flowLpm>=minFlow;
+    let finalScore=scoreRaw;
+    let flowWarning;
+    if(!flowOk && minFlow>0){
+      finalScore=0;
+      flowWarning=`Requires ≥ ${minFlow} L/min (you have ${rd(flowLpm,1)} L/min)`;
+    }
+    return {
+      ...r,
+      utilities:{Ue:Math.round(Ue),Up:Math.round(Up),Uc:Math.round(Uc),Uf:Math.round(Uf),Um:Math.round(Um),score:Math.round(finalScore)},
+      flowWarning:flowWarning||undefined,
+      flowOk
+    };
   });
 }
 
@@ -331,7 +352,7 @@ function annuityPayment(capex, ratePct, years){
 /* ==== UI WIRING ==== */
 const $=s=>document.querySelector(s);
 const els={
-  usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'),
+  usage:$('#usage'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'), flow:$('#flow'),
   existing:$('#existing'), sedbuk:$('#sedbuk'),
   capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
   financeRate:$('#financeRate'), financeYears:$('#financeYears'),
@@ -343,7 +364,7 @@ const els={
   uE:$('#uE'), uP:$('#uP'), uC:$('#uC'), uF:$('#uF'), uM:$('#uM'),
   eUse:$('#eUse'), eWait:$('#eWait'), standby:$('#standby'), eta:$('#eta'), starts:$('#starts'),
   capexFocus:$('#capexFocus'), paybackFocus:$('#paybackFocus'),
-  echo:$('#echo'), compareBody:$('#compareBody'),
+  echo:$('#echo'), echoWarn:$('#echoWarn'), compareBody:$('#compareBody'),
   copyBtn:$('#copy'), recalcBtn:$('#recalc'),
   presetBudget:$('#presetBudget'), presetComfort:$('#presetComfort'),
   presetFuture:$('#presetFuture'), presetReset:$('#presetReset')
@@ -356,8 +377,11 @@ const els={
 })();
 
 function getState(){
+  const flowVal=parseFloat(els.flow.value);
+  const flowLpm=Number.isFinite(flowVal)?Math.max(0, flowVal):14;
   return {
     usageKey:els.usage.value, mainsKey:els.mains.value, layoutKey:els.layout.value,
+    flowLpm,
     prices:{gas:parseFloat(els.gas.value||"0.07"), water:0.0003},
     existingKey:els.existing.value, sedbukPct:+els.sedbuk.value,
     weights:{e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value},
@@ -412,12 +436,12 @@ function runAll(){
   });
 
   // Score & sort (by score)
-  const scored=scoreAll(results, st.weights).sort((a,b)=>b.utilities.score - a.utilities.score);
+  const scored=scoreAll(results, st.weights, {flowLpm:st.flowLpm}).sort((a,b)=>b.utilities.score - a.utilities.score);
 
   // Render table
   els.compareBody.innerHTML=scored.map(r=>`
     <tr data-sys="${r.sysKey}" class="${r.sysKey===st.existingKey?'exist':''}">
-      <td>${r.sysKey}${r.sysKey===st.existingKey?' <span class="badge">Existing</span>':''}</td>
+      <td>${r.sysKey}${r.sysKey===st.existingKey?' <span class="badge">Existing</span>':''}${r.flowWarning?' <span class="badge warn">⚠️ Flow limit</span>':''}</td>
       <td class="right">${r.kWh}</td>
       <td class="right">£${r.cost.toFixed(2)}</td>
       <td class="right">${r.wasteL}</td>
@@ -456,7 +480,9 @@ function focus(r, st){
   els.standby.textContent=r.breakdown.standby; els.eta.textContent=r.breakdown.eta; els.starts.textContent=r.breakdown.starts;
   els.capexFocus.textContent=r.capex.toLocaleString();
   els.paybackFocus.textContent= (r.payback==="—" ? "—" : (r.payback+" yrs"));
-  els.echo.textContent = `${r.usageKey} • ${r.mainsKey} • ${r.layoutKey}`;
+  const flowSummary = Number.isFinite(st.flowLpm) ? `${rd(st.flowLpm,1)} L/min` : '—';
+  els.echo.textContent = `${r.usageKey} • ${r.mainsKey} • ${r.layoutKey} • Flow ${flowSummary}`;
+  els.echoWarn.textContent = r.flowWarning ? `⚠️ ${r.flowWarning}` : '';
 
   els.copyBtn.onclick=()=>navigator.clipboard.writeText(JSON.stringify(r,null,2));
 }
