@@ -72,6 +72,27 @@
   .hw-preview .hw-card{background:#0e141a;border-color:#243041;color:var(--ink)}
   .hw-preview .hw-card small{color:var(--muted)}
   .col3{grid-column:3}
+  .refined-water{display:flex;flex-direction:column;gap:12px}
+  .refined-water p{margin:0;color:var(--muted);font-size:13px}
+  .refined-water strong{color:var(--ink)}
+  .rw-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+  .rw-controls label{display:flex;flex-direction:column;gap:6px;font-weight:600;color:var(--ink)}
+  .rw-controls select{background:#0f141a;border:1px solid #2a3644;color:var(--ink);padding:8px;border-radius:10px;font:inherit}
+  .rw-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .rw-card{border:1px solid #243041;border-radius:12px;padding:12px;background:#0e141a;display:flex;flex-direction:column;gap:10px}
+  .rw-card.best{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,163,255,0.35)}
+  .rw-card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .rw-score{font:700 20px/1.1 ui-sans-serif;color:var(--accent)}
+  .rw-meta{color:var(--muted);font-size:12px}
+  .rw-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;padding:0}
+  .rw-stats div{border:1px solid #1f2630;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;background:#0b1016}
+  .rw-stats dt{margin:0;font-weight:600;font-size:12px;color:var(--muted)}
+  .rw-stats dd{margin:0;font-weight:600;color:var(--ink);font-size:14px}
+  .rw-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .rw-chip{padding:4px 8px;border:1px solid #1f2630;border-radius:999px;background:#0b1016;color:var(--muted);font-size:12px}
+  .rw-chip strong{color:var(--ink);font-weight:600}
+  .rw-summary{color:var(--muted);font-size:13px}
+  .rw-footnote{color:var(--muted);font-size:12px;margin:0}
 </style>
 </head>
 <body>
@@ -160,6 +181,20 @@
         <small class="muted" id="summaryStatus">Ready</small>
       </div>
       <textarea id="summaryBox" placeholder="Click “Generate summary with GPT” to create a clean, customer-friendly summary."></textarea>
+    </div>
+  </section>
+  <section class="card full">
+    <h2 class="sticky">Refined hot water model</h2>
+    <div class="pad refined-water" data-refined-water>
+      <p>Compare every hot water system family with the same physics-backed defaults used across Depot, Fast Survey and the full model.</p>
+      <div class="rw-controls">
+        <label>Usage<select data-rw-control="usage"></select></label>
+        <label>Mains temperature<select data-rw-control="mains"></select></label>
+        <label>Layout<select data-rw-control="layout"></select></label>
+      </div>
+      <div class="rw-cards" data-rw-cards></div>
+      <div class="rw-summary" data-rw-summary></div>
+      <p class="rw-footnote">Scores combine energy, running cost, comfort, future readiness and maintenance weighting.</p>
     </div>
   </section>
 </main>
@@ -793,10 +828,56 @@ window.FastSurveyHotWater={
     return r;
   }
 };
+window.FastSurveyHotWater.PRESETS = HW_PRESETS;
 const css=document.createElement('style');
 css.textContent=`.hw-card{border:1px solid #ccc;padding:10px;border-radius:8px;font:14px/1.4 -apple-system,Segoe UI,Roboto;}
 .hw-card hr{border:none;border-top:1px solid #eee;margin:6px 0}`;
 document.head.appendChild(css);
+
+const fillSelect=(select, entries, preferred)=>{
+  if(!select) return;
+  const list=Array.from(entries || []);
+  select.innerHTML=list.map(key=>`<option value="${key}">${key}</option>`).join('');
+  if(preferred && list.includes(preferred)){
+    select.value=preferred;
+  } else if(list.length){
+    select.value=list[0];
+  }
+};
+
+const UTIL_LABELS={
+  energy:'Energy',
+  cost:'Running cost',
+  comfort:'Comfort',
+  future:'Future-ready',
+  maint:'Maintenance'
+};
+const UTIL_ORDER=['energy','cost','comfort','future','maint'];
+
+function renderRefinedCard(result, highlight){
+  if(!result) return '';
+  const chips=UTIL_ORDER.map(key=>{
+    const val=result.utilities?.[key];
+    if(typeof val==='undefined') return '';
+    return `<span class="rw-chip"><strong>${Math.round(val)}</strong> ${UTIL_LABELS[key]}</span>`;
+  }).filter(Boolean).join('');
+  const annualKwh=Math.round((result.kWh||0)*365);
+  const annualCost=Math.round((result.cost||0)*365);
+  return `<article class="rw-card${highlight?' best':''}">
+    <div class="rw-card-head">
+      <strong>${escapeHtml(result.system)}</strong>
+      <span class="rw-score">${result.utilities?.score ?? ''}/100</span>
+    </div>
+    <div class="rw-meta">${escapeHtml(result.usage)} • ${escapeHtml(result.mains)} mains • ${escapeHtml(result.layout)}</div>
+    <dl class="rw-stats">
+      <div><dt>Energy</dt><dd>${result.kWh.toFixed(2)} kWh/day</dd></div>
+      <div><dt>Cost</dt><dd>£${result.cost.toFixed(2)}/day</dd></div>
+      <div><dt>Water</dt><dd>${result.wasteL.toFixed(1)} L/day</dd></div>
+      <div><dt>Annual</dt><dd>${annualKwh} kWh · £${annualCost}</dd></div>
+    </dl>
+    <div class="rw-chips">${chips}</div>
+  </article>`;
+}
 
 function initHotWaterWidget(){
   const panel=document.querySelector('[data-hot-water-widget]');
@@ -807,14 +888,6 @@ function initHotWaterWidget(){
   const systemSel=panel.querySelector('[data-hw-control="system"]');
   const preview=panel.querySelector('[data-hw-preview]');
   const summary=panel.querySelector('[data-hw-summary]');
-
-  const fillSelect=(select, entries, preferred)=>{
-    if(!select) return;
-    select.innerHTML=entries.map(key=>`<option value="${key}">${key}</option>`).join('');
-    if(preferred && entries.includes(preferred)){
-      select.value=preferred;
-    }
-  };
 
   fillSelect(usageSel, Object.keys(HW_PRESETS.usage), 'Med (3–4 ppl)');
   fillSelect(mainsSel, Object.keys(HW_PRESETS.mains), 'Spring/Autumn');
@@ -859,6 +932,95 @@ function initHotWaterWidget(){
 }
 
 initHotWaterWidget();
+function initRefinedWaterMiniApp(){
+  const host=document.querySelector('[data-refined-water]');
+  if(!host) return;
+  const compute=window.FastSurveyHotWater?.compute;
+  const presets=window.FastSurveyHotWater?.PRESETS;
+  if(typeof compute!=='function' || !presets) return;
+
+  const usageSel=host.querySelector('[data-rw-control="usage"]');
+  const mainsSel=host.querySelector('[data-rw-control="mains"]');
+  const layoutSel=host.querySelector('[data-rw-control="layout"]');
+  const cards=host.querySelector('[data-rw-cards]');
+  const summary=host.querySelector('[data-rw-summary]');
+
+  const usageKeys=Object.keys(presets.usage);
+  const mainsKeys=Object.keys(presets.mains);
+  const layoutKeys=Object.keys(presets.layout);
+  fillSelect(usageSel, usageKeys, 'Med (3–4 ppl)');
+  fillSelect(mainsSel, mainsKeys, 'Spring/Autumn');
+  fillSelect(layoutSel, layoutKeys, 'Typical');
+
+  const systems=Object.keys(presets.system);
+
+  const update=()=>{
+    const base={
+      usage:usageSel?.value || usageKeys[0],
+      mains:mainsSel?.value || mainsKeys[0],
+      layout:layoutSel?.value || layoutKeys[0]
+    };
+    const results=systems.map(system=>{
+      try {
+        return compute({...base, system});
+      } catch(err){
+        console.warn('Refined water model failed', system, err);
+        return null;
+      }
+    }).filter(Boolean);
+
+    if(cards){
+      const best=results.reduce((acc, curr)=>{
+        const score=curr?.utilities?.score ?? -Infinity;
+        const bestScore=acc?.utilities?.score ?? -Infinity;
+        return score>bestScore ? curr : acc;
+      }, null);
+      cards.innerHTML=results.map(res=>renderRefinedCard(res, best && res.system===best.system)).join('');
+    }
+
+    if(summary){
+      if(!results.length){
+        summary.textContent='Adjust the inputs to generate a comparison.';
+        return;
+      }
+      const sorted=[...results].sort((a,b)=>{
+        const as=a?.utilities?.score ?? -Infinity;
+        const bs=b?.utilities?.score ?? -Infinity;
+        return bs-as;
+      });
+      const best=sorted[0];
+      const runner=sorted[1];
+      if(!best){
+        summary.textContent='Adjust the inputs to generate a comparison.';
+        return;
+      }
+      let diffText='';
+      if(runner){
+        const pointGap=Math.round((best.utilities?.score ?? 0)-(runner.utilities?.score ?? 0));
+        const costDelta=(runner.cost ?? 0)-(best.cost ?? 0);
+        const costAbs=Math.abs(costDelta);
+        const costText=costAbs<0.005
+          ? 'a similar running cost'
+          : `£${costAbs.toFixed(2)} ${costDelta>0?'more':'less'} per day`;
+        const pointText=pointGap>0
+          ? `${pointGap} points lower`
+          : pointGap<0
+            ? `${Math.abs(pointGap)} points higher`
+            : 'matching score';
+        diffText=` Next best is <strong>${escapeHtml(runner.system)}</strong> at ${runner.utilities.score}/100 (${pointText}) with ${costText}.`;
+      }
+      summary.innerHTML=`Top pick: <strong>${escapeHtml(best.system)}</strong> scores ${best.utilities.score}/100 — ${best.kWh.toFixed(2)} kWh/day (£${best.cost.toFixed(2)}/day) and ${best.wasteL.toFixed(1)} L waiting water/day.${diffText}`;
+    }
+  };
+
+  [usageSel,mainsSel,layoutSel].forEach(sel=>{
+    if(sel) sel.addEventListener('change', update);
+  });
+
+  update();
+}
+
+initRefinedWaterMiniApp();
 </script>
 <!-- 🔥 END HOT WATER MODEL ADD-ON -->
 </body>
