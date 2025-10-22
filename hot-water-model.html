@@ -194,7 +194,7 @@
         <div class="focus-note" id="existEcho">—</div>
         <div class="kpi">
           <div class="pill"><div class="muted">Energy</div><div><b id="existKwhDay">—</b> kWh/day</div><small id="existKwhYear">—</small></div>
-          <div class="pill"><div class="muted">Running cost</div><div>£<b id="existCostDay">—</b> / day</div><small id="existCostYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="existSaving">—</b> / yr</div><small>vs current system</small></div>
           <div class="pill"><div class="muted">Waiting water</div><div><b id="existWasteL">—</b> L/day</div><small>layout + draws</small></div>
         </div>
         <div class="focus-meta">
@@ -226,7 +226,7 @@
         <div class="focus-warn" id="likeWarn"></div>
         <div class="kpi">
           <div class="pill"><div class="muted">Energy</div><div><b id="likeKwhDay">—</b> kWh/day</div><small id="likeKwhYear">—</small></div>
-          <div class="pill"><div class="muted">Running cost</div><div>£<b id="likeCostDay">—</b> / day</div><small id="likeCostYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="likeSaving">—</b> / yr</div><small>vs current system</small></div>
           <div class="pill"><div class="muted">Waiting water</div><div><b id="likeWasteL">—</b> L/day</div><small>layout + draws</small></div>
         </div>
         <div class="focus-meta">
@@ -261,7 +261,7 @@
         <div class="focus-warn" id="focusWarn"></div>
         <div class="kpi">
           <div class="pill"><div class="muted">Energy</div><div><b id="focusKwhDay">—</b> kWh/day</div><small id="focusKwhYear">—</small></div>
-          <div class="pill"><div class="muted">Running cost</div><div>£<b id="focusCostDay">—</b> / day</div><small id="focusCostYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="focusSaving">—</b> / yr</div><small>vs current system</small></div>
           <div class="pill"><div class="muted">Waiting water</div><div><b id="focusWasteL">—</b> L/day</div><small>layout + draws</small></div>
         </div>
         <div class="focus-meta">
@@ -288,20 +288,19 @@
   <!-- Compare All Systems -->
   <div class="card" id="compareCard">
     <h2>Compare all systems</h2>
-    <div class="sub">Sorted by Customer score. Includes your current system and a modern like-for-like. Click a row to focus. Running costs include heating demand. Payback uses your SEDBUK baseline.</div>
+    <div class="sub">Sorted by Customer score. Includes your current system and a modern like-for-like. Click a row to focus. Annual savings vs your current system include heating demand. Payback uses your SEDBUK baseline.</div>
     <div style="overflow:auto">
       <table id="compareTable">
         <thead>
           <tr>
             <th>System</th>
             <th class="right nowrap">kWh/day</th>
-            <th class="right nowrap">£/day</th>
             <th class="right nowrap">Waste L/day</th>
             <th class="right nowrap">Score</th>
             <th class="right nowrap">η</th>
             <th class="right nowrap">Standby</th>
             <th class="right nowrap">Capex £</th>
-            <th class="right nowrap">Run £/yr</th>
+            <th class="right nowrap">Annual saving £/yr</th>
             <th class="right nowrap">Year-1 £</th>
             <th class="right nowrap">Payback (yrs)</th>
           </tr>
@@ -564,7 +563,7 @@ const els={
   focusTag:$('#focusTag'), focusName:$('#focusName'),
   focusEcho:$('#focusEcho'), focusWarn:$('#focusWarn'),
   focusKwhDay:$('#focusKwhDay'), focusKwhYear:$('#focusKwhYear'),
-  focusCostDay:$('#focusCostDay'), focusCostYear:$('#focusCostYear'),
+  focusSaving:$('#focusSaving'),
   focusWasteL:$('#focusWasteL'), focusScore:$('#focusScore'),
   focusUE:$('#focusUE'), focusUP:$('#focusUP'), focusUC:$('#focusUC'), focusUF:$('#focusUF'), focusUM:$('#focusUM'),
   focusEUse:$('#focusEUse'), focusEWait:$('#focusEWait'), focusStandby:$('#focusStandby'), focusEta:$('#focusEta'), focusStarts:$('#focusStarts'),
@@ -572,14 +571,14 @@ const els={
   focusCapex:$('#focusCapex'), focusPayback:$('#focusPayback'),
   existName:$('#existName'), existEcho:$('#existEcho'),
   existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
-  existCostDay:$('#existCostDay'), existCostYear:$('#existCostYear'),
+  existSaving:$('#existSaving'),
   existWasteL:$('#existWasteL'), existScore:$('#existScore'),
   existUE:$('#existUE'), existUP:$('#existUP'), existUC:$('#existUC'), existUF:$('#existUF'), existUM:$('#existUM'),
   existEUse:$('#existEUse'), existEWait:$('#existEWait'), existStandby:$('#existStandby'), existEta:$('#existEta'), existStarts:$('#existStarts'),
   existHeatInput:$('#existHeatInput'), existHeatDelivered:$('#existHeatDelivered'),
   existCapex:$('#existCapex'), existPayback:$('#existPayback'),
   likeTag:$('#likeTag'), likeName:$('#likeName'), likeEcho:$('#likeEcho'), likeWarn:$('#likeWarn'),
-  likeKwhDay:$('#likeKwhDay'), likeKwhYear:$('#likeKwhYear'), likeCostDay:$('#likeCostDay'), likeCostYear:$('#likeCostYear'),
+  likeKwhDay:$('#likeKwhDay'), likeKwhYear:$('#likeKwhYear'), likeSaving:$('#likeSaving'),
   likeWasteL:$('#likeWasteL'), likeScore:$('#likeScore'),
   likeUE:$('#likeUE'), likeUP:$('#likeUP'), likeUC:$('#likeUC'), likeUF:$('#likeUF'), likeUM:$('#likeUM'),
   likeEUse:$('#likeEUse'), likeEWait:$('#likeEWait'), likeStandby:$('#likeStandby'), likeEta:$('#likeEta'), likeStarts:$('#likeStarts'),
@@ -600,8 +599,7 @@ const focusColumns={
     warn:els.focusWarn,
     kWhDay:els.focusKwhDay,
     kWhYear:els.focusKwhYear,
-    costDay:els.focusCostDay,
-    costYear:els.focusCostYear,
+    saving:els.focusSaving,
     waste:els.focusWasteL,
     score:els.focusScore,
     Ue:els.focusUE,
@@ -626,8 +624,7 @@ const focusColumns={
     warn:els.likeWarn,
     kWhDay:els.likeKwhDay,
     kWhYear:els.likeKwhYear,
-    costDay:els.likeCostDay,
-    costYear:els.likeCostYear,
+    saving:els.likeSaving,
     waste:els.likeWasteL,
     score:els.likeScore,
     Ue:els.likeUE,
@@ -652,8 +649,7 @@ const focusColumns={
     warn:null,
     kWhDay:els.existKwhDay,
     kWhYear:els.existKwhYear,
-    costDay:els.existCostDay,
-    costYear:els.existCostYear,
+    saving:els.existSaving,
     waste:els.existWasteL,
     score:els.existScore,
     Ue:els.existUE,
@@ -690,8 +686,7 @@ function fillFocusColumn(key, data, options={}){
     if(col.warn) setText(col.warn, '');
     setText(col.kWhDay, placeholder);
     setText(col.kWhYear, placeholder);
-    setText(col.costDay, placeholder);
-    setText(col.costYear, placeholder);
+    setText(col.saving, placeholder);
     setText(col.waste, placeholder);
     setText(col.score, placeholder);
     setText(col.Ue, placeholder);
@@ -711,8 +706,7 @@ function fillFocusColumn(key, data, options={}){
     return;
   }
 
-  const cost=Number.isFinite(data.cost)?data.cost.toFixed(2):placeholder;
-  const costYear=Number.isFinite(data.cost_year)?`≈ £${data.cost_year.toLocaleString()} / yr`:placeholder;
+  const saving=Number.isFinite(data.annualSaving)?data.annualSaving.toLocaleString():placeholder;
   const kWhDay=Number.isFinite(data.kWh)?String(data.kWh):placeholder;
   const kWhYear=Number.isFinite(data.kWh_year)?`≈ ${data.kWh_year.toLocaleString()} kWh / yr`:placeholder;
   const waste=Number.isFinite(data.wasteL)?String(data.wasteL):placeholder;
@@ -733,8 +727,7 @@ function fillFocusColumn(key, data, options={}){
   if(col.warn) setText(col.warn, warnText);
   setText(col.kWhDay, kWhDay);
   setText(col.kWhYear, kWhYear);
-  setText(col.costDay, cost);
-  setText(col.costYear, costYear);
+  setText(col.saving, saving);
   setText(col.waste, waste);
   setText(col.score, utilities.score!==undefined?String(utilities.score):placeholder);
   setText(col.Ue, utilities.Ue!==undefined?String(utilities.Ue):placeholder);
@@ -900,13 +893,12 @@ function runAll(){
     <tr data-id="${r.id}" class="${r.variant==='existing'?'exist':''}">
       <td>${r.label}${badges?` ${badges}`:''}</td>
       <td class="right">${r.kWh}</td>
-      <td class="right">£${r.cost.toFixed(2)}</td>
       <td class="right">${r.wasteL}</td>
       <td class="right"><b>${r.utilities.score}</b></td>
       <td class="right">${r.breakdown.eta}</td>
       <td class="right">${r.breakdown.standby}</td>
       <td class="right">£${r.capex.toLocaleString()}</td>
-      <td class="right">£${r.runYr.toLocaleString()}</td>
+      <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
       <td class="right">£${r.year1.toLocaleString()}</td>
       <td class="right">${r.payback}</td>
     </tr>
