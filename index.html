@@ -868,19 +868,170 @@ Combine points fluidly — no lists or semicolons.
     }
 
     function toNaturalLanguage(text){
-      return normalizeNewlines(String(text || ''))
+      const lines = normalizeNewlines(String(text || ''))
         .split('\n')
-        .map(line => line.replace(/^\s*(?:✅|↘️)?\s*/, '').replace(/\s*;\s*$/, '').trim())
-        .filter(Boolean)
-        .map(sentence => {
-          let clean = sentence.replace(/\s+/g,' ').trim();
-          if (!clean) return '';
-          clean = clean.charAt(0).toUpperCase() + clean.slice(1);
-          if (!/[.!?]$/.test(clean)) clean += '.';
-          return clean;
-        })
-        .filter(Boolean)
-        .join(' ');
+        .map(line => line.replace(/^\s*(?:✅|↘️)?\s*/, '').replace(/\s*;\s*$/, '').replace(/^[-*•]+\s*/, '').trim())
+        .filter(Boolean);
+
+      if (!lines.length) return '';
+
+      const context = {
+        systemTypeSeen: false,
+        systemTypeAlternatives: [],
+        clauses: []
+      };
+
+      lines.forEach(line => {
+        const plain = removeMarkdown(line);
+        const { label, value } = splitLabelValue(plain);
+        if (!label) {
+          const clause = formatStandaloneClause(value);
+          if (clause) context.clauses.push(clause);
+          return;
+        }
+        const clause = formatLabelClause(label, value, context);
+        if (clause) context.clauses.push(clause);
+      });
+
+      if (context.systemTypeAlternatives.length) {
+        context.clauses.push(formatListClause(
+          'Proposed upgrade options include',
+          context.systemTypeAlternatives.map(v => ensureIndefiniteArticle(v))
+        ));
+      }
+
+      const clauses = context.clauses
+        .map(cleanClause)
+        .filter(Boolean);
+
+      if (!clauses.length) return '';
+
+      return `${clauses.join('; ')}.`;
+    }
+
+    function splitLabelValue(line){
+      const parts = String(line || '')
+        .split('|')
+        .map(s => s.trim())
+        .filter(Boolean);
+      if (parts.length >= 2) {
+        return { label: parts[0], value: parts.slice(1).join(' | ') };
+      }
+      return { label: '', value: parts[0] || '' };
+    }
+
+    function removeMarkdown(line){
+      return String(line || '')
+        .replace(/[*_`~]+/g, '')
+        .replace(/^#{1,6}\s*/, '')
+        .trim();
+    }
+
+    function formatStandaloneClause(value){
+      return sentenceCase(cleanValue(value));
+    }
+
+    function formatLabelClause(label, value, context){
+      const rawLabel = String(label || '').replace(/[:]/g, '').trim();
+      const cleanedValue = cleanValue(value);
+      if (!cleanedValue) return '';
+
+      const lower = rawLabel.toLowerCase();
+
+      switch (lower) {
+        case 'system type': {
+          if (!context.systemTypeSeen) {
+            const last = context.clauses[context.clauses.length - 1];
+            if (last && /^Existing system$/i.test(last)) {
+              context.clauses.pop();
+              context.systemTypeSeen = true;
+              return `The existing system is ${cleanedValue}`;
+            }
+            if (last && /^Proposed system$/i.test(last)) {
+              context.clauses.pop();
+              context.systemTypeSeen = true;
+              return `The proposed system will be ${ensureIndefiniteArticle(cleanedValue)}`;
+            }
+            if (last && /^New boiler$/i.test(last)) {
+              context.clauses.pop();
+              context.systemTypeSeen = true;
+              return `The new boiler will be ${ensureIndefiniteArticle(cleanedValue)}`;
+            }
+            context.systemTypeSeen = true;
+            return `The system type is ${cleanedValue}`;
+          }
+          context.systemTypeAlternatives.push(cleanedValue);
+          return '';
+        }
+        case 'controls':
+          return `Controls are ${cleanedValue}`;
+        case 'hot water':
+          return `Hot water is provided by ${ensureIndefiniteArticle(cleanedValue)}`;
+        case 'configuration':
+          return `Configuration is ${cleanedValue}`;
+        case 'flue':
+          return `Flue arrangement is ${cleanedValue}`;
+        case 'gas supply':
+          return `Gas supply is ${cleanedValue}`;
+        case 'location':
+          return `Location is ${cleanedValue}`;
+        case 'need':
+          return `Identified need: ${sentenceCase(cleanedValue)}`;
+        default: {
+          const subject = sentenceCase(rawLabel);
+          const verb = chooseVerb(lower);
+          return `${subject} ${verb} ${cleanedValue}`;
+        }
+      }
+    }
+
+    function formatListClause(prefix, values){
+      const items = values.map(cleanClause).filter(Boolean);
+      if (!items.length) return '';
+      if (items.length === 1) return `${prefix} ${items[0]}`;
+      const last = items.pop();
+      return `${prefix} ${items.join(', ')} or ${last}`;
+    }
+
+    function ensureIndefiniteArticle(value){
+      const text = cleanClause(value);
+      if (!text) return '';
+      if (/^(?:a|an|the)\b/i.test(text)) return text;
+      if (/^[0-9]/.test(text)) return text;
+      const article = /^[aeiou]/i.test(text) ? 'an' : 'a';
+      return `${article} ${text}`;
+    }
+
+    function chooseVerb(labelLower){
+      if (/(?:controls|services|valves|radiators|circuits|zones|rooms|needs|options|notes|documents|measurements|risks|issues|vents|drains|windows|doors|supports|pipes|emitters|appliances)\b/.test(labelLower)) {
+        return 'are';
+      }
+      return 'is';
+    }
+
+    function cleanValue(value){
+      return String(value || '')
+        .replace(/[*_`~]+/g, '')
+        .replace(/\s*\/\s*/g, ' and ')
+        .replace(/\broom stat\b/gi, 'room thermostat')
+        .replace(/\s+-\s+/g, ' – ')
+        .replace(/\s+/g, ' ')
+        .replace(/\band and\b/gi, 'and')
+        .trim();
+    }
+
+    function cleanClause(text){
+      return String(text || '')
+        .replace(/\s+/g, ' ')
+        .replace(/^[;,:\s]+/, '')
+        .replace(/[;,:\s]+$/, '')
+        .trim();
+    }
+
+    function sentenceCase(text){
+      const cleaned = cleanClause(text);
+      if (!cleaned) return '';
+      return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
     }
 
     function normalizeNewlines(str){
