@@ -630,6 +630,8 @@ CA07 | Customer | Supply specified items
         .join('\n');
     }
 
+    const OUTPUT_ORDER = ['Need','Working at heights','System characteristics','Assistance','Restrictions','Hazards','Delivery','Office','Boiler/controls','Flue','Pipework','Disruption','Customer action','Additional'];
+
     function generateOutputs(){
       if (!OPTIONS_READY) return;
       const S=State.selections; const out={};
@@ -663,7 +665,7 @@ CA07 | Customer | Supply specified items
       out['Additional']=lines(S.additional||[]);
 
       // Render copy boxes in exact order
-      const ORDER=['Need','Working at heights','System characteristics','Assistance','Restrictions','Hazards','Delivery','Office','Boiler/controls','Flue','Pipework','Disruption','Customer action','Additional'];
+      const ORDER = OUTPUT_ORDER;
       const grid=document.getElementById('copyBoxes');
       const naturalOut={};
       ORDER.forEach(key=>{ naturalOut[key]=toNaturalLanguage(out[key]||''); });
@@ -671,15 +673,15 @@ CA07 | Customer | Supply specified items
         const slug = key.replace(/[^a-z0-9]+/gi,'_');
         const baseId = `box_${slug}`;
         const naturalId = `${baseId}_natural`;
-        return `<div class="copybox">
+        return `<div class="copybox depot-section" data-section="${slug}" data-section-title="${key.replace(/"/g,'&quot;')}">
           <div class="copybox-head">
-            <label for="${baseId}">${key}</label>
+            <label class="section-title" for="${baseId}">${key}</label>
             <div class="copybox-actions">
               <button class="btn small ghost" data-speak="${baseId}">🔊 Speak</button>
               <button class="btn small" data-copy="${baseId}">Copy ${key}</button>
             </div>
           </div>
-          <textarea class="tall" id="${baseId}" rows="8">${out[key]||''}</textarea>
+          <textarea class="tall plain-text" id="${baseId}" rows="8">${out[key]||''}</textarea>
           <div class="copybox-head natural">
             <label for="${naturalId}">${key} — natural language</label>
             <div class="copybox-actions">
@@ -709,10 +711,47 @@ CA07 | Customer | Supply specified items
       setupCopyAndSpeakHandlers();
 
       // Generate summaries
-      document.getElementById('genCustomer').onclick = ()=>{
-        const t = buildCustomerSummary(out);
-        document.getElementById('customerSummary').value = t;
-      };
+      const customerBtn = document.getElementById('genCustomer');
+      if (customerBtn) {
+        customerBtn.onclick = async () => {
+          const target = document.getElementById('customerSummary');
+          if (!target) {
+            console.warn('Customer summary textarea missing.');
+            return;
+          }
+          const sections = collectSectionsForSummary();
+          if (!sections.length) {
+            alert('Add notes to the depot sections first.');
+            return;
+          }
+
+          const originalLabel = customerBtn.textContent;
+          customerBtn.disabled = true;
+          customerBtn.textContent = 'Summarising…';
+
+          const fallbackText = buildFallbackCustomerSummary(sections);
+          let summaryText = fallbackText;
+          let usedModel = false;
+
+          try {
+            const client = getOpenAIClient();
+            if (client) {
+              const result = await summariseSectionsWithGPT(client, sections);
+              if (result.text) {
+                summaryText = result.text;
+                usedModel = result.usedModel;
+              }
+            }
+          } catch (err) {
+            console.warn('Customer summary failed:', err);
+          } finally {
+            target.value = normalizeNewlines(summaryText);
+            customerBtn.textContent = usedModel ? 'Summary ready ✓' : 'Summary ready ✓ (fallback)';
+            setTimeout(() => { customerBtn.textContent = originalLabel; }, 1600);
+            customerBtn.disabled = false;
+          }
+        };
+      }
       document.getElementById('genEngineer').onclick = ()=>{
         const t = buildEngineerSummary(out);
         document.getElementById('engineerSummary').value = t;
@@ -720,19 +759,6 @@ CA07 | Customer | Supply specified items
     }
 
     function brief(list){ return list ? list.split('\n').filter(Boolean).map(s=>s.replace(/;$/,'')).join(', ') : ''; }
-
-    function buildCustomerSummary(out){
-      const parts=[];
-      const needs=brief(out['Need']); if(needs) parts.push(`What you asked for: ${needs}.`);
-      const bc=brief(out['Boiler/controls']); if(bc) parts.push(`Boiler & controls: ${bc}.`);
-      const sys=brief(out['System characteristics']); if(sys) parts.push(`System setup: ${sys}.`);
-      const flue=brief(out['Flue']); if(flue) parts.push(`Flue changes: ${flue}.`);
-      const pipe=brief(out['Pipework']); if(pipe) parts.push(`Pipework: ${pipe}.`);
-      const dis=brief(out['Disruption']); if(dis) parts.push(`During the work: ${dis}.`);
-      const actions=brief(out['Customer action']); if(actions) parts.push(`What we need from you: ${actions}.`);
-      const add=brief(out['Additional']); if(add) parts.push(`Good to know: ${add}.`);
-      return parts.join('\n');
-    }
 
     function buildEngineerSummary(out){
       const parts=[];
@@ -751,6 +777,96 @@ CA07 | Customer | Supply specified items
       return parts.join('\n');
     }
 
+    const SUMMARY_SYSTEM_PROMPT = `
+You are an expert British Gas heating adviser.
+Rewrite each section's bullet points into short, clear, customer-friendly paragraphs.
+Keep the tone professional, positive, and natural. Avoid repeating section titles.
+Combine points fluidly — no lists or semicolons.
+`;
+    const SUMMARY_MODEL = 'gpt-4o-mini';
+    const SUMMARY_TEMPERATURE = 0.7;
+
+    function getOpenAIClient(){
+      if (typeof openai !== 'undefined' && openai?.chat?.completions?.create) return openai;
+      if (window.openai?.chat?.completions?.create) return window.openai;
+      return null;
+    }
+
+    function cleanSummaryLines(text){
+      return normalizeNewlines(String(text || ''))
+        .split('\n')
+        .map(line => line.replace(/^\s*(?:✅|↘️|[-•])?\s*/, '').replace(/\s*;?\s*$/, '').trim())
+        .filter(Boolean);
+    }
+
+    function linesToParagraph(lines){
+      return lines
+        .map(sentence => {
+          let clean = sentence.replace(/\s+/g, ' ').trim();
+          if (!clean) return '';
+          clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+          if (!/[.!?]$/.test(clean)) clean += '.';
+          return clean;
+        })
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    function collectSectionsForSummary(){
+      const sections = [];
+      OUTPUT_ORDER.forEach(name => {
+        const slug = name.replace(/[^a-z0-9]+/gi,'_');
+        const textarea = document.getElementById(`box_${slug}`);
+        if (!textarea) return;
+        const lines = cleanSummaryLines(textarea.value);
+        if (!lines.length) return;
+        const fallback = linesToParagraph(lines);
+        if (!fallback) return;
+        sections.push({ name, text: lines.join('\n'), fallback });
+      });
+      return sections;
+    }
+
+    function buildFallbackCustomerSummary(sections){
+      return sections
+        .map(section => section.fallback ? `${section.name}: ${section.fallback}` : '')
+        .filter(Boolean)
+        .join('\n\n');
+    }
+
+    async function summariseSectionsWithGPT(client, sections){
+      if (!client?.chat?.completions?.create) {
+        return { text: '', usedModel: false };
+      }
+      const paragraphs = [];
+      let usedModel = false;
+      for (const section of sections) {
+        const prompt = `${section.name}:\n${section.text}`;
+        try {
+          const response = await client.chat.completions.create({
+            model: SUMMARY_MODEL,
+            messages: [
+              { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
+              { role: 'user', content: prompt }
+            ],
+            temperature: SUMMARY_TEMPERATURE,
+          });
+          const summary = response?.choices?.[0]?.message?.content?.trim();
+          const paragraph = summary || section.fallback;
+          if (summary) usedModel = true;
+          if (paragraph) {
+            paragraphs.push(`${section.name}: ${paragraph}`);
+          }
+        } catch (error) {
+          console.warn(`Error summarising ${section.name}:`, error);
+          if (section.fallback) {
+            paragraphs.push(`${section.name}: ${section.fallback}`);
+          }
+        }
+      }
+      return { text: paragraphs.join('\n\n').trim(), usedModel };
+    }
+
     function toNaturalLanguage(text){
       return normalizeNewlines(String(text || ''))
         .split('\n')
@@ -765,6 +881,10 @@ CA07 | Customer | Supply specified items
         })
         .filter(Boolean)
         .join(' ');
+    }
+
+    function normalizeNewlines(str){
+      return String(str || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     }
 
     function setupCopyAndSpeakHandlers(){
