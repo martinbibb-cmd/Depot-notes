@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hot Water Model — SEDBUK Payback, Full Scope</title>
+<style>
+  :root{--fg:#111;--bg:#fff;--muted:#666;--b:#e5e7eb;--pri:#0b84ff;--hl:#fff7cc}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Ubuntu;color:var(--fg);background:var(--bg)}
+  header{padding:14px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:16px;margin:0}
+  .wrap{max-width:1150px;margin:0 auto;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media (max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:560px){.grid{grid-template-columns:1fr}}
+  label{font-weight:600;font-size:12px;color:var(--muted);display:block;margin:0 0 6px}
+  select,input[type="number"],input[type="range"]{width:100%}
+  input[type="number"],select{padding:8px 10px;border:1px solid var(--b);border-radius:8px;background:#fff}
+  .card{border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:14px}
+  .card h2{margin:0 0 8px;font-size:16px}
+  .sub{color:var(--muted);font-size:12px;margin-top:-4px}
+  .kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0}
+  @media(max-width:560px){.kpi{grid-template-columns:1fr}}
+  .pill{border:1px solid var(--b);border-radius:10px;padding:10px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  button{padding:9px 12px;border:1px solid var(--b);background:#fff;border-radius:10px;cursor:pointer}
+  button.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  .score{font:600 28px/1.1 system-ui;margin:4px 0}
+  .muted{color:var(--muted)}
+  .slrow{display:flex;align-items:center;gap:10px}
+  .slrow output{min-width:3ch;text-align:right;font-variant-numeric:tabular-nums}
+  .usage-label{min-width:160px;text-align:left;font-weight:600;font-size:13px;color:var(--fg)}
+  .field-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg)}
+  .field-check input{width:auto;margin:0}
+  .field-check span{flex:1}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border:1px solid var(--b);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa}
+  .right{text-align:right}
+  .badge{display:inline-block;padding:2px 6px;border:1px solid var(--b);border-radius:999px;font-size:12px;color:#444}
+  .badge.warn{background:#fff4e5;border-color:#f59e0b;color:#92400e}
+  .exist{background:var(--hl)}
+  .nowrap{white-space:nowrap}
+  .focus-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
+  @media(max-width:1100px){.focus-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:720px){.focus-cols{grid-template-columns:1fr}}
+  .focus-col{border:1px solid var(--b);border-radius:10px;padding:12px;background:#fff}
+  .focus-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .focus-title h3{margin:4px 0 0;font-size:16px}
+  .focus-note{margin-top:6px;color:var(--muted);font-size:13px}
+  .focus-warn{margin-top:4px;color:#92400e;font-size:13px}
+  .focus-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+  .badge.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  @media print{
+    header,.no-print{display:none!important}
+    body{background:#fff}
+    .wrap{padding:0}
+    .card{border:none;margin:0 0 8mm 0;padding:0}
+    .pill{border:1px solid #ddd}
+    table,th,td{border:1px solid #999}
+    .score{font-size:24px}
+  }
+</style>
+</head>
+<body>
+<header class="no-print">
+  <h1>Hot Water Model</h1>
+  <span class="muted">Physics • Cost • Customer score • SEDBUK Payback • Printable</span>
+  <div style="margin-left:auto" class="actions">
+    <button onclick="window.print()">🖨️ Print</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card no-print">
+    <h2>Inputs</h2>
+    <div class="grid">
+      <div>
+        <label for="usage">👨‍👩‍👧 Usage</label>
+        <div class="slrow">
+          <input id="usage" type="range" min="1" max="8" step="1" value="4">
+          <output id="usageLabel" class="usage-label">Average (4 people)</output>
+        </div>
+      </div>
+      <div>
+        <label>🗓️ Season (UK mains temp)</label>
+        <select id="mains">
+          <option>Winter</option>
+          <option selected>Spring/Autumn</option>
+          <option>Summer</option>
+        </select>
+      </div>
+      <div>
+        <label>🧵 Pipe layout (waiting water)</label>
+        <select id="layout">
+          <option selected>Central</option>
+          <option>Typical</option>
+          <option>Remote</option>
+        </select>
+      </div>
+      <div>
+        <label for="pipeScreed">🧱 Pipe work in screed</label>
+        <div class="field-check">
+          <input id="pipeScreed" type="checkbox">
+          <span>Reduce suitability for system &amp; combi</span>
+        </div>
+        <div class="sub">Applies a penalty to system and combi options.</div>
+      </div>
+      <div>
+        <label>⛽ Gas price ( £ / kWh )</label>
+        <input id="gas" type="number" step="0.001" value="0.07">
+      </div>
+      <div>
+        <label for="heating">🔥 Heating demand (kWh/yr)</label>
+        <div class="slrow">
+          <input id="heating" type="range" min="4000" max="30000" step="100" value="12000">
+          <output id="heatingLabel" class="usage-label">Average (12,000 kWh/yr)</output>
+        </div>
+        <div class="sub">Annual space-heating load to include in running costs.</div>
+      </div>
+      <div>
+        <label>🚿 Water flow (L/min)</label>
+        <input id="flow" type="number" step="0.5" value="14">
+        <div class="sub">Estimate mains flow. Below 12 L/min we avoid combis.</div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div style="grid-column:1/-1">
+        <label>🧰 Existing system type</label>
+        <select id="existing"></select>
+      </div>
+      <div class="slrow" title="SEDBUK seasonal efficiency of the CURRENT boiler">
+        <label style="flex:1">📊 Existing SEDBUK (%)</label>
+        <input id="sedbuk" type="range" min="55" max="95" step="1" value="78" oninput="sedVal.value=this.value">
+        <output id="sedVal">78</output>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>🏗️ Capex multiplier (×)</label>
+        <input id="capexMult" type="number" step="0.05" value="1.00">
+        <div class="sub">Adjust installed costs (region/access).</div>
+      </div>
+      <div>
+        <label>🧾 Existing keep-cost (£)</label>
+        <input id="capexKeep" type="number" step="50" value="0">
+        <div class="sub">Repairs/upgrades to keep current system.</div>
+      </div>
+      <div>
+        <label>💷 Finance rate (%)</label>
+        <input id="financeRate" type="number" step="0.1" value="0">
+        <div class="sub">If >0, we add annualised capex.</div>
+      </div>
+      <div>
+        <label>Term (years)</label>
+        <input id="financeYears" type="number" step="1" value="10">
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="sub">Adjust what matters most:</div>
+      <div class="grid" style="margin-top:8px">
+        <div class="slrow"><label style="flex:1">🔋 Energy</label><input id="wE" type="range" min="0" max="10" step="1" value="3" oninput="wEVal.value=this.value"><output id="wEVal">3</output></div>
+        <div class="slrow"><label style="flex:1">💷 Cost</label><input id="wCost" type="range" min="0" max="10" step="1" value="5" oninput="wCostVal.value=this.value"><output id="wCostVal">5</output></div>
+        <div class="slrow"><label style="flex:1">🛁 Comfort</label><input id="wC" type="range" min="0" max="10" step="1" value="4" oninput="wCVal.value=this.value"><output id="wCVal">4</output></div>
+        <div class="slrow"><label style="flex:1">🌱 Future-proof</label><input id="wF" type="range" min="0" max="10" step="1" value="4" oninput="wFVal.value=this.value"><output id="wFVal">4</output></div>
+        <div class="slrow"><label style="flex:1">🔧 Maintenance</label><input id="wM" type="range" min="0" max="10" step="1" value="2" oninput="wMVal.value=this.value"><output id="wMVal">2</output></div>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button id="presetBudget">💰 Budget-led</button>
+        <button id="presetComfort">🛁 Comfort-led</button>
+        <button id="presetFuture">🌱 Future-ready</button>
+        <button id="presetReset">♻️ Reset</button>
+        <button id="recalc" class="primary">Recalculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Focused view -->
+  <div class="card" id="focusCard">
+    <h2>Focused comparison</h2>
+    <div class="sub">Totals include hot water + heating demand. Click the table to change the best option.</div>
+    <div class="focus-cols">
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge" id="existTag">Existing</span>
+            <h3 id="existName">—</h3>
+          </div>
+        </div>
+        <div class="focus-note" id="existEcho">—</div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="existKwhDay">—</b> kWh/day</div><small id="existKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="existSaving">—</b> / yr</div><small>vs current system</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="existWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="existScore">—</div>
+            <small>🔋 <span id="existUE">—</span> • 💷 <span id="existUP">—</span> • 🛁 <span id="existUC">—</span> • 🌱 <span id="existUF">—</span> • 🔧 <span id="existUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="existEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="existEWait">—</b> kWh/day</div>
+            <div>Standby <b id="existStandby">—</b> kWh/day</div>
+            <div>Heating input <b id="existHeatInput">—</b> kWh/day</div>
+            <div>Heating delivered <b id="existHeatDelivered">—</b> kWh/day</div>
+            <div>η <b id="existEta">—</b> • Starts <b id="existStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="existPayback">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge" id="likeTag">Like for like</span>
+            <h3 id="likeName">—</h3>
+          </div>
+        </div>
+        <div class="focus-note" id="likeEcho">—</div>
+        <div class="focus-warn" id="likeWarn"></div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="likeKwhDay">—</b> kWh/day</div><small id="likeKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="likeSaving">—</b> / yr</div><small>vs current system</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="likeWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="likeScore">—</div>
+            <small>🔋 <span id="likeUE">—</span> • 💷 <span id="likeUP">—</span> • 🛁 <span id="likeUC">—</span> • 🌱 <span id="likeUF">—</span> • 🔧 <span id="likeUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="likeEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="likeEWait">—</b> kWh/day</div>
+            <div>Standby <b id="likeStandby">—</b> kWh/day</div>
+            <div>Heating input <b id="likeHeatInput">—</b> kWh/day</div>
+            <div>Heating delivered <b id="likeHeatDelivered">—</b> kWh/day</div>
+            <div>η <b id="likeEta">—</b> • Starts <b id="likeStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="likePayback">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge primary" id="focusTag">Top pick</span>
+            <h3 id="focusName">—</h3>
+          </div>
+          <div class="actions no-print">
+            <button id="copy">Copy JSON (focused)</button>
+          </div>
+        </div>
+        <div class="focus-note" id="focusEcho">—</div>
+        <div class="focus-warn" id="focusWarn"></div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="focusKwhDay">—</b> kWh/day</div><small id="focusKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="focusSaving">—</b> / yr</div><small>vs current system</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="focusWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="focusScore">—</div>
+            <small>🔋 <span id="focusUE">—</span> • 💷 <span id="focusUP">—</span> • 🛁 <span id="focusUC">—</span> • 🌱 <span id="focusUF">—</span> • 🔧 <span id="focusUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="focusEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="focusEWait">—</b> kWh/day</div>
+            <div>Standby <b id="focusStandby">—</b> kWh/day</div>
+            <div>Heating input <b id="focusHeatInput">—</b> kWh/day</div>
+            <div>Heating delivered <b id="focusHeatDelivered">—</b> kWh/day</div>
+            <div>η <b id="focusEta">—</b> • Starts <b id="focusStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="focusPayback">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare All Systems -->
+  <div class="card" id="compareCard">
+    <h2>Compare all systems</h2>
+    <div class="sub">Sorted by Customer score. Includes your current system and a modern like-for-like. Click a row to focus. Annual savings vs your current system include heating demand. Payback uses your SEDBUK baseline.</div>
+    <div style="overflow:auto">
+      <table id="compareTable">
+        <thead>
+          <tr>
+            <th>System</th>
+            <th class="right nowrap">kWh/day</th>
+            <th class="right nowrap">Score</th>
+            <th class="right nowrap">Annual saving £/yr</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="muted">© Hot Water Model — SEDBUK payback build</footer>
+</div>
+
+<script type="module">
+/* ==== CORE CONSTANTS & HELPERS ==== */
+const CP=0.001163,cl=(v,a,b)=>Math.max(a,Math.min(b,v)),rd=(n,d=2)=>Math.round(n*10**d)/10**d;
+const etaCurve=t=>t<=30?0.98:t>=55?0.88:0.98-0.004*(t-30);
+const invU=(v,b)=>cl(100*(b/v),10,100);
+
+/* ==== USAGE LEVELS ==== */
+const USAGE_LEVELS=[
+  {value:1,key:"1 person",label:"1 person",Vd:55,dr:9},
+  {value:2,key:"2 people",label:"2 people",Vd:80,dr:12},
+  {value:3,key:"3 people",label:"3 people",Vd:105,dr:15},
+  {value:4,key:"4 people",label:"Average (4 people)",Vd:130,dr:18},
+  {value:5,key:"5 people",label:"5 people",Vd:155,dr:21},
+  {value:6,key:"6 people",label:"6 people",Vd:180,dr:24},
+  {value:7,key:"7 people",label:"7 people",Vd:205,dr:27},
+  {value:8,key:"8 people",label:"8 people",Vd:230,dr:30}
+];
+const DEFAULT_USAGE_VALUE=4;
+const USAGE_LEVEL_MAP=USAGE_LEVELS.reduce((acc,level)=>{acc[level.value]=level;return acc;},{});
+const USAGE_KEY_MAP=USAGE_LEVELS.reduce((acc,level)=>{acc[level.key]=level;return acc;},{});
+const DEFAULT_USAGE_SELECTION=USAGE_LEVEL_MAP[DEFAULT_USAGE_VALUE]||USAGE_LEVELS[0];
+
+/* ==== PRESETS ==== */
+const PRE={
+  usage:Object.fromEntries(USAGE_LEVELS.map(({key,Vd,dr})=>[key,{Vd,dr}])),
+  mains:{"Winter":8,"Spring/Autumn":12,"Summer":16},
+  layout:{"Central":.35,"Typical":.7,"Remote":1.2}, // L per draw (waiting water)
+  systems:{
+    "Regular • Open CH + Open-vented cyl":      {t:"s", sb:1.8, cf:1.00, Tr:54, C:86, F:65, M:72, capex:4000, erp:.90},
+    "Regular • Sealed CH + Open-vented cyl":    {t:"s", sb:1.7, cf:1.00, Tr:52, C:87, F:70, M:74, capex:4200, erp:.91},
+    "Regular • Open CH + Unvented cyl":         {t:"s", sb:1.5, cf:1.00, Tr:52, C:88, F:82, M:80, capex:4600, erp:.92},
+    "Regular • Sealed CH + Unvented cyl":       {t:"s", sb:1.4, cf:1.00, Tr:50, C:89, F:84, M:82, capex:4800, erp:.93},
+
+    "System • Open-vented cyl":                 {t:"s", sb:1.6, cf:1.00, Tr:51, C:90, F:75, M:78, capex:4400, erp:.92},
+    "System • Unvented cyl":                    {t:"s", sb:1.3, cf:1.00, Tr:49, C:91, F:86, M:84, capex:5000, erp:.94},
+
+    "System • Mixergy Unvented (indirect)":     {t:"s", sb:1.0, cf:.95, Tr:48, C:92, F:95, M:85, capex:5500, erp:.96},
+    "System • Mixergy Vented (open-vented)":    {t:"s", sb:1.1, cf:.96, Tr:49, C:91, F:88, M:83, capex:5200, erp:.94},
+
+    "Combi • Standard":                         {t:"c", st:.012, sc:1.08, Tr:55, C:72, F:50, M:70, capex:3300, minFlow:12, erp:.92},
+    "Combi • Premium (conditioned/central)":    {t:"c", st:.009, sc:1.02, Tr:52, C:78, F:55, M:78, capex:3800, minFlow:12, erp:.94},
+  },
+  Tuse:40,
+  price:{ gas:.07, water:.0003 }
+};
+
+const usageSelectionFromValue=value=>{
+  const numeric=parseInt(value,10);
+  if(Number.isNaN(numeric)) return DEFAULT_USAGE_SELECTION;
+  return USAGE_LEVEL_MAP[numeric]||DEFAULT_USAGE_SELECTION;
+};
+const usageSelectionFromKey=key=>USAGE_KEY_MAP[key]||DEFAULT_USAGE_SELECTION;
+const usageLabelFromKey=key=>usageSelectionFromKey(key).label;
+
+const HEATING_MIN=4000;
+const HEATING_MAX=30000;
+const DEFAULT_HEATING_VALUE=12000;
+const HEATING_LOW_MAX=9000;
+const HEATING_HIGH_MIN=18000;
+const heatingLabelForValue=value=>{
+  const descriptor=value<=HEATING_LOW_MAX?'Low':value>=HEATING_HIGH_MIN?'High':'Average';
+  return `${descriptor} (${Math.round(value).toLocaleString()} kWh/yr)`;
+};
+
+/* ==== THERMAL MODEL (NEW/PROPOSED OPTION) ==== */
+function calcOption({sysKey, usageKey, mainsKey, layoutKey, prices, heatingYear}){
+  const usagePreset=PRE.usage[usageKey]||PRE.usage[DEFAULT_USAGE_SELECTION.key];
+  const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
+  const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
+  const Euse = U.Vd*CP*(Tu-Tm);
+  const Vwait= L*U.dr;
+  const Ewait= Vwait*CP*(Tu-Tm);
+  const eta  = etaCurve(S.Tr);
+  const heatingYr=Math.max(0, heatingYear||0);
+  const heatingDeliveredDay=heatingYr/365;
+  const erpEff=cl(S.erp||0.92,0.6,0.99);
+  const heatingInputDay=heatingDeliveredDay/erpEff;
+
+  let E_kWh, cost_day, standby=0, starts=0, hwInput=0;
+  if(S.t==="s"){
+    hwInput=((Euse+Ewait)/eta)*S.cf;
+    standby=S.sb;
+    const totalInput=hwInput+standby+heatingInputDay;
+    E_kWh=totalInput;
+    cost_day = totalInput*pgas + Vwait*pw;
+  }else{
+    const etaEff=eta/(S.sc||1);
+    starts=U.dr;
+    const Eover = starts*(S.st||0.01);
+    hwInput=((Euse+Ewait)/etaEff)+Eover;
+    E_kWh=hwInput+heatingInputDay;
+    cost_day = E_kWh*pgas + Vwait*pw;
+  }
+
+  return {
+    sysKey, usageKey, mainsKey, layoutKey,
+    usageLabel: usageLabelFromKey(usageKey),
+    kWh: rd(E_kWh,3),
+    cost: rd(cost_day,2),
+    kWh_year: Math.round(E_kWh*365),
+    cost_year: Math.round(cost_day*365),
+    wasteL: rd(Vwait,1),
+    breakdown:{
+      E_use:rd(Euse,3),
+      E_wait:rd(Ewait,3),
+      standby:rd(standby,3),
+      heating_input:rd(heatingInputDay,3),
+      heating_delivered:rd(heatingDeliveredDay,3),
+      eta:rd(eta,3),
+      starts,
+      hw_input:rd(hwInput,3)
+    },
+    erpPct: Math.round(erpEff*100),
+    capexBase: PRE.systems[sysKey].capex
+  };
+}
+
+/* ==== EXISTING SYSTEM BASELINE USING SEDBUK ==== */
+function calcExistingRun({existingKey, sedbukPct, usageKey, mainsKey, layoutKey, prices, heatingYear}){
+  const usagePreset=PRE.usage[usageKey]||PRE.usage[DEFAULT_USAGE_SELECTION.key];
+  const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[existingKey];
+  const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
+  const eff = cl((sedbukPct||75)/100, 0.40, 0.99);
+  const Euse = U.Vd*CP*(Tu-Tm);
+  const Vwait= L*U.dr;
+  const Ewait= Vwait*CP*(Tu-Tm);
+  const heatingYr=Math.max(0, heatingYear||0);
+  const heatingDeliveredDay=heatingYr/365;
+  const heatingInputDay=eff>0?(heatingDeliveredDay/eff):0;
+
+  let E_kWh, cost_day, standby=0, starts=0, hwInput=0;
+  if(S.t==="s"){
+    standby = S.sb || 1.5;
+    hwInput=((Euse+Ewait)/eff);
+    const totalInput=hwInput+standby+heatingInputDay;
+    E_kWh = totalInput;
+    cost_day = totalInput*pgas + Vwait*pw;
+  } else {
+    starts = U.dr;
+    const Eover = starts*(S.st||0.012);
+    hwInput=((Euse+Ewait)/eff)+Eover;
+    E_kWh = hwInput+heatingInputDay;
+    cost_day = E_kWh*pgas + Vwait*pw;
+  }
+
+  return {
+    kWh_day: rd(E_kWh,3),
+    kWh_year: Math.round(E_kWh*365),
+    cost_day: rd(cost_day,2),
+    cost_year: Math.round(cost_day*365),
+    eta_effective: rd(eff,3),
+    standby: rd(standby,3),
+    starts,
+    wasteL: rd(Vwait,1),
+    breakdown:{
+      E_use:rd(Euse,3),
+      E_wait:rd(Ewait,3),
+      standby:rd(standby,3),
+      heating_input:rd(heatingInputDay,3),
+      heating_delivered:rd(heatingDeliveredDay,3),
+      eta:rd(eff,3),
+      starts,
+      hw_input:rd(hwInput,3)
+    }
+  };
+}
+
+/* ==== SCORING (unchanged, best-of-two reference) ==== */
+function baseUtilities(r, weights, bestKWh, bestGBP){
+  const S=PRE.systems[r.sysKey];
+  const pen=r.layoutKey==="Central"?0:r.layoutKey==="Typical"?6:12;
+  const Ue=invU(r.kWh,bestKWh);
+  const Up=invU(r.cost,bestGBP);
+  const Uc=cl((S.C||75)-pen,10,100);
+  const Uf=cl(S.F||60,10,100);
+  const Um=cl(S.M||70,10,100);
+  const W=weights;
+  const scoreRaw=(W.e*Ue+W.c*Up+W.C*Uc+W.F*Uf+W.M*Um)/(W.e+W.c+W.C+W.F+W.M);
+  return {Ue,Up,Uc,Uf,Um,scoreRaw};
+}
+
+function scoreAll(results, weights, ctx={}){
+  const refKeys=["System • Mixergy Unvented (indirect)","Combi • Premium (conditioned/central)"];
+  const refs=results.filter(r=>refKeys.includes(r.sysKey));
+  const bestKWh=Math.min(...refs.map(r=>r.kWh));
+  const bestGBP=Math.min(...refs.map(r=>r.cost));
+  const flowLpm=Number.isFinite(ctx.flowLpm)?ctx.flowLpm:Infinity;
+  const pipeInScreed=!!ctx.pipeScreed;
+
+  return results.map(r=>{
+    const sysKey=r.sysKey||'';
+    const S=PRE.systems[sysKey]||{};
+    const base=baseUtilities(r, weights, bestKWh, bestGBP);
+    const minFlow=S.minFlow||0;
+    const flowOk=flowLpm>=minFlow;
+    const W=weights||{};
+    const weightSum=Math.max(1,(W.e||0)+(W.c||0)+(W.C||0)+(W.F||0)+(W.M||0));
+    let {Ue,Up,Uc,Uf,Um}=base;
+    let finalScore=( (W.e||0)*Ue + (W.c||0)*Up + (W.C||0)*Uc + (W.F||0)*Uf + (W.M||0)*Um )/weightSum;
+    let pipePenaltyApplied=false;
+    let pipePenaltyNote;
+    if(pipeInScreed && (sysKey.startsWith('System') || sysKey.startsWith('Combi'))){
+      pipePenaltyApplied=true;
+      Uc=cl(Uc-20,10,100);
+      finalScore=( (W.e||0)*Ue + (W.c||0)*Up + (W.C||0)*Uc + (W.F||0)*Uf + (W.M||0)*Um )/weightSum;
+      pipePenaltyNote='Pipe work in screed reduces suitability';
+    }
+    finalScore=Math.max(0, finalScore);
+    let flowWarning;
+    if(!flowOk && minFlow>0){
+      finalScore=0;
+      flowWarning=`Requires ≥ ${minFlow} L/min (you have ${rd(flowLpm,1)} L/min)`;
+    }
+    return {
+      ...r,
+      utilities:{
+        Ue:Math.round(Ue),
+        Up:Math.round(Up),
+        Uc:Math.round(Uc),
+        Uf:Math.round(Uf),
+        Um:Math.round(Um),
+        score:Math.round(finalScore)
+      },
+      flowWarning:flowWarning||undefined,
+      flowOk,
+      pipePenaltyApplied:pipePenaltyApplied||undefined,
+      pipePenaltyNote:pipePenaltyApplied?pipePenaltyNote:undefined
+    };
+  });
+}
+
+/* ==== FINANCE ==== */
+function annuityPayment(capex, ratePct, years){
+  const r=(ratePct||0)/100; if(r<=0) return 0;
+  const n=Math.max(1, years||1);
+  const f=r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1);
+  return capex*f;
+}
+
+/* ==== UI WIRING ==== */
+const $=s=>document.querySelector(s);
+const els={
+  usage:$('#usage'), usageLabel:$('#usageLabel'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'), heating:$('#heating'), heatingLabel:$('#heatingLabel'), flow:$('#flow'),
+  existing:$('#existing'), sedbuk:$('#sedbuk'),
+  capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
+  financeRate:$('#financeRate'), financeYears:$('#financeYears'),
+  wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
+  focusTag:$('#focusTag'), focusName:$('#focusName'),
+  focusEcho:$('#focusEcho'), focusWarn:$('#focusWarn'),
+  focusKwhDay:$('#focusKwhDay'), focusKwhYear:$('#focusKwhYear'),
+  focusSaving:$('#focusSaving'),
+  focusWasteL:$('#focusWasteL'), focusScore:$('#focusScore'),
+  focusUE:$('#focusUE'), focusUP:$('#focusUP'), focusUC:$('#focusUC'), focusUF:$('#focusUF'), focusUM:$('#focusUM'),
+  focusEUse:$('#focusEUse'), focusEWait:$('#focusEWait'), focusStandby:$('#focusStandby'), focusEta:$('#focusEta'), focusStarts:$('#focusStarts'),
+  focusHeatInput:$('#focusHeatInput'), focusHeatDelivered:$('#focusHeatDelivered'),
+  focusPayback:$('#focusPayback'),
+  existName:$('#existName'), existEcho:$('#existEcho'),
+  existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
+  existSaving:$('#existSaving'),
+  existWasteL:$('#existWasteL'), existScore:$('#existScore'),
+  existUE:$('#existUE'), existUP:$('#existUP'), existUC:$('#existUC'), existUF:$('#existUF'), existUM:$('#existUM'),
+  existEUse:$('#existEUse'), existEWait:$('#existEWait'), existStandby:$('#existStandby'), existEta:$('#existEta'), existStarts:$('#existStarts'),
+  existHeatInput:$('#existHeatInput'), existHeatDelivered:$('#existHeatDelivered'),
+  existPayback:$('#existPayback'),
+  likeTag:$('#likeTag'), likeName:$('#likeName'), likeEcho:$('#likeEcho'), likeWarn:$('#likeWarn'),
+  likeKwhDay:$('#likeKwhDay'), likeKwhYear:$('#likeKwhYear'), likeSaving:$('#likeSaving'),
+  likeWasteL:$('#likeWasteL'), likeScore:$('#likeScore'),
+  likeUE:$('#likeUE'), likeUP:$('#likeUP'), likeUC:$('#likeUC'), likeUF:$('#likeUF'), likeUM:$('#likeUM'),
+  likeEUse:$('#likeEUse'), likeEWait:$('#likeEWait'), likeStandby:$('#likeStandby'), likeEta:$('#likeEta'), likeStarts:$('#likeStarts'),
+  likeHeatInput:$('#likeHeatInput'), likeHeatDelivered:$('#likeHeatDelivered'),
+  likePayback:$('#likePayback'),
+  pipeScreed:$('#pipeScreed'),
+  compareBody:$('#compareBody'),
+  copyBtn:$('#copy'), recalcBtn:$('#recalc'),
+  presetBudget:$('#presetBudget'), presetComfort:$('#presetComfort'),
+  presetFuture:$('#presetFuture'), presetReset:$('#presetReset')
+};
+
+const focusColumns={
+  best:{
+    tag:els.focusTag,
+    name:els.focusName,
+    echo:els.focusEcho,
+    warn:els.focusWarn,
+    kWhDay:els.focusKwhDay,
+    kWhYear:els.focusKwhYear,
+    saving:els.focusSaving,
+    waste:els.focusWasteL,
+    score:els.focusScore,
+    Ue:els.focusUE,
+    Up:els.focusUP,
+    Uc:els.focusUC,
+    Uf:els.focusUF,
+    Um:els.focusUM,
+    EUse:els.focusEUse,
+    EWait:els.focusEWait,
+    Standby:els.focusStandby,
+    Eta:els.focusEta,
+    Starts:els.focusStarts,
+    HeatInput:els.focusHeatInput,
+    HeatDelivered:els.focusHeatDelivered,
+    Payback:els.focusPayback
+  },
+  like:{
+    tag:els.likeTag,
+    name:els.likeName,
+    echo:els.likeEcho,
+    warn:els.likeWarn,
+    kWhDay:els.likeKwhDay,
+    kWhYear:els.likeKwhYear,
+    saving:els.likeSaving,
+    waste:els.likeWasteL,
+    score:els.likeScore,
+    Ue:els.likeUE,
+    Up:els.likeUP,
+    Uc:els.likeUC,
+    Uf:els.likeUF,
+    Um:els.likeUM,
+    EUse:els.likeEUse,
+    EWait:els.likeEWait,
+    Standby:els.likeStandby,
+    Eta:els.likeEta,
+    Starts:els.likeStarts,
+    HeatInput:els.likeHeatInput,
+    HeatDelivered:els.likeHeatDelivered,
+    Payback:els.likePayback
+  },
+  existing:{
+    tag:els.existTag,
+    name:els.existName,
+    echo:els.existEcho,
+    warn:null,
+    kWhDay:els.existKwhDay,
+    kWhYear:els.existKwhYear,
+    saving:els.existSaving,
+    waste:els.existWasteL,
+    score:els.existScore,
+    Ue:els.existUE,
+    Up:els.existUP,
+    Uc:els.existUC,
+    Uf:els.existUF,
+    Um:els.existUM,
+    EUse:els.existEUse,
+    EWait:els.existEWait,
+    Standby:els.existStandby,
+    Eta:els.existEta,
+    Starts:els.existStarts,
+    HeatInput:els.existHeatInput,
+    HeatDelivered:els.existHeatDelivered,
+    Payback:els.existPayback
+  }
+};
+
+function fillFocusColumn(key, data, options={}){
+  const col=focusColumns[key];
+  if(!col) return;
+  const placeholder='—';
+  if(col.tag){
+    col.tag.textContent=options.tagText||placeholder;
+    if(col.tag.classList){
+      col.tag.classList.toggle('primary', !!options.primaryTag);
+    }
+  }
+  const setText=(el, value)=>{ if(!el) return; el.textContent=value; };
+  if(!data){
+    setText(col.name, placeholder);
+    setText(col.echo, options.emptyEcho||placeholder);
+    if(col.warn) setText(col.warn, '');
+    setText(col.kWhDay, placeholder);
+    setText(col.kWhYear, placeholder);
+    setText(col.saving, placeholder);
+    setText(col.waste, placeholder);
+    setText(col.score, placeholder);
+    setText(col.Ue, placeholder);
+    setText(col.Up, placeholder);
+    setText(col.Uc, placeholder);
+    setText(col.Uf, placeholder);
+    setText(col.Um, placeholder);
+    setText(col.EUse, placeholder);
+    setText(col.EWait, placeholder);
+    setText(col.Standby, placeholder);
+    setText(col.HeatInput, placeholder);
+    setText(col.HeatDelivered, placeholder);
+    setText(col.Eta, placeholder);
+    setText(col.Starts, placeholder);
+    setText(col.Payback, placeholder);
+    return;
+  }
+
+  const saving=Number.isFinite(data.annualSaving)?data.annualSaving.toLocaleString():placeholder;
+  const kWhDay=Number.isFinite(data.kWh)?String(data.kWh):placeholder;
+  const kWhYear=Number.isFinite(data.kWh_year)?`≈ ${data.kWh_year.toLocaleString()} kWh / yr`:placeholder;
+  const waste=Number.isFinite(data.wasteL)?String(data.wasteL):placeholder;
+  const utilities=data.utilities||{};
+  const breakdown=data.breakdown||{};
+  const paybackText=(data.payback==='—'||data.payback===undefined)?'—':`${data.payback} yrs`;
+  const buildWarnText=()=>{
+    const notes=[];
+    if(data.flowWarning) notes.push(`⚠️ ${data.flowWarning}`);
+    if(data.pipePenaltyApplied && data.pipePenaltyNote) notes.push(`⚠️ ${data.pipePenaltyNote}`);
+    return notes.join(' ');
+  };
+  const warnText = options.warnText!==undefined?options.warnText:buildWarnText();
+
+  setText(col.name, data.label||data.sysKey||placeholder);
+  setText(col.echo, options.echoText||placeholder);
+  if(col.warn) setText(col.warn, warnText);
+  setText(col.kWhDay, kWhDay);
+  setText(col.kWhYear, kWhYear);
+  setText(col.saving, saving);
+  setText(col.waste, waste);
+  setText(col.score, utilities.score!==undefined?String(utilities.score):placeholder);
+  setText(col.Ue, utilities.Ue!==undefined?String(utilities.Ue):placeholder);
+  setText(col.Up, utilities.Up!==undefined?String(utilities.Up):placeholder);
+  setText(col.Uc, utilities.Uc!==undefined?String(utilities.Uc):placeholder);
+  setText(col.Uf, utilities.Uf!==undefined?String(utilities.Uf):placeholder);
+  setText(col.Um, utilities.Um!==undefined?String(utilities.Um):placeholder);
+  setText(col.EUse, breakdown.E_use!==undefined?String(breakdown.E_use):placeholder);
+  setText(col.EWait, breakdown.E_wait!==undefined?String(breakdown.E_wait):placeholder);
+  setText(col.Standby, breakdown.standby!==undefined?String(breakdown.standby):placeholder);
+  setText(col.HeatInput, breakdown.heating_input!==undefined?String(breakdown.heating_input):placeholder);
+  setText(col.HeatDelivered, breakdown.heating_delivered!==undefined?String(breakdown.heating_delivered):placeholder);
+  setText(col.Eta, breakdown.eta!==undefined?String(breakdown.eta):placeholder);
+  setText(col.Starts, breakdown.starts!==undefined?String(breakdown.starts):placeholder);
+  setText(col.Payback, paybackText);
+}
+
+/* Populate selects */
+(function populateExisting(){
+  const keys=Object.keys(PRE.systems);
+  els.existing.innerHTML=keys.map(k=>`<option ${k.includes('Combi • Standard')?'selected':''}>${k}</option>`).join('');
+})();
+
+function getUsageSelection(){
+  const sliderValue=parseInt(els.usage?.value||String(DEFAULT_USAGE_VALUE),10);
+  const selection=usageSelectionFromValue(Number.isNaN(sliderValue)?DEFAULT_USAGE_VALUE:sliderValue);
+  if(els.usage) els.usage.value=String(selection.value);
+  return selection;
+}
+
+function refreshUsageLabel(){
+  const selection=getUsageSelection();
+  if(els.usageLabel) els.usageLabel.textContent=selection.label;
+  return selection;
+}
+
+function refreshHeatingLabel(){
+  if(!els.heating) return DEFAULT_HEATING_VALUE;
+  const raw=parseFloat(els.heating.value||String(DEFAULT_HEATING_VALUE));
+  const safe=Number.isFinite(raw)?cl(raw, HEATING_MIN, HEATING_MAX):DEFAULT_HEATING_VALUE;
+  els.heating.value=String(safe);
+  if(els.heatingLabel) els.heatingLabel.textContent=heatingLabelForValue(safe);
+  return safe;
+}
+
+function getState(){
+  const usageSelection=refreshUsageLabel();
+  const heatingValue=refreshHeatingLabel();
+  const flowVal=parseFloat(els.flow.value);
+  const flowLpm=Number.isFinite(flowVal)?Math.max(0, flowVal):14;
+  return {
+    usageKey:usageSelection.key, mainsKey:els.mains.value, layoutKey:els.layout.value,
+    usageLabel:usageSelection.label,
+    flowLpm,
+    heatingYear:Math.max(0, heatingValue),
+    prices:{gas:parseFloat(els.gas.value||"0.07"), water:0.0003},
+    existingKey:els.existing.value, sedbukPct:+els.sedbuk.value,
+    weights:{e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value},
+    capexMult:parseFloat(els.capexMult.value||"1"), capexKeep:parseFloat(els.capexKeep.value||"0"),
+    financeRate:parseFloat(els.financeRate.value||"0"), financeYears:parseInt(els.financeYears.value||"10",10),
+    pipeScreed:!!els.pipeScreed?.checked
+  };
+}
+
+function runAll(){
+  const st=getState();
+
+  // Existing baseline using SEDBUK
+  const existingRun=calcExistingRun({
+    existingKey:st.existingKey, sedbukPct:st.sedbukPct,
+    usageKey:st.usageKey, mainsKey:st.mainsKey, layoutKey:st.layoutKey, prices:st.prices,
+    heatingYear:st.heatingYear
+  });
+
+  // All candidate options (new/proposed)
+  const baseResults=Object.keys(PRE.systems).map(sysKey=>calcOption({
+    sysKey, usageKey:st.usageKey, mainsKey:st.mainsKey, layoutKey:st.layoutKey, prices:st.prices,
+    heatingYear:st.heatingYear
+  }));
+
+  // Attach capex + savings/payback vs existing
+  const modernResults=baseResults.map(r=>{
+    const capex=(PRE.systems[r.sysKey].capex||0)*st.capexMult;
+    const runYr=r.cost_year;
+    const year1=capex+runYr;
+
+    // Finance
+    const annualised=annuityPayment(capex, st.financeRate, st.financeYears);
+    const totalAnnualWithFinance=runYr+annualised;
+
+    // Savings vs existing (SEDBUK baseline)
+    const keepCost=st.capexKeep;
+    const incrCapex=Math.max(0, capex - keepCost);
+    const annualSaving=Math.max(0, existingRun.cost_year - runYr);
+    const payback=annualSaving>0 ? (incrCapex/annualSaving) : Infinity;
+
+    const variant=r.sysKey===st.existingKey?'like':'modern';
+    const label=variant==='like'?`${r.sysKey} (Modern ERP)`:r.sysKey;
+
+    return {
+      ...r,
+      id:`${r.sysKey}::${variant}`,
+      variant,
+      label,
+      capex:Math.round(capex),
+      runYr:Math.round(runYr),
+      year1:Math.round(year1),
+      annualised:Math.round(annualised),
+      totalAnnualWithFinance:Math.round(totalAnnualWithFinance),
+      annualSaving:Math.round(annualSaving),
+      payback:(payback===Infinity?"—":(payback>99?"99+":payback.toFixed(1))),
+      baseline:existingRun
+    };
+  });
+
+  const keepCost=Math.max(0, st.capexKeep);
+  const annualisedKeep=annuityPayment(keepCost, st.financeRate, st.financeYears);
+  const existingVariant={
+    id:`${st.existingKey}::existing`,
+    variant:'existing',
+    label:`${st.existingKey} (Current)`,
+    sysKey:st.existingKey,
+    usageKey:st.usageKey,
+    usageLabel: usageLabelFromKey(st.usageKey),
+    mainsKey:st.mainsKey,
+    layoutKey:st.layoutKey,
+    kWh: rd(existingRun.kWh_day,3),
+    cost: rd(existingRun.cost_day,2),
+    kWh_year: existingRun.kWh_year,
+    cost_year: existingRun.cost_year,
+    wasteL: existingRun.wasteL,
+    breakdown: existingRun.breakdown,
+    capex: Math.round(keepCost),
+    runYr: Math.round(existingRun.cost_year),
+    year1: Math.round(keepCost + existingRun.cost_year),
+    annualised: Math.round(annualisedKeep),
+    totalAnnualWithFinance: Math.round(existingRun.cost_year + annualisedKeep),
+    annualSaving: 0,
+    payback: '—',
+    baseline: existingRun,
+    sedbuk: st.sedbukPct
+  };
+
+  const results=[...modernResults, existingVariant];
+
+  // Score & sort (by score)
+  const scored=scoreAll(results, st.weights, {flowLpm:st.flowLpm, pipeScreed:st.pipeScreed}).sort((a,b)=>b.utilities.score - a.utilities.score);
+  const existingScored=scored.find(x=>x.variant==='existing') || null;
+  const likeScored=scored.find(x=>x.variant==='like') || null;
+  const bestCandidate=scored.find(x=>x.variant!=='existing') || scored[0];
+  const focusCtx={existing:existingScored, like:likeScored, bestDefault:bestCandidate, st};
+
+  // Render table
+  els.compareBody.innerHTML=scored.map(r=>{
+    const badges=[
+      r.variant==='existing'?'<span class="badge">Existing</span>':'',
+      r.variant==='like'?`<span class="badge">Like for like</span>${Number.isFinite(r.erpPct)?` <span class="badge">ERP ${r.erpPct}%</span>`:''}`:'',
+      r.flowWarning?'<span class="badge warn">⚠️ Flow limit</span>':'',
+      r.pipePenaltyApplied?`<span class="badge warn" title="${r.pipePenaltyNote||'Pipe work in screed reduces suitability'}">⚠️ Screed</span>`:''
+    ].filter(Boolean).join(' ');
+    return `
+    <tr data-id="${r.id}" class="${r.variant==='existing'?'exist':''}">
+      <td>${r.label}${badges?` ${badges}`:''}</td>
+      <td class="right">${r.kWh}</td>
+      <td class="right"><b>${r.utilities.score}</b></td>
+      <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
+    </tr>
+  `;}).join('');
+
+  for(const tr of els.compareBody.querySelectorAll('tr')){
+    tr.onclick=()=>{
+      const candidate=scored.find(x=>x.id===tr.dataset.id);
+      focus(candidate, focusCtx);
+    };
+  }
+
+  // Focus best option by default
+  focus(bestCandidate, focusCtx);
+  return {scored, st, existingRun};
+}
+
+function focus(candidate, ctx){
+  const {st, existing, like, bestDefault}=ctx||{};
+  const selected=candidate||bestDefault;
+  if(!selected) return;
+  const flowSummary=Number.isFinite(st?.flowLpm)?`${rd(st.flowLpm,1)} L/min`:'—';
+  const heatingSummary=Number.isFinite(st?.heatingYear)?`${Math.round(st.heatingYear).toLocaleString()} kWh/yr`:'—';
+  const buildEcho=(data, extras=[])=>{
+    if(!data) return '—';
+    const usageDisplay=data.usageLabel||usageLabelFromKey(data.usageKey);
+    const base=[usageDisplay||'—', data.mainsKey||'—', data.layoutKey||'—', `Flow ${flowSummary}`, `Heating ${heatingSummary}`];
+    return base.concat(extras.filter(Boolean)).join(' • ');
+  };
+
+  const isExisting=selected.variant==='existing';
+  const isLike=selected.variant==='like';
+  const isDefaultBest=bestDefault && selected.id===bestDefault.id;
+
+  let bestTag='Selected option';
+  if(isExisting) bestTag='Existing (selected)';
+  else if(isDefaultBest) bestTag=isLike?'Best overall (like for like)':'Best overall';
+  else if(isLike) bestTag='Like-for-like selection';
+
+  const screedNote=st?.pipeScreed?'Pipework in screed':null;
+
+  fillFocusColumn('best', selected, {
+    tagText:bestTag,
+    primaryTag:!isExisting && isDefaultBest,
+    echoText:buildEcho(selected, [Number.isFinite(selected.erpPct)?`ERP ${selected.erpPct}%`:null, screedNote])
+  });
+
+  fillFocusColumn('existing', existing, {
+    tagText:existing?`Existing (SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%)`:'Existing',
+    echoText:buildEcho(existing, [existing?`SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%`:null, screedNote]),
+  });
+
+  fillFocusColumn('like', like, {
+    tagText:like?`Like for like${Number.isFinite(like.erpPct)?` (ERP ${like.erpPct}%)`:''}`:'Like for like',
+    echoText:buildEcho(like, [like&&Number.isFinite(like.erpPct)?`ERP ${like.erpPct}%`:null, screedNote])
+  });
+
+  const copyTarget=selected;
+  if(copyTarget){
+    els.copyBtn.onclick=()=>navigator.clipboard.writeText(JSON.stringify(copyTarget,null,2));
+  }
+}
+
+/* Presets */
+els.presetBudget.onclick = ()=>{ els.wE.value=3; els.wCost.value=8; els.wC.value=2; els.wF.value=2; els.wM.value=2; runAll(); };
+els.presetComfort.onclick= ()=>{ els.wE.value=3; els.wCost.value=3; els.wC.value=8; els.wF.value=3; els.wM.value=3; runAll(); };
+els.presetFuture.onclick = ()=>{ els.wE.value=5; els.wCost.value=4; els.wC.value=3; els.wF.value=8; els.wM.value=2; runAll(); };
+els.presetReset.onclick  = ()=>{ els.wE.value=3; els.wCost.value=5; els.wC.value=4; els.wF.value=4; els.wM.value=2; runAll(); };
+
+if(els.usage){
+  els.usage.addEventListener('input', ()=>{ refreshUsageLabel(); runAll(); });
+}
+
+if(els.heating){
+  els.heating.addEventListener('input', ()=>{ refreshHeatingLabel(); runAll(); });
+}
+
+els.recalcBtn.onclick=runAll;
+for(const el of document.querySelectorAll('input,select')) el.addEventListener('change', runAll);
+
+// init
+(function initExisting(){
+  const keys=Object.keys(PRE.systems);
+  els.existing.innerHTML=keys.map(k=>`<option ${k.includes('Combi • Standard')?'selected':''}>${k}</option>`).join('');
+})();
+refreshUsageLabel();
+refreshHeatingLabel();
+runAll();
+</script>
+</body>
+</html>
