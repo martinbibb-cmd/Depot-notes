@@ -295,13 +295,8 @@
           <tr>
             <th>System</th>
             <th class="right nowrap">kWh/day</th>
-            <th class="right nowrap">Waste L/day</th>
             <th class="right nowrap">Score</th>
-            <th class="right nowrap">η</th>
-            <th class="right nowrap">Standby</th>
             <th class="right nowrap">Annual saving £/yr</th>
-            <th class="right nowrap">Year-1 £</th>
-            <th class="right nowrap">Payback (yrs)</th>
           </tr>
         </thead>
         <tbody id="compareBody"></tbody>
@@ -886,13 +881,8 @@ function runAll(){
     <tr data-id="${r.id}" class="${r.variant==='existing'?'exist':''}">
       <td>${r.label}${badges?` ${badges}`:''}</td>
       <td class="right">${r.kWh}</td>
-      <td class="right">${r.wasteL}</td>
       <td class="right"><b>${r.utilities.score}</b></td>
-      <td class="right">${r.breakdown.eta}</td>
-      <td class="right">${r.breakdown.standby}</td>
       <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
-      <td class="right">£${r.year1.toLocaleString()}</td>
-      <td class="right">${r.payback}</td>
     </tr>
   `;}).join('');
 
