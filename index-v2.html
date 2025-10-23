@@ -257,8 +257,18 @@ function populateFromOptions() {
   SECTION_ORDER.forEach(s => els.srcSection.add(new Option(s, s)));
   els.destSection.innerHTML = "";
   SECTION_ORDER.forEach(s => els.destSection.add(new Option(s, s)));
+  syncDestToSource();
   renderOutputs();
   renderItemList();
+}
+
+function syncDestToSource() {
+  const sourceValue = els.srcSection.value;
+  if (!sourceValue) return;
+  const hasMatch = Array.from(els.destSection.options).some(opt => opt.value === sourceValue);
+  if (hasMatch) {
+    els.destSection.value = sourceValue;
+  }
 }
 
 function renderItemList() {
@@ -351,7 +361,10 @@ function outTemplate(name){
 }
 
 /* -------------------- Actions -------------------- */
-els.srcSection.addEventListener('change', renderItemList);
+els.srcSection.addEventListener('change', () => {
+  syncDestToSource();
+  renderItemList();
+});
 els.filter.addEventListener('input', renderItemList);
 els.reloadBtn.addEventListener('click', loadOptionsTxt);
 
