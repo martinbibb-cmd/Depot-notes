@@ -160,6 +160,37 @@
       </div>
     </div>
 
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Combi warranty term</label>
+        <select id="warrantyCombi">
+          <option value="5">5 years</option>
+          <option value="10" selected>10 years</option>
+          <option value="12">12 years</option>
+        </select>
+      </div>
+      <div>
+        <label>System/regular warranty term</label>
+        <select id="warrantySystem">
+          <option value="5">5 years</option>
+          <option value="10" selected>10 years</option>
+          <option value="12">12 years</option>
+        </select>
+      </div>
+      <div>
+        <label>Homecare cover level</label>
+        <select id="homecareCover">
+          <option value="boiler-controls" selected>Boiler &amp; controls</option>
+          <option value="system-excess">Full system (£60 excess)</option>
+          <option value="system-no-excess">Full system (no excess)</option>
+        </select>
+      </div>
+      <div>
+        <label>Current Homecare cost ( £ / yr )</label>
+        <input id="homecareCurrent" type="number" min="0" step="1" value="0">
+      </div>
+    </div>
+
     <div class="card" style="margin-top:12px">
       <div class="sub">Adjust what matters most:</div>
       <div class="grid" style="margin-top:8px">
@@ -280,6 +311,13 @@
             <div>η <b id="focusEta">—</b> • Starts <b id="focusStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="focusPayback">—</span></div>
           </div>
+          <div class="pill" id="focusHomecare" style="display:none">
+            <div class="muted">Homecare savings</div>
+            <div id="focusHomecareCover">—</div>
+            <div>Year 1: <b id="focusHomecareYear1">—</b></div>
+            <div>Years 2-<span id="focusHomecareYearsLabel">—</span>: <b id="focusHomecareYears">—</b></div>
+            <div>Total: <b id="focusHomecareTotal">—</b></div>
+          </div>
         </div>
       </div>
     </div>
@@ -352,6 +390,14 @@ const PRE={
   Tuse:40,
   price:{ gas:.07, water:.0003 }
 };
+
+const HOMECARE_COVERS={
+  "boiler-controls":{label:"Boiler & controls", year1:0, year2:rd(9.08*12,2)},
+  "system-excess":{label:"Full system (£60 excess)", year1:rd(7*12,2), year2:rd(14.5*12,2)},
+  "system-no-excess":{label:"Full system (no excess)", year1:rd(13*12,2), year2:rd(19*12,2)}
+};
+const DEFAULT_HOMECARE_COVER="boiler-controls";
+const DEFAULT_WARRANTY_TERM=10;
 
 const usageSelectionFromValue=value=>{
   const numeric=parseInt(value,10);
@@ -546,6 +592,51 @@ function annuityPayment(capex, ratePct, years){
   return capex*f;
 }
 
+function formatGBP(value){
+  if(!Number.isFinite(value)) return "—";
+  const rounded=Math.round(value*100)/100;
+  const abs=Math.abs(rounded);
+  const formatted=abs.toLocaleString(undefined, {
+    minimumFractionDigits:Number.isInteger(abs)?0:2,
+    maximumFractionDigits:2
+  });
+  return `${rounded<0?'-£':'£'}${formatted}`;
+}
+
+function warrantyTermForSystem(sysKey, st){
+  const key=(sysKey||"").toLowerCase();
+  const raw=key.includes("combi")?st.warrantyCombi:st.warrantySystem;
+  const term=parseInt(raw,10);
+  if(Number.isFinite(term) && term>0) return term;
+  return DEFAULT_WARRANTY_TERM;
+}
+
+function computeHomecareSummary(sysKey, st){
+  const current=st.homecareCurrent;
+  const coverKey=st.homecareCover||DEFAULT_HOMECARE_COVER;
+  const cover=HOMECARE_COVERS[coverKey]||HOMECARE_COVERS[DEFAULT_HOMECARE_COVER];
+  if(!Number.isFinite(current) || current<=0) return null;
+  if(!cover) return null;
+  const term=warrantyTermForSystem(sysKey, st);
+  if(!Number.isFinite(term) || term<=0) return null;
+  const year1Cost=cover.year1;
+  const year2Cost=cover.year2;
+  const year1Saving=rd(current - year1Cost,2);
+  const perYearSaving=rd(current - year2Cost,2);
+  const years2Plus=Math.max(0, term-1);
+  const year2Total=rd(perYearSaving*years2Plus,2);
+  const total=rd(year1Saving + year2Total,2);
+  return {
+    coverLabel:cover.label,
+    term,
+    year1Saving,
+    perYearSaving,
+    years2Plus,
+    year2Total,
+    total
+  };
+}
+
 /* ==== UI WIRING ==== */
 const $=s=>document.querySelector(s);
 const els={
@@ -553,6 +644,8 @@ const els={
   existing:$('#existing'), sedbuk:$('#sedbuk'),
   capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
   financeRate:$('#financeRate'), financeYears:$('#financeYears'),
+  warrantyCombi:$('#warrantyCombi'), warrantySystem:$('#warrantySystem'),
+  homecareCover:$('#homecareCover'), homecareCurrent:$('#homecareCurrent'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
   focusTag:$('#focusTag'), focusName:$('#focusName'),
   focusEcho:$('#focusEcho'), focusWarn:$('#focusWarn'),
@@ -563,6 +656,9 @@ const els={
   focusEUse:$('#focusEUse'), focusEWait:$('#focusEWait'), focusStandby:$('#focusStandby'), focusEta:$('#focusEta'), focusStarts:$('#focusStarts'),
   focusHeatInput:$('#focusHeatInput'), focusHeatDelivered:$('#focusHeatDelivered'),
   focusPayback:$('#focusPayback'),
+  focusHomecare:$('#focusHomecare'), focusHomecareCover:$('#focusHomecareCover'),
+  focusHomecareYear1:$('#focusHomecareYear1'), focusHomecareYearsLabel:$('#focusHomecareYearsLabel'),
+  focusHomecareYears:$('#focusHomecareYears'), focusHomecareTotal:$('#focusHomecareTotal'),
   existName:$('#existName'), existEcho:$('#existEcho'),
   existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
   existSaving:$('#existSaving'),
@@ -734,6 +830,32 @@ function fillFocusColumn(key, data, options={}){
   setText(col.Payback, paybackText);
 }
 
+function updateHomecarePill(selected, st){
+  const pill=els.focusHomecare;
+  const coverEl=els.focusHomecareCover;
+  const year1El=els.focusHomecareYear1;
+  const yearsLabelEl=els.focusHomecareYearsLabel;
+  const yearsEl=els.focusHomecareYears;
+  const totalEl=els.focusHomecareTotal;
+  if(!pill) return;
+  const summary=!selected || selected.variant==='existing'?null:(selected.homecare||computeHomecareSummary(selected.sysKey, st));
+  if(!summary){
+    pill.style.display='none';
+    if(coverEl) coverEl.textContent='—';
+    if(year1El) year1El.textContent='—';
+    if(yearsLabelEl) yearsLabelEl.textContent='—';
+    if(yearsEl) yearsEl.textContent='—';
+    if(totalEl) totalEl.textContent='—';
+    return;
+  }
+  pill.style.display='';
+  if(coverEl) coverEl.textContent=summary.coverLabel||'—';
+  if(year1El) year1El.textContent=formatGBP(summary.year1Saving);
+  if(yearsLabelEl) yearsLabelEl.textContent=summary.term||'—';
+  if(yearsEl) yearsEl.textContent=formatGBP(summary.year2Total);
+  if(totalEl) totalEl.textContent=formatGBP(summary.total);
+}
+
 /* Populate selects */
 (function populateExisting(){
   const keys=Object.keys(PRE.systems);
@@ -767,6 +889,13 @@ function getState(){
   const heatingValue=refreshHeatingLabel();
   const flowVal=parseFloat(els.flow.value);
   const flowLpm=Number.isFinite(flowVal)?Math.max(0, flowVal):14;
+  const combiTermRaw=parseInt(els.warrantyCombi?.value||String(DEFAULT_WARRANTY_TERM),10);
+  const systemTermRaw=parseInt(els.warrantySystem?.value||String(DEFAULT_WARRANTY_TERM),10);
+  const warrantyCombi=Number.isFinite(combiTermRaw)?Math.max(1, combiTermRaw):DEFAULT_WARRANTY_TERM;
+  const warrantySystem=Number.isFinite(systemTermRaw)?Math.max(1, systemTermRaw):DEFAULT_WARRANTY_TERM;
+  const homecareCover=els.homecareCover?.value||DEFAULT_HOMECARE_COVER;
+  const homecareCurrentRaw=parseFloat(els.homecareCurrent?.value||"0");
+  const homecareCurrent=Number.isFinite(homecareCurrentRaw)?Math.max(0, homecareCurrentRaw):NaN;
   return {
     usageKey:usageSelection.key, mainsKey:els.mains.value, layoutKey:els.layout.value,
     usageLabel:usageSelection.label,
@@ -777,6 +906,10 @@ function getState(){
     weights:{e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value},
     capexMult:parseFloat(els.capexMult.value||"1"), capexKeep:parseFloat(els.capexKeep.value||"0"),
     financeRate:parseFloat(els.financeRate.value||"0"), financeYears:parseInt(els.financeYears.value||"10",10),
+    warrantyCombi,
+    warrantySystem,
+    homecareCover,
+    homecareCurrent,
     pipeScreed:!!els.pipeScreed?.checked
   };
 }
@@ -815,6 +948,7 @@ function runAll(){
 
     const variant=r.sysKey===st.existingKey?'like':'modern';
     const label=variant==='like'?`${r.sysKey} (Modern ERP)`:r.sysKey;
+    const homecare=computeHomecareSummary(r.sysKey, st);
 
     return {
       ...r,
@@ -828,7 +962,8 @@ function runAll(){
       totalAnnualWithFinance:Math.round(totalAnnualWithFinance),
       annualSaving:Math.round(annualSaving),
       payback:(payback===Infinity?"—":(payback>99?"99+":payback.toFixed(1))),
-      baseline:existingRun
+      baseline:existingRun,
+      homecare
     };
   });
 
@@ -857,7 +992,8 @@ function runAll(){
     annualSaving: 0,
     payback: '—',
     baseline: existingRun,
-    sedbuk: st.sedbukPct
+    sedbuk: st.sedbukPct,
+    homecare: computeHomecareSummary(st.existingKey, st)
   };
 
   const results=[...modernResults, existingVariant];
@@ -937,6 +1073,8 @@ function focus(candidate, ctx){
     tagText:like?`Like for like${Number.isFinite(like.erpPct)?` (ERP ${like.erpPct}%)`:''}`:'Like for like',
     echoText:buildEcho(like, [like&&Number.isFinite(like.erpPct)?`ERP ${like.erpPct}%`:null, screedNote])
   });
+
+  updateHomecarePill(selected, st);
 
   const copyTarget=selected;
   if(copyTarget){
