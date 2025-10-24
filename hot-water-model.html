@@ -44,8 +44,8 @@
   .badge.warn{background:#fff4e5;border-color:#f59e0b;color:#92400e}
   .exist{background:var(--hl)}
   .nowrap{white-space:nowrap}
-  .focus-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
-  @media(max-width:1100px){.focus-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .focus-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:12px}
+  @media(max-width:1100px){.focus-cols{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
   @media(max-width:720px){.focus-cols{grid-template-columns:1fr}}
   .focus-col{border:1px solid var(--b);border-radius:10px;padding:12px;background:#fff}
   .focus-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
@@ -54,6 +54,9 @@
   .focus-warn{margin-top:4px;color:#92400e;font-size:13px}
   .focus-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
   .badge.primary{background:var(--pri);border-color:var(--pri);color:#fff}
+  .preferred-control{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0 0}
+  .preferred-control label{font-weight:600;font-size:12px;color:var(--muted)}
+  .preferred-control select{min-width:220px;max-width:320px}
   @media print{
     header,.no-print{display:none!important}
     body{background:#fff}
@@ -193,7 +196,13 @@
   <!-- Focused view -->
   <div class="card" id="focusCard">
     <h2>Focused comparison</h2>
-    <div class="sub">Totals include hot water + heating demand. Click the table to change the best option.</div>
+    <div class="sub">Totals include hot water + heating demand. Click the table to change the best option. Use the selector to pin a preferred system.</div>
+    <div class="preferred-control no-print">
+      <label for="preferredSelect">Preferred option</label>
+      <select id="preferredSelect">
+        <option value="">— None selected —</option>
+      </select>
+    </div>
     <div class="focus-cols">
       <div class="focus-col">
         <div class="focus-title">
@@ -269,6 +278,45 @@
             <div>Year 1: <b id="likeHomecareYear1">—</b></div>
             <div>Years 2-<span id="likeHomecareYearsLabel">—</span>: <b id="likeHomecareYears">—</b></div>
             <div>Total: <b id="likeHomecareTotal">—</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="focus-col">
+        <div class="focus-title">
+          <div>
+            <span class="badge" id="preferredTag">Preferred option</span>
+            <h3 id="preferredName">—</h3>
+          </div>
+        </div>
+        <div class="focus-note" id="preferredEcho">—</div>
+        <div class="focus-warn" id="preferredWarn"></div>
+        <div class="kpi">
+          <div class="pill"><div class="muted">Energy</div><div><b id="preferredKwhDay">—</b> kWh/day</div><small id="preferredKwhYear">—</small></div>
+          <div class="pill"><div class="muted">Annual saving</div><div>£<b id="preferredSaving">—</b> / yr</div><small>vs current system</small></div>
+          <div class="pill"><div class="muted">Waiting water</div><div><b id="preferredWasteL">—</b> L/day</div><small>layout + draws</small></div>
+        </div>
+        <div class="focus-meta">
+          <div class="pill">
+            <div class="muted">Customer score</div>
+            <div class="score" id="preferredScore">—</div>
+            <small>🔋 <span id="preferredUE">—</span> • 💷 <span id="preferredUP">—</span> • 🛁 <span id="preferredUC">—</span> • 🌱 <span id="preferredUF">—</span> • 🔧 <span id="preferredUM">—</span></small>
+          </div>
+          <div class="pill">
+            <div class="muted">Breakdown</div>
+            <div>Useful <b id="preferredEUse">—</b> kWh/day</div>
+            <div>Waiting <b id="preferredEWait">—</b> kWh/day</div>
+            <div>Standby <b id="preferredStandby">—</b> kWh/day</div>
+            <div>Heating input <b id="preferredHeatInput">—</b> kWh/day</div>
+            <div>Heating delivered <b id="preferredHeatDelivered">—</b> kWh/day</div>
+            <div>η <b id="preferredEta">—</b> • Starts <b id="preferredStarts">—</b></div>
+            <div class="muted" style="margin-top:6px">Payback <span id="preferredPayback">—</span></div>
+          </div>
+          <div class="pill" id="preferredHomecare" style="display:none">
+            <div class="muted">Homecare savings</div>
+            <div id="preferredHomecareCover">—</div>
+            <div>Year 1: <b id="preferredHomecareYear1">—</b></div>
+            <div>Years 2-<span id="preferredHomecareYearsLabel">—</span>: <b id="preferredHomecareYears">—</b></div>
+            <div>Total: <b id="preferredHomecareTotal">—</b></div>
           </div>
         </div>
       </div>
@@ -385,6 +433,7 @@
 const CP=0.001163,cl=(v,a,b)=>Math.max(a,Math.min(b,v)),rd=(n,d=2)=>Math.round(n*10**d)/10**d;
 const etaCurve=t=>t<=30?0.98:t>=55?0.88:0.98-0.004*(t-30);
 const invU=(v,b)=>cl(100*(b/v),10,100);
+const escapeHtml=str=>String(str??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[ch]||ch);
 
 /* === HWM combi wait-loss model (additive; safe defaults) === */
 const HWM_WASTE={
@@ -755,6 +804,7 @@ const els={
   warrantyCombi:$('#warrantyCombi'), warrantySystem:$('#warrantySystem'),
   homecareCover:$('#homecareCover'), homecareCurrent:$('#homecareCurrent'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
+  preferredSelect:$('#preferredSelect'),
   focusTag:$('#focusTag'), focusName:$('#focusName'),
   focusEcho:$('#focusEcho'), focusWarn:$('#focusWarn'),
   focusKwhDay:$('#focusKwhDay'), focusKwhYear:$('#focusKwhYear'),
@@ -770,6 +820,16 @@ const els={
   likeHomecare:$('#likeHomecare'), likeHomecareCover:$('#likeHomecareCover'),
   likeHomecareYear1:$('#likeHomecareYear1'), likeHomecareYearsLabel:$('#likeHomecareYearsLabel'),
   likeHomecareYears:$('#likeHomecareYears'), likeHomecareTotal:$('#likeHomecareTotal'),
+  preferredTag:$('#preferredTag'), preferredName:$('#preferredName'), preferredEcho:$('#preferredEcho'), preferredWarn:$('#preferredWarn'),
+  preferredKwhDay:$('#preferredKwhDay'), preferredKwhYear:$('#preferredKwhYear'), preferredSaving:$('#preferredSaving'),
+  preferredWasteL:$('#preferredWasteL'), preferredScore:$('#preferredScore'),
+  preferredUE:$('#preferredUE'), preferredUP:$('#preferredUP'), preferredUC:$('#preferredUC'), preferredUF:$('#preferredUF'), preferredUM:$('#preferredUM'),
+  preferredEUse:$('#preferredEUse'), preferredEWait:$('#preferredEWait'), preferredStandby:$('#preferredStandby'), preferredEta:$('#preferredEta'), preferredStarts:$('#preferredStarts'),
+  preferredHeatInput:$('#preferredHeatInput'), preferredHeatDelivered:$('#preferredHeatDelivered'),
+  preferredPayback:$('#preferredPayback'),
+  preferredHomecare:$('#preferredHomecare'), preferredHomecareCover:$('#preferredHomecareCover'),
+  preferredHomecareYear1:$('#preferredHomecareYear1'), preferredHomecareYearsLabel:$('#preferredHomecareYearsLabel'),
+  preferredHomecareYears:$('#preferredHomecareYears'), preferredHomecareTotal:$('#preferredHomecareTotal'),
   existName:$('#existName'), existEcho:$('#existEcho'),
   existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
   existSaving:$('#existSaving'),
@@ -860,6 +920,38 @@ const focusColumns={
       total:els.likeHomecareTotal
     }
   },
+  preferred:{
+    tag:els.preferredTag,
+    name:els.preferredName,
+    echo:els.preferredEcho,
+    warn:els.preferredWarn,
+    kWhDay:els.preferredKwhDay,
+    kWhYear:els.preferredKwhYear,
+    saving:els.preferredSaving,
+    waste:els.preferredWasteL,
+    score:els.preferredScore,
+    Ue:els.preferredUE,
+    Up:els.preferredUP,
+    Uc:els.preferredUC,
+    Uf:els.preferredUF,
+    Um:els.preferredUM,
+    EUse:els.preferredEUse,
+    EWait:els.preferredEWait,
+    Standby:els.preferredStandby,
+    Eta:els.preferredEta,
+    Starts:els.preferredStarts,
+    HeatInput:els.preferredHeatInput,
+    HeatDelivered:els.preferredHeatDelivered,
+    Payback:els.preferredPayback,
+    homecare:{
+      pill:els.preferredHomecare,
+      cover:els.preferredHomecareCover,
+      year1:els.preferredHomecareYear1,
+      yearsLabel:els.preferredHomecareYearsLabel,
+      years:els.preferredHomecareYears,
+      total:els.preferredHomecareTotal
+    }
+  },
   existing:{
     tag:els.existTag,
     name:els.existName,
@@ -893,6 +985,10 @@ const focusColumns={
     }
   }
 };
+
+let preferredSelectionId='';
+let latestFocusContext=null;
+let lastFocusedCandidateId=null;
 
 function updateHomecareSection(section, data, st){
   if(!section || !section.pill) return;
@@ -1140,7 +1236,27 @@ function runAll(){
   const existingScored=scored.find(x=>x.variant==='existing') || null;
   const likeScored=scored.find(x=>x.variant==='like') || null;
   const bestCandidate=scored.find(x=>x.variant!=='existing') || scored[0];
-  const focusCtx={existing:existingScored, like:likeScored, bestDefault:bestCandidate, st};
+  if(els.preferredSelect){
+    const previous=preferredSelectionId;
+    const options=["<option value=\"\">— None selected —</option>"].concat(
+      scored.filter(x=>x.variant!=='existing').map(r=>{
+        const badge=r.variant==='like'?" (like for like)":"";
+        return `<option value="${escapeHtml(r.id)}">${escapeHtml(r.label)}${badge}</option>`;
+      })
+    );
+    els.preferredSelect.innerHTML=options.join('');
+    if(previous && scored.some(x=>x.id===previous)){
+      els.preferredSelect.value=previous;
+      preferredSelectionId=previous;
+    }else{
+      els.preferredSelect.value='';
+      preferredSelectionId='';
+    }
+  }
+
+  const preferredCandidate=preferredSelectionId?scored.find(x=>x.id===preferredSelectionId)||null:null;
+  const focusCtx={existing:existingScored, like:likeScored, bestDefault:bestCandidate, preferred:preferredCandidate, st, scored};
+  latestFocusContext=focusCtx;
 
   // Render table
   els.compareBody.innerHTML=scored.map(r=>{
@@ -1171,20 +1287,29 @@ function runAll(){
 
   for(const tr of els.compareBody.querySelectorAll('tr')){
     tr.onclick=()=>{
-      const candidate=scored.find(x=>x.id===tr.dataset.id);
-      focus(candidate, focusCtx);
+      if(!latestFocusContext) return;
+      const candidate=latestFocusContext.scored?.find(x=>x.id===tr.dataset.id);
+      focus(candidate||null, latestFocusContext);
     };
   }
 
   // Focus best option by default
-  focus(bestCandidate, focusCtx);
+  focus(bestCandidate, latestFocusContext);
   return {scored, st, existingRun};
 }
 
 function focus(candidate, ctx){
-  const {st, existing, like, bestDefault}=ctx||{};
-  const selected=candidate||bestDefault;
-  if(!selected) return;
+  const {st, existing, like, bestDefault, preferred}=ctx||{};
+  const preferredCandidate=preferred||null;
+  const selected=candidate||bestDefault||preferredCandidate||existing||like||null;
+  if(!selected){
+    fillFocusColumn('best', null, {emptyEcho:'—'}, st);
+    fillFocusColumn('preferred', preferredCandidate, {tagText:'Preferred option', emptyEcho:'Select a preferred option above to pin it here.'}, st);
+    fillFocusColumn('existing', existing, {tagText:'Existing', emptyEcho:'—'}, st);
+    fillFocusColumn('like', like, {tagText:'Like for like', emptyEcho:'—'}, st);
+    return;
+  }
+  lastFocusedCandidateId=selected?.id||null;
   const flowSummary=Number.isFinite(st?.flowLpm)?`${rd(st.flowLpm,1)} L/min`:'—';
   const heatingSummary=Number.isFinite(st?.heatingYear)?`${Math.round(st.heatingYear).toLocaleString()} kWh/yr`:'—';
   const buildEcho=(data, extras=[])=>{
@@ -1209,6 +1334,12 @@ function focus(candidate, ctx){
     tagText:bestTag,
     primaryTag:!isExisting && isDefaultBest,
     echoText:buildEcho(selected, [Number.isFinite(selected.erpPct)?`ERP ${selected.erpPct}%`:null, screedNote])
+  }, st);
+
+  fillFocusColumn('preferred', preferredCandidate, {
+    tagText:'Preferred option',
+    echoText:buildEcho(preferredCandidate, [preferredCandidate&&Number.isFinite(preferredCandidate.erpPct)?`ERP ${preferredCandidate.erpPct}%`:null, screedNote]),
+    emptyEcho:'Select a preferred option above to pin it here.'
   }, st);
 
   fillFocusColumn('existing', existing, {
@@ -1242,7 +1373,22 @@ if(els.heating){
 }
 
 els.recalcBtn.onclick=runAll;
-for(const el of document.querySelectorAll('input,select')) el.addEventListener('change', runAll);
+for(const el of document.querySelectorAll('input,select')){
+  if(el===els.preferredSelect) continue;
+  el.addEventListener('change', runAll);
+}
+if(els.preferredSelect){
+  els.preferredSelect.addEventListener('change', ()=>{
+    preferredSelectionId=els.preferredSelect.value||'';
+    if(!latestFocusContext) return;
+    const preferred=preferredSelectionId?
+      latestFocusContext.scored?.find(x=>x.id===preferredSelectionId)||null:
+      null;
+    latestFocusContext={...latestFocusContext, preferred};
+    const candidate=latestFocusContext.scored?.find(x=>x.id===lastFocusedCandidateId)||latestFocusContext.bestDefault||preferred||latestFocusContext.existing||latestFocusContext.like||null;
+    focus(candidate, latestFocusContext);
+  });
+}
 
 // init
 (function initExisting(){
