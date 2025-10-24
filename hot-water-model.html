@@ -54,9 +54,6 @@
   .focus-warn{margin-top:4px;color:#92400e;font-size:13px}
   .focus-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
   .badge.primary{background:var(--pri);border-color:var(--pri);color:#fff}
-  #fca-banner strong{font-weight:700}
-  #assumptions-method summary{cursor:pointer}
-  .range-pill{display:inline-block;padding:0.15rem 0.4rem;border:1px solid var(--b);border-radius:999px;font-variant-numeric:tabular-nums;background:#fff;color:var(--fg)}
   @media print{
     header,.no-print{display:none!important}
     body{background:#fff}
@@ -160,7 +157,7 @@
           <option value="12">12 years</option>
         </select>
       </div>
-      <div data-section="maintenance">
+      <div>
         <label>Homecare cover level</label>
         <select id="homecareCover">
           <option value="boiler-controls" selected>Boiler &amp; controls</option>
@@ -168,7 +165,7 @@
           <option value="system-no-excess">Full system (no excess)</option>
         </select>
       </div>
-      <div data-section="maintenance">
+      <div>
         <label>Current Homecare cost ( £ / yr )</label>
         <input id="homecareCurrent" type="number" min="0" step="1" value="0">
       </div>
@@ -191,41 +188,6 @@
         <button id="recalc" class="primary">Recalculate</button>
       </div>
     </div>
-  </div>
-
-  <section id="fca-banner" aria-live="polite" style="margin:1rem 0;border:1px solid #ddd;padding:0.75rem;border-radius:8px;">
-    <strong>Important: illustration only</strong> — This tool estimates potential energy use, running costs and payback using your inputs and standard assumptions. It is <strong>not</strong> financial advice, insurance advice, or a personal recommendation. Actual outcomes vary with property characteristics, installation specifics, usage patterns, tariffs and future price changes.
-  </section>
-
-  <details id="assumptions-method" open style="margin:1rem 0;">
-    <summary><strong>Assumptions &amp; Method</strong></summary>
-    <div style="padding-top:0.5rem" id="assumptions-content">
-      <ul style="margin:0.5rem 1rem;">
-        <li><strong>Energy prices:</strong> Defaults use <span id="defaultTariffLabel">user-entered tariffs</span>. For clarity, record the source/date alongside any default caps or reference values. Edit the unit rates for accuracy.</li>
-        <li><strong>Usage:</strong> Hot-water demand assumes a typical household pattern (default <span id="defaultHotDraws">12</span> hot draws/day for 3–4 occupants) with sensitivity ±20%.</li>
-        <li><strong>Efficiencies:</strong> Baseline SEDBUK from user input; option efficiencies from manufacturer/SEDBUK data. We apply tolerance ±5% in range outputs.</li>
-        <li><strong>Payback:</strong> Upfront differential ÷ annual running-cost difference, presented as a <em>range</em> to reflect tariff/usage/efficiency uncertainty.</li>
-        <li><strong>Maintenance:</strong> Any “Homecare/maintenance” comparison (if shown) is <em>illustrative only</em>, not a quote or advice.</li>
-        <li><strong>Limitations:</strong> Estimates exclude atypical plumbing layouts, legionella cycles/pasteurisation, secondary return pumps (unless set), exceptional draw patterns, or future tariff changes.</li>
-      </ul>
-    </div>
-  </details>
-
-  <div id="internal-controls" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0;">
-    <label>
-      <input type="checkbox" id="toggle-internal" />
-      Show maintenance comparison (internal)
-    </label>
-    <span id="internal-disclaimer" style="display:none;font-size:0.9rem;opacity:0.8;">
-      Maintenance figures are illustrative; not insurance advice or a quote.
-    </span>
-  </div>
-
-  <div class="card" id="rangeHighlights">
-    <h2>Range highlights</h2>
-    <p style="margin-top:0">Annual saving: <span id="annualSavingValue">—</span></p>
-    <p>Payback: <span id="paybackValue">—</span></p>
-    <p id="waste-diagnostics" style="font-size:0.9rem;opacity:0.8;"></p>
   </div>
 
   <!-- Focused view -->
@@ -262,7 +224,7 @@
             <div>η <b id="existEta">—</b> • Starts <b id="existStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="existPayback">—</span></div>
           </div>
-          <div class="pill" id="existHomecare" style="display:none" data-section="maintenance">
+          <div class="pill" id="existHomecare" style="display:none">
             <div class="muted">Homecare savings</div>
             <div id="existHomecareCover">—</div>
             <div>Year 1: <b id="existHomecareYear1">—</b></div>
@@ -301,7 +263,7 @@
             <div>η <b id="likeEta">—</b> • Starts <b id="likeStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="likePayback">—</span></div>
           </div>
-          <div class="pill" id="likeHomecare" style="display:none" data-section="maintenance">
+          <div class="pill" id="likeHomecare" style="display:none">
             <div class="muted">Homecare savings</div>
             <div id="likeHomecareCover">—</div>
             <div>Year 1: <b id="likeHomecareYear1">—</b></div>
@@ -343,7 +305,7 @@
             <div>η <b id="focusEta">—</b> • Starts <b id="focusStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="focusPayback">—</span></div>
           </div>
-          <div class="pill" id="focusHomecare" style="display:none" data-section="maintenance">
+          <div class="pill" id="focusHomecare" style="display:none">
             <div class="muted">Homecare savings</div>
             <div id="focusHomecareCover">—</div>
             <div>Year 1: <b id="focusHomecareYear1">—</b></div>
@@ -367,18 +329,13 @@
             <th class="right nowrap">kWh/day</th>
             <th class="right nowrap">Score</th>
             <th class="right nowrap">Annual saving £/yr</th>
-            <th data-section="maintenance">Homecare savings</th>
+            <th>Homecare savings</th>
           </tr>
         </thead>
         <tbody id="compareBody"></tbody>
       </table>
     </div>
   </div>
-
-  <footer id="audit-strip" style="margin-top:1rem; font-size:0.9rem; opacity:0.9;">
-    <div><strong>Audit:</strong> <span id="audit-version">Hot Water Model vX.Y</span> • <span id="audit-commit">commit ???</span> • <span id="audit-timestamp"></span></div>
-    <div><code id="audit-inputs-json" style="display:block;white-space:pre-wrap;word-break:break-word;"></code></div>
-  </footer>
 
   <footer class="muted">© Hot Water Model — SEDBUK payback build</footer>
 </div>
@@ -440,15 +397,6 @@ const DEFAULT_CAPEX_MULT=1;
 const DEFAULT_CAPEX_KEEP=0;
 const DEFAULT_FINANCE_RATE=0;
 const DEFAULT_FINANCE_YEARS=10;
-
-const Compliance={
-  efficiencyTolerancePct:0.05,
-  usageSwingPct:0.20,
-  tariffSwingPct:0.12,
-  defaultHotDrawsPerDay:12,
-  pipeIDm:{'10mm':0.008,'15mm':0.013,'22mm':0.021},
-  combiIgnitionWasteL:{min:0.8,mid:1.4,max:2.2}
-};
 
 const usageSelectionFromValue=value=>{
   const numeric=parseInt(value,10);
@@ -1106,7 +1054,7 @@ function runAll(){
       <td class="right">${r.kWh}</td>
       <td class="right"><b>${r.utilities.score}</b></td>
       <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
-      <td data-section="maintenance">${homecareCell}</td>
+      <td>${homecareCell}</td>
     </tr>
   `;}).join('');
 
@@ -1119,17 +1067,7 @@ function runAll(){
 
   // Focus best option by default
   focus(bestCandidate, focusCtx);
-  const complianceCtx={
-    scored,
-    st,
-    existingRun,
-    bestCandidate,
-    existingVariant,
-    likeCandidate:likeScored,
-    existingCandidate:existingScored
-  };
-  applyComplianceEnhancements(complianceCtx);
-  return complianceCtx;
+  return {scored, st, existingRun};
 }
 
 function focus(candidate, ctx){
@@ -1178,200 +1116,6 @@ function focus(candidate, ctx){
   }
 }
 
-function coldSlugLitres(runMeters, pipeIDm){
-  const radius=(pipeIDm||0)/2;
-  const vol_m3=Math.PI*radius*radius*Math.max(0, runMeters||0);
-  return vol_m3*1000;
-}
-
-function estimateWastePerDrawL(opts, range='mid'){
-  const idm=Compliance.pipeIDm?.[opts?.pipe] ?? Compliance.pipeIDm['15mm'];
-  const slugL=coldSlugLitres(Math.max(0, opts?.runMeters||8), idm);
-  const sysType=String(opts?.systemType||'SYSTEM').toUpperCase();
-  if(sysType==='COMBI'){
-    const ign=Compliance.combiIgnitionWasteL?.[range] ?? Compliance.combiIgnitionWasteL.mid;
-    return slugL+ign;
-  }
-  if(opts?.hasSecondaryReturn) return Math.max(0, slugL*0.15);
-  return slugL;
-}
-
-function estimateDailyWasteL(opts, drawsPerDay, range='mid'){
-  const draws=Math.max(0, drawsPerDay||Compliance.defaultHotDrawsPerDay);
-  return estimateWastePerDrawL(opts, range)*draws;
-}
-
-function ranged(value, swingPct){
-  const v=Number(value)||0;
-  return {min:v*(1-swingPct), mid:v, max:v*(1+swingPct)};
-}
-
-function combineSwings(base, swingsPctArray){
-  const totalSwing=Math.min(0.6, Math.sqrt((swingsPctArray||[]).map(s=>s*s).reduce((a,b)=>a+b,0)));
-  return ranged(base, totalSwing);
-}
-
-function yearsStr(n){
-  if(!Number.isFinite(n) || n<=0) return '—';
-  return `${n.toFixed(1)} yrs`;
-}
-
-function toRangePill(range, formatter){
-  const fmt=formatter||((x)=>Number.isFinite(x)?x.toFixed(0):'—');
-  const min=fmt(range?.min);
-  const max=fmt(range?.max);
-  const mid=fmt(range?.mid);
-  return `<span class="range-pill">${min}–${max} (≈${mid})</span>`;
-}
-
-function mapSystemType(key){
-  if(!key) return 'SYSTEM';
-  if(/combi/i.test(key)) return 'COMBI';
-  if(/regular/i.test(key)) return 'REGULAR';
-  return 'SYSTEM';
-}
-
-function readModelInputs(ctx){
-  const st=ctx?.st || getState();
-  const best=ctx?.bestCandidate || null;
-  const existingVariant=ctx?.existingVariant || null;
-  const existing=ctx?.existingRun || null;
-  const usagePreset=PRE.usage?.[st?.usageKey] || DEFAULT_USAGE_SELECTION;
-  const layoutRunMap={Central:6, Typical:8, Remote:12};
-  const layoutPipeMap={Central:'15mm', Typical:'15mm', Remote:'22mm'};
-  const hotDraws=Math.max(0, usagePreset?.dr ?? Compliance.defaultHotDrawsPerDay);
-  const systemType=mapSystemType(best?.sysKey || best?.label);
-  const existingType=mapSystemType(st?.existingKey);
-  return {
-    systemType,
-    existingSystemType:existingType,
-    gasUnitPrice:Number(st?.prices?.gas ?? 0.07),
-    elecUnitPrice:Number(st?.prices?.elec ?? 0.28),
-    baselineSEDBUK:Number(st?.sedbukPct ?? 75),
-    proposedEff:Number(best?.erpPct ?? 90),
-    hotDrawsPerDay:hotDraws,
-    pipe:layoutPipeMap[st?.layoutKey] || '15mm',
-    runMeters:layoutRunMap[st?.layoutKey] || 8,
-    hasSecondaryReturn:false,
-    upfrontDiff:Math.max(0, (best?.capex ?? 0) - (existingVariant?.capex ?? st?.capexKeep ?? 0)),
-    annualkWhBaseline:Number(existing?.kWh_year ?? 3000),
-    annualkWhProposed:Number(best?.kWh_year ?? existing?.kWh_year ?? 2400),
-    proposedLabel:best?.label || best?.sysKey || '',
-    existingLabel:st?.existingKey || '',
-    usageLabel:st?.usageLabel || usagePreset?.label || ''
-  };
-}
-
-function calcAnnualCostDelta£(model){
-  const gasPrice=Number(model?.gasUnitPrice ?? 0.07);
-  const gasCost=kWh=>kWh*gasPrice;
-  const baseline£=gasCost(model?.annualkWhBaseline ?? 0);
-  const proposed£=gasCost(model?.annualkWhProposed ?? 0);
-  const pointSaving£=Math.max(0, baseline£ - proposed£);
-  const draws=model?.hotDrawsPerDay ?? Compliance.defaultHotDrawsPerDay;
-  const kWhPerL=(4.186*35)/3600;
-  const combiOpts={systemType:'COMBI', pipe:model?.pipe, runMeters:model?.runMeters, hasSecondaryReturn:false};
-  let waste£={min:0, mid:0, max:0};
-  if(String(model?.systemType).toUpperCase()==='COMBI'){
-    const combWaste={
-      min:estimateDailyWasteL(combiOpts, draws, 'min')*365*kWhPerL,
-      mid:estimateDailyWasteL(combiOpts, draws, 'mid')*365*kWhPerL,
-      max:estimateDailyWasteL(combiOpts, draws, 'max')*365*kWhPerL
-    };
-    const cylType=model?.existingSystemType==='REGULAR'?'REGULAR':'SYSTEM';
-    const cylOpts={systemType:cylType, pipe:model?.pipe, runMeters:model?.runMeters, hasSecondaryReturn:model?.hasSecondaryReturn};
-    const cylWaste={
-      min:estimateDailyWasteL(cylOpts, draws, 'min')*365*kWhPerL,
-      mid:estimateDailyWasteL(cylOpts, draws, 'mid')*365*kWhPerL,
-      max:estimateDailyWasteL(cylOpts, draws, 'max')*365*kWhPerL
-    };
-    waste£={
-      min:(combWaste.min - cylWaste.min)*gasPrice,
-      mid:(combWaste.mid - cylWaste.mid)*gasPrice,
-      max:(combWaste.max - cylWaste.max)*gasPrice
-    };
-  }
-  const baseRange=combineSwings(pointSaving£, [Compliance.usageSwingPct, Compliance.tariffSwingPct, Compliance.efficiencyTolerancePct]);
-  return {
-    min:Math.max(0, baseRange.min - Math.max(0, waste£.max)),
-    mid:Math.max(0, baseRange.mid - Math.max(0, waste£.mid)),
-    max:Math.max(0, baseRange.max - Math.max(0, waste£.min))
-  };
-}
-
-function calcPaybackRangeYears(upfrontDiff£, annualSavingRange£){
-  const safe=x=>x>0?x:Infinity;
-  return {
-    min:safe(upfrontDiff£/Math.max(1, annualSavingRange£?.max ?? 0)),
-    mid:safe(upfrontDiff£/Math.max(1, annualSavingRange£?.mid ?? 0)),
-    max:safe(upfrontDiff£/Math.max(1, annualSavingRange£?.min ?? 0))
-  };
-}
-
-function renderRangesToUI(annualSavingRange£, paybackRangeY){
-  const saveEl=document.querySelector('#annualSavingValue');
-  const paybackEl=document.querySelector('#paybackValue');
-  if(saveEl) saveEl.innerHTML=toRangePill(annualSavingRange£, (x)=>Number.isFinite(x)?`£${Math.round(x)}/yr`:'—');
-  if(paybackEl) paybackEl.innerHTML=toRangePill(paybackRangeY, yearsStr);
-}
-
-function applyMaintenanceVisibility(isOn){
-  const targets=document.querySelectorAll('#maintenance-section, [data-section="maintenance"]');
-  targets.forEach(el=>{
-    if(!el) return;
-    el.style.display=isOn?'' : 'none';
-  });
-  const disclaimer=document.querySelector('#internal-disclaimer');
-  if(disclaimer) disclaimer.style.display=isOn?'':'none';
-}
-
-function setupInternalToggle(){
-  const toggle=document.querySelector('#toggle-internal');
-  if(toggle){
-    const apply=()=>applyMaintenanceVisibility(!!toggle.checked);
-    toggle.addEventListener('change', apply);
-    apply();
-  }else{
-    applyMaintenanceVisibility(false);
-  }
-}
-
-function renderAudit(inputs){
-  const ts=new Date().toISOString();
-  const versionEl=document.querySelector('#audit-version');
-  if(versionEl && !versionEl.textContent.trim()) versionEl.textContent='Hot Water Model v1.0';
-  const commitEl=document.querySelector('#audit-commit');
-  if(commitEl && !commitEl.textContent.trim()) commitEl.textContent='commit (set in build)';
-  const timestampEl=document.querySelector('#audit-timestamp');
-  if(timestampEl) timestampEl.textContent=ts;
-  const jsonEl=document.querySelector('#audit-inputs-json');
-  if(jsonEl) jsonEl.textContent=JSON.stringify(inputs, null, 2);
-}
-
-function applyComplianceEnhancements(ctx){
-  const inputs=readModelInputs(ctx);
-  const drawsLbl=document.querySelector('#defaultHotDraws');
-  if(drawsLbl) drawsLbl.textContent=String(inputs.hotDrawsPerDay ?? Compliance.defaultHotDrawsPerDay);
-  const tariffLbl=document.querySelector('#defaultTariffLabel');
-  if(tariffLbl){
-    const gas=inputs.gasUnitPrice ?? Compliance.defaultGas ?? 0.07;
-    tariffLbl.textContent=`user-entered tariffs (gas £${Number(gas).toFixed(3)}/kWh)`;
-  }
-  const annualSavingRange£=calcAnnualCostDelta£(inputs);
-  const paybackRange=calcPaybackRangeYears(inputs.upfrontDiff, annualSavingRange£);
-  renderRangesToUI(annualSavingRange£, paybackRange);
-  const diag=document.querySelector('#waste-diagnostics');
-  if(diag){
-    const combiMid=estimateDailyWasteL({systemType:'COMBI', pipe:inputs.pipe, runMeters:inputs.runMeters, hasSecondaryReturn:false}, inputs.hotDrawsPerDay, 'mid');
-    const cylType=inputs.systemType==='COMBI'? (inputs.existingSystemType==='REGULAR'?'REGULAR':'SYSTEM') : inputs.systemType;
-    const cylMid=estimateDailyWasteL({systemType:cylType, pipe:inputs.pipe, runMeters:inputs.runMeters, hasSecondaryReturn:inputs.hasSecondaryReturn}, inputs.hotDrawsPerDay, 'mid');
-    diag.textContent=`Est. daily hot-water waste: COMBI ≈ ${combiMid.toFixed(1)} L/day vs CYL ≈ ${cylMid.toFixed(1)} L/day (default pipe ${inputs.pipe}, run ${inputs.runMeters} m).`;
-  }
-  renderAudit(inputs);
-  const toggle=document.querySelector('#toggle-internal');
-  applyMaintenanceVisibility(!!toggle?.checked);
-}
-
 /* Presets */
 els.presetBudget.onclick = ()=>{ els.wE.value=3; els.wCost.value=8; els.wC.value=2; els.wF.value=2; els.wM.value=2; runAll(); };
 els.presetComfort.onclick= ()=>{ els.wE.value=3; els.wCost.value=3; els.wC.value=8; els.wF.value=3; els.wM.value=3; runAll(); };
@@ -1388,8 +1132,6 @@ if(els.heating){
 
 els.recalcBtn.onclick=runAll;
 for(const el of document.querySelectorAll('input,select')) el.addEventListener('change', runAll);
-
-setupInternalToggle();
 
 // init
 (function initExisting(){
