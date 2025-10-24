@@ -38,6 +38,8 @@
   th,td{border:1px solid var(--b);padding:8px 10px;text-align:left;vertical-align:top}
   th{background:#fafafa}
   .right{text-align:right}
+  .homecare-summary{font-size:12px;line-height:1.35;color:var(--muted)}
+  .homecare-summary b{color:var(--fg)}
   .badge{display:inline-block;padding:2px 6px;border:1px solid var(--b);border-radius:999px;font-size:12px;color:#444}
   .badge.warn{background:#fff4e5;border-color:#f59e0b;color:#92400e}
   .exist{background:var(--hl)}
@@ -140,28 +142,6 @@
 
     <div class="grid" style="margin-top:12px">
       <div>
-        <label>🏗️ Capex multiplier (×)</label>
-        <input id="capexMult" type="number" step="0.05" value="1.00">
-        <div class="sub">Adjust installed costs (region/access).</div>
-      </div>
-      <div>
-        <label>🧾 Existing keep-cost (£)</label>
-        <input id="capexKeep" type="number" step="50" value="0">
-        <div class="sub">Repairs/upgrades to keep current system.</div>
-      </div>
-      <div>
-        <label>💷 Finance rate (%)</label>
-        <input id="financeRate" type="number" step="0.1" value="0">
-        <div class="sub">If >0, we add annualised capex.</div>
-      </div>
-      <div>
-        <label>Term (years)</label>
-        <input id="financeYears" type="number" step="1" value="10">
-      </div>
-    </div>
-
-    <div class="grid" style="margin-top:12px">
-      <div>
         <label>Combi warranty term</label>
         <select id="warrantyCombi">
           <option value="5">5 years</option>
@@ -244,6 +224,13 @@
             <div>η <b id="existEta">—</b> • Starts <b id="existStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="existPayback">—</span></div>
           </div>
+          <div class="pill" id="existHomecare" style="display:none">
+            <div class="muted">Homecare savings</div>
+            <div id="existHomecareCover">—</div>
+            <div>Year 1: <b id="existHomecareYear1">—</b></div>
+            <div>Years 2-<span id="existHomecareYearsLabel">—</span>: <b id="existHomecareYears">—</b></div>
+            <div>Total: <b id="existHomecareTotal">—</b></div>
+          </div>
         </div>
       </div>
       <div class="focus-col">
@@ -275,6 +262,13 @@
             <div>Heating delivered <b id="likeHeatDelivered">—</b> kWh/day</div>
             <div>η <b id="likeEta">—</b> • Starts <b id="likeStarts">—</b></div>
             <div class="muted" style="margin-top:6px">Payback <span id="likePayback">—</span></div>
+          </div>
+          <div class="pill" id="likeHomecare" style="display:none">
+            <div class="muted">Homecare savings</div>
+            <div id="likeHomecareCover">—</div>
+            <div>Year 1: <b id="likeHomecareYear1">—</b></div>
+            <div>Years 2-<span id="likeHomecareYearsLabel">—</span>: <b id="likeHomecareYears">—</b></div>
+            <div>Total: <b id="likeHomecareTotal">—</b></div>
           </div>
         </div>
       </div>
@@ -335,6 +329,7 @@
             <th class="right nowrap">kWh/day</th>
             <th class="right nowrap">Score</th>
             <th class="right nowrap">Annual saving £/yr</th>
+            <th>Homecare savings</th>
           </tr>
         </thead>
         <tbody id="compareBody"></tbody>
@@ -398,6 +393,10 @@ const HOMECARE_COVERS={
 };
 const DEFAULT_HOMECARE_COVER="boiler-controls";
 const DEFAULT_WARRANTY_TERM=10;
+const DEFAULT_CAPEX_MULT=1;
+const DEFAULT_CAPEX_KEEP=0;
+const DEFAULT_FINANCE_RATE=0;
+const DEFAULT_FINANCE_YEARS=10;
 
 const usageSelectionFromValue=value=>{
   const numeric=parseInt(value,10);
@@ -642,8 +641,6 @@ const $=s=>document.querySelector(s);
 const els={
   usage:$('#usage'), usageLabel:$('#usageLabel'), mains:$('#mains'), layout:$('#layout'), gas:$('#gas'), heating:$('#heating'), heatingLabel:$('#heatingLabel'), flow:$('#flow'),
   existing:$('#existing'), sedbuk:$('#sedbuk'),
-  capexMult:$('#capexMult'), capexKeep:$('#capexKeep'),
-  financeRate:$('#financeRate'), financeYears:$('#financeYears'),
   warrantyCombi:$('#warrantyCombi'), warrantySystem:$('#warrantySystem'),
   homecareCover:$('#homecareCover'), homecareCurrent:$('#homecareCurrent'),
   wE:$('#wE'), wCost:$('#wCost'), wC:$('#wC'), wF:$('#wF'), wM:$('#wM'),
@@ -659,6 +656,9 @@ const els={
   focusHomecare:$('#focusHomecare'), focusHomecareCover:$('#focusHomecareCover'),
   focusHomecareYear1:$('#focusHomecareYear1'), focusHomecareYearsLabel:$('#focusHomecareYearsLabel'),
   focusHomecareYears:$('#focusHomecareYears'), focusHomecareTotal:$('#focusHomecareTotal'),
+  likeHomecare:$('#likeHomecare'), likeHomecareCover:$('#likeHomecareCover'),
+  likeHomecareYear1:$('#likeHomecareYear1'), likeHomecareYearsLabel:$('#likeHomecareYearsLabel'),
+  likeHomecareYears:$('#likeHomecareYears'), likeHomecareTotal:$('#likeHomecareTotal'),
   existName:$('#existName'), existEcho:$('#existEcho'),
   existKwhDay:$('#existKwhDay'), existKwhYear:$('#existKwhYear'),
   existSaving:$('#existSaving'),
@@ -667,6 +667,9 @@ const els={
   existEUse:$('#existEUse'), existEWait:$('#existEWait'), existStandby:$('#existStandby'), existEta:$('#existEta'), existStarts:$('#existStarts'),
   existHeatInput:$('#existHeatInput'), existHeatDelivered:$('#existHeatDelivered'),
   existPayback:$('#existPayback'),
+  existHomecare:$('#existHomecare'), existHomecareCover:$('#existHomecareCover'),
+  existHomecareYear1:$('#existHomecareYear1'), existHomecareYearsLabel:$('#existHomecareYearsLabel'),
+  existHomecareYears:$('#existHomecareYears'), existHomecareTotal:$('#existHomecareTotal'),
   likeTag:$('#likeTag'), likeName:$('#likeName'), likeEcho:$('#likeEcho'), likeWarn:$('#likeWarn'),
   likeKwhDay:$('#likeKwhDay'), likeKwhYear:$('#likeKwhYear'), likeSaving:$('#likeSaving'),
   likeWasteL:$('#likeWasteL'), likeScore:$('#likeScore'),
@@ -704,7 +707,15 @@ const focusColumns={
     Starts:els.focusStarts,
     HeatInput:els.focusHeatInput,
     HeatDelivered:els.focusHeatDelivered,
-    Payback:els.focusPayback
+    Payback:els.focusPayback,
+    homecare:{
+      pill:els.focusHomecare,
+      cover:els.focusHomecareCover,
+      year1:els.focusHomecareYear1,
+      yearsLabel:els.focusHomecareYearsLabel,
+      years:els.focusHomecareYears,
+      total:els.focusHomecareTotal
+    }
   },
   like:{
     tag:els.likeTag,
@@ -728,7 +739,15 @@ const focusColumns={
     Starts:els.likeStarts,
     HeatInput:els.likeHeatInput,
     HeatDelivered:els.likeHeatDelivered,
-    Payback:els.likePayback
+    Payback:els.likePayback,
+    homecare:{
+      pill:els.likeHomecare,
+      cover:els.likeHomecareCover,
+      year1:els.likeHomecareYear1,
+      yearsLabel:els.likeHomecareYearsLabel,
+      years:els.likeHomecareYears,
+      total:els.likeHomecareTotal
+    }
   },
   existing:{
     tag:els.existTag,
@@ -752,11 +771,40 @@ const focusColumns={
     Starts:els.existStarts,
     HeatInput:els.existHeatInput,
     HeatDelivered:els.existHeatDelivered,
-    Payback:els.existPayback
+    Payback:els.existPayback,
+    homecare:{
+      pill:els.existHomecare,
+      cover:els.existHomecareCover,
+      year1:els.existHomecareYear1,
+      yearsLabel:els.existHomecareYearsLabel,
+      years:els.existHomecareYears,
+      total:els.existHomecareTotal
+    }
   }
 };
 
-function fillFocusColumn(key, data, options={}){
+function updateHomecareSection(section, data, st){
+  if(!section || !section.pill) return;
+  const {pill, cover, year1, yearsLabel, years, total}=section;
+  const summary=data ? (data.homecare || computeHomecareSummary(data.sysKey, st||{})) : null;
+  if(!summary){
+    pill.style.display='none';
+    if(cover) cover.textContent='—';
+    if(year1) year1.textContent='—';
+    if(yearsLabel) yearsLabel.textContent='—';
+    if(years) years.textContent='—';
+    if(total) total.textContent='—';
+    return;
+  }
+  pill.style.display='';
+  if(cover) cover.textContent=summary.coverLabel||'—';
+  if(year1) year1.textContent=formatGBP(summary.year1Saving);
+  if(yearsLabel) yearsLabel.textContent=summary.term>1?summary.term:'—';
+  if(years) years.textContent=summary.term>1?formatGBP(summary.year2Total):'—';
+  if(total) total.textContent=formatGBP(summary.total);
+}
+
+function fillFocusColumn(key, data, options={}, st){
   const col=focusColumns[key];
   if(!col) return;
   const placeholder='—';
@@ -789,6 +837,7 @@ function fillFocusColumn(key, data, options={}){
     setText(col.Eta, placeholder);
     setText(col.Starts, placeholder);
     setText(col.Payback, placeholder);
+    updateHomecareSection(col.homecare, null, st);
     return;
   }
 
@@ -828,32 +877,7 @@ function fillFocusColumn(key, data, options={}){
   setText(col.Eta, breakdown.eta!==undefined?String(breakdown.eta):placeholder);
   setText(col.Starts, breakdown.starts!==undefined?String(breakdown.starts):placeholder);
   setText(col.Payback, paybackText);
-}
-
-function updateHomecarePill(selected, st){
-  const pill=els.focusHomecare;
-  const coverEl=els.focusHomecareCover;
-  const year1El=els.focusHomecareYear1;
-  const yearsLabelEl=els.focusHomecareYearsLabel;
-  const yearsEl=els.focusHomecareYears;
-  const totalEl=els.focusHomecareTotal;
-  if(!pill) return;
-  const summary=!selected || selected.variant==='existing'?null:(selected.homecare||computeHomecareSummary(selected.sysKey, st));
-  if(!summary){
-    pill.style.display='none';
-    if(coverEl) coverEl.textContent='—';
-    if(year1El) year1El.textContent='—';
-    if(yearsLabelEl) yearsLabelEl.textContent='—';
-    if(yearsEl) yearsEl.textContent='—';
-    if(totalEl) totalEl.textContent='—';
-    return;
-  }
-  pill.style.display='';
-  if(coverEl) coverEl.textContent=summary.coverLabel||'—';
-  if(year1El) year1El.textContent=formatGBP(summary.year1Saving);
-  if(yearsLabelEl) yearsLabelEl.textContent=summary.term||'—';
-  if(yearsEl) yearsEl.textContent=formatGBP(summary.year2Total);
-  if(totalEl) totalEl.textContent=formatGBP(summary.total);
+  updateHomecareSection(col.homecare, data, st);
 }
 
 /* Populate selects */
@@ -904,8 +928,10 @@ function getState(){
     prices:{gas:parseFloat(els.gas.value||"0.07"), water:0.0003},
     existingKey:els.existing.value, sedbukPct:+els.sedbuk.value,
     weights:{e:+els.wE.value, c:+els.wCost.value, C:+els.wC.value, F:+els.wF.value, M:+els.wM.value},
-    capexMult:parseFloat(els.capexMult.value||"1"), capexKeep:parseFloat(els.capexKeep.value||"0"),
-    financeRate:parseFloat(els.financeRate.value||"0"), financeYears:parseInt(els.financeYears.value||"10",10),
+    capexMult:DEFAULT_CAPEX_MULT,
+    capexKeep:DEFAULT_CAPEX_KEEP,
+    financeRate:DEFAULT_FINANCE_RATE,
+    financeYears:DEFAULT_FINANCE_YEARS,
     warrantyCombi,
     warrantySystem,
     homecareCover,
@@ -1013,12 +1039,22 @@ function runAll(){
       r.flowWarning?'<span class="badge warn">⚠️ Flow limit</span>':'',
       r.pipePenaltyApplied?`<span class="badge warn" title="${r.pipePenaltyNote||'Pipe work in screed reduces suitability'}">⚠️ Screed</span>`:''
     ].filter(Boolean).join(' ');
+    const homecareSummary=r.homecare;
+    const homecareCell=homecareSummary?`
+      <div class="homecare-summary">
+        <div>${homecareSummary.coverLabel||'—'}</div>
+        <div>Year 1: <b>${formatGBP(homecareSummary.year1Saving)}</b></div>
+        <div>${homecareSummary.term>1?`Years 2-${homecareSummary.term}: <b>${formatGBP(homecareSummary.year2Total)}</b>`:'Years 2+: —'}</div>
+        <div>Total: <b>${formatGBP(homecareSummary.total)}</b></div>
+      </div>
+    `:'—';
     return `
     <tr data-id="${r.id}" class="${r.variant==='existing'?'exist':''}">
       <td>${r.label}${badges?` ${badges}`:''}</td>
       <td class="right">${r.kWh}</td>
       <td class="right"><b>${r.utilities.score}</b></td>
       <td class="right">${Number.isFinite(r.annualSaving)?`£${r.annualSaving.toLocaleString()}`:'—'}</td>
+      <td>${homecareCell}</td>
     </tr>
   `;}).join('');
 
@@ -1062,19 +1098,17 @@ function focus(candidate, ctx){
     tagText:bestTag,
     primaryTag:!isExisting && isDefaultBest,
     echoText:buildEcho(selected, [Number.isFinite(selected.erpPct)?`ERP ${selected.erpPct}%`:null, screedNote])
-  });
+  }, st);
 
   fillFocusColumn('existing', existing, {
     tagText:existing?`Existing (SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%)`:'Existing',
     echoText:buildEcho(existing, [existing?`SEDBUK ${(existing.sedbuk||st?.sedbukPct)||'—'}%`:null, screedNote]),
-  });
+  }, st);
 
   fillFocusColumn('like', like, {
     tagText:like?`Like for like${Number.isFinite(like.erpPct)?` (ERP ${like.erpPct}%)`:''}`:'Like for like',
     echoText:buildEcho(like, [like&&Number.isFinite(like.erpPct)?`ERP ${like.erpPct}%`:null, screedNote])
-  });
-
-  updateHomecarePill(selected, st);
+  }, st);
 
   const copyTarget=selected;
   if(copyTarget){
