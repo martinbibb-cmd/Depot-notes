@@ -162,6 +162,46 @@
         <a href="https://martinbibb-cmd.github.io/Fast-survey/index.html" target="_blank" rel="noopener">Open fast survey</a>
       </article>
     </div>
+
+    <section id="hwc-caveat-banner" role="note" aria-live="polite" style="margin:1rem 0;border:1px solid #ddd;padding:0.75rem 1rem;border-radius:8px;background:#fafafa;">
+      <strong>Important: illustration only</strong> — The figures shown are estimates based on user inputs and generic assumptions. This is <strong>not</strong> financial advice, insurance advice, or a personal recommendation. Actual outcomes vary with property characteristics, installation specifics, draw patterns, tariffs, and future price changes.
+    </section>
+
+    <details id="hwc-assumptions" open style="margin:1rem 0;">
+      <summary style="cursor:pointer;font-weight:600;">Assumptions & Method</summary>
+      <div style="padding:0.5rem 0 0 0; line-height:1.45;">
+        <ul style="margin:0.25rem 1.25rem;">
+          <li><strong>Energy prices:</strong> Calculations use the unit rates entered on this page. Any default values (where present) are placeholders and should be replaced with your tariff for accuracy.</li>
+          <li><strong>Usage / hot-water demand:</strong> Estimates assume typical domestic draw patterns for a family household. Real usage can vary substantially by occupancy, shower/bath habits, flow rates, and seasonal behaviour.</li>
+          <li><strong>Efficiencies (SEDBUK/ERP):</strong> Baseline and proposed system efficiencies are interpreted as steady-state seasonal averages. Actual performance varies with return temperatures, controls, and emitter sizing.</li>
+          <li><strong>Payback concept:</strong> Any payback presented reflects the simple ratio of upfront cost difference to annualised running-cost difference under current assumptions. It is <em>not</em> a guarantee and excludes finance costs, major repairs, or tariff changes.</li>
+          <li><strong>Maintenance / “Homecare” comparisons:</strong> If any maintenance or plan cost comparisons are displayed elsewhere on this page, they are <em>illustrative only</em> (not a quote or advice) and may not reflect eligibility, excesses, exclusions, or live prices.</li>
+          <li><strong>Installation scope limits:</strong> Figures exclude atypical layouts, secondary returns (unless explicitly entered elsewhere on the page), pasteurisation/legionella cycles, pipework upsizing, mixing valve losses, and commissioning adjustments.</li>
+          <li><strong>Water distribution realities (important):</strong> The model’s headline figures do <em>not</em> currently account for the extra water typically run to waste before stable hot water is delivered at outlets.
+            <ul style="margin:0.25rem 1.25rem;">
+              <li><strong>Combi systems:</strong> Each hot draw usually has two components of unavoidable waste before stable hot water arrives:
+                <ul style="margin:0.2rem 1.25rem;">
+                  <li><em>Pipe “cold slug” volume:</em> the standing water in the pipe between the boiler and the tap/shower (e.g., ~1.0–2.0 L for ~8–12 m of 15&nbsp;mm pipe; more for longer runs or larger bore).</li>
+                  <li><em>Ignition/preheat stabilisation:</em> additional waste while the burner/plate exchanger ramps to a steady output (commonly ~0.8–2.2 L per draw, depending on appliance, flow, and inlet temperature).</li>
+                </ul>
+                <div style="opacity:0.85;">In practice this means a combi hot tap often wastes <strong>≈1.8–4.0&nbsp;L per draw</strong> before stable hot water, depending on run length and flow rate. This is a normal characteristic of instantaneous DHW and is <em>not</em> included in the current cost figures.</div>
+              </li>
+              <li><strong>System/regular (cylinder-fed):</strong> No burner ignition delay for DHW; typical waste is mainly the pipe “cold slug.” Where a <em>secondary return loop</em> is fitted and active, the effective waste at frequent-use outlets may be significantly reduced (at the expense of some standing heat loss from the loop).</li>
+            </ul>
+          </li>
+          <li><strong>Uncertainty:</strong> All numbers should be viewed as <em>estimates</em>. Small changes in tariffs, flows, setpoints, pipe runs, and usage patterns can lead to materially different annual costs and payback.</li>
+        </ul>
+
+        <div style="margin-top:0.75rem; font-size:0.95rem; opacity:0.9;">
+          <strong>Good practice:</strong> confirm actual tariffs; note approximate pipe run lengths and bores to key outlets; record presence/operation of any secondary return; and capture shower/bath frequency and typical flow rates for a more realistic comparison.
+        </div>
+      </div>
+    </details>
+
+    <!-- Optional small-print marker for printed exports (purely textual; no logic): -->
+    <div id="hwc-print-note" style="margin:0.75rem 0 0 0; font-size:0.9rem; opacity:0.8;">
+      Print/export note: values reflect inputs at the time of printing and generic assumptions above. Version/date: <span data-hwc="timestamp"></span>.
+    </div>
   </main>
   <footer>Depot Notes works offline once installed. Updates arrive automatically.</footer>
 
