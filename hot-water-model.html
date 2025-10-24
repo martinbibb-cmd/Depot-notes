@@ -386,6 +386,45 @@ const CP=0.001163,cl=(v,a,b)=>Math.max(a,Math.min(b,v)),rd=(n,d=2)=>Math.round(n
 const etaCurve=t=>t<=30?0.98:t>=55?0.88:0.98-0.004*(t-30);
 const invU=(v,b)=>cl(100*(b/v),10,100);
 
+/* === HWM combi wait-loss model (additive; safe defaults) === */
+const HWM_WASTE={
+  pipeIDm:{'10mm':0.008,'12mm':0.010,'15mm':0.013,'22mm':0.021},
+  defaultRunMeters:8,
+  defaultPipe:'15mm',
+  combiIgnitionWasteL:{min:0.8,mid:1.4,max:2.2},
+  deltaT:35,
+  range:'mid'
+};
+function hwm_pipeID(pipe){
+  return HWM_WASTE.pipeIDm[String(pipe||'').toLowerCase()]??HWM_WASTE.pipeIDm[HWM_WASTE.defaultPipe];
+}
+function hwm_coldSlugLitres(runMeters, pipeIDm){
+  const r=(pipeIDm||hwm_pipeID())/2;
+  const vol_m3=Math.PI*r*r*Math.max(0,runMeters??HWM_WASTE.defaultRunMeters);
+  return vol_m3*1000;
+}
+function hwm_cylinderWasteLPerDraw(runMeters, pipe){
+  return hwm_coldSlugLitres(runMeters, hwm_pipeID(pipe));
+}
+function hwm_combiWasteLPerDraw(runMeters, pipe, range=HWM_WASTE.range){
+  const slug=hwm_coldSlugLitres(runMeters, hwm_pipeID(pipe));
+  const ign=HWM_WASTE.combiIgnitionWasteL[range]??HWM_WASTE.combiIgnitionWasteL.mid;
+  return slug+ign;
+}
+function hwm_kWhPerL(deltaT=HWM_WASTE.deltaT){
+  return (4.186*deltaT)/3600;
+}
+function hwm_runMetersFromSlug(slugL, pipe){
+  const pipeID=hwm_pipeID(pipe);
+  if(!pipeID) return HWM_WASTE.defaultRunMeters;
+  const area=Math.PI*(pipeID/2)**2;
+  const vol_m3=Math.max(0, slugL||0)/1000;
+  if(!area) return HWM_WASTE.defaultRunMeters;
+  if(vol_m3<=0) return 0;
+  const length=vol_m3/area;
+  return Number.isFinite(length)&&length>0?length:HWM_WASTE.defaultRunMeters;
+}
+
 /* ==== USAGE LEVELS ==== */
 const USAGE_LEVELS=[
   {value:1,key:"1 person",label:"1 person",Vd:55,dr:9},
@@ -461,9 +500,25 @@ function calcOption({sysKey, usageKey, mainsKey, layoutKey, prices, heatingYear}
   const usagePreset=PRE.usage[usageKey]||PRE.usage[DEFAULT_USAGE_SELECTION.key];
   const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[sysKey];
   const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
-  const Euse = U.Vd*CP*(Tu-Tm);
-  const Vwait= L*U.dr;
-  const Ewait= Vwait*CP*(Tu-Tm);
+  const deltaT=Math.max(0, Tu-Tm);
+  const perLDelivered=hwm_kWhPerL(deltaT);
+  const drawsPerDay=Math.max(0, U?.dr||0);
+  const layoutSlugPerDraw=Math.max(0, L||0);
+  const pipeSizeKey=HWM_WASTE.defaultPipe;
+  const runMeters=hwm_runMetersFromSlug(layoutSlugPerDraw, pipeSizeKey);
+  const cylWastePerDraw=hwm_cylinderWasteLPerDraw(runMeters, pipeSizeKey);
+  const combiWastePerDraw=hwm_combiWasteLPerDraw(runMeters, pipeSizeKey);
+  const systemType=(S?.t||'').toLowerCase();
+  const isCombi=systemType==='c';
+  const extraWastePerDraw=Math.max(0, combiWastePerDraw-cylWastePerDraw);
+  const extraWasteLPerDay=isCombi?drawsPerDay*extraWastePerDraw:0;
+  const Euse = U.Vd*perLDelivered;
+  const VwaitBase=layoutSlugPerDraw*drawsPerDay;
+  let Vwait=VwaitBase;
+  if(isCombi) Vwait+=extraWasteLPerDay;
+  const EwaitBase=VwaitBase*perLDelivered;
+  let Ewait=EwaitBase;
+  if(isCombi) Ewait+=extraWasteLPerDay*perLDelivered;
   const eta  = etaCurve(S.Tr);
   const heatingYr=Math.max(0, heatingYear||0);
   const heatingDeliveredDay=heatingYr/365;
@@ -514,10 +569,26 @@ function calcExistingRun({existingKey, sedbukPct, usageKey, mainsKey, layoutKey,
   const usagePreset=PRE.usage[usageKey]||PRE.usage[DEFAULT_USAGE_SELECTION.key];
   const U=usagePreset, M=PRE.mains[mainsKey], L=PRE.layout[layoutKey], S=PRE.systems[existingKey];
   const Tu=PRE.Tuse, Tm=M, pgas=prices.gas, pw=prices.water;
+  const deltaT=Math.max(0, Tu-Tm);
+  const perLDelivered=hwm_kWhPerL(deltaT);
   const eff = cl((sedbukPct||75)/100, 0.40, 0.99);
-  const Euse = U.Vd*CP*(Tu-Tm);
-  const Vwait= L*U.dr;
-  const Ewait= Vwait*CP*(Tu-Tm);
+  const drawsPerDay=Math.max(0, U?.dr||0);
+  const layoutSlugPerDraw=Math.max(0, L||0);
+  const pipeSizeKey=HWM_WASTE.defaultPipe;
+  const runMeters=hwm_runMetersFromSlug(layoutSlugPerDraw, pipeSizeKey);
+  const cylWastePerDraw=hwm_cylinderWasteLPerDraw(runMeters, pipeSizeKey);
+  const combiWastePerDraw=hwm_combiWasteLPerDraw(runMeters, pipeSizeKey);
+  const systemType=(S?.t||'').toLowerCase();
+  const isCombi=systemType==='c';
+  const extraWastePerDraw=Math.max(0, combiWastePerDraw-cylWastePerDraw);
+  const extraWasteLPerDay=isCombi?drawsPerDay*extraWastePerDraw:0;
+  const Euse = U.Vd*perLDelivered;
+  const VwaitBase=layoutSlugPerDraw*drawsPerDay;
+  let Vwait=VwaitBase;
+  if(isCombi) Vwait+=extraWasteLPerDay;
+  const EwaitBase=VwaitBase*perLDelivered;
+  let Ewait=EwaitBase;
+  if(isCombi) Ewait+=extraWasteLPerDay*perLDelivered;
   const heatingYr=Math.max(0, heatingYear||0);
   const heatingDeliveredDay=heatingYr/365;
   const heatingInputDay=eff>0?(heatingDeliveredDay/eff):0;
