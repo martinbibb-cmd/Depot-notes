@@ -675,12 +675,16 @@ CA07 | Customer | Supply specified items
         const slug = key.replace(/[^a-z0-9]+/gi,'_');
         const baseId = `box_${slug}`;
         const naturalId = `${baseId}_natural`;
+        const w3wButton = key === 'Delivery'
+          ? `<button class="btn small" type="button" id="btn-w3w">➕ Add What3Words to Delivery Notes</button>`
+          : '';
         return `<div class="copybox depot-section" data-section="${slug}" data-section-title="${key.replace(/"/g,'&quot;')}">
           <div class="copybox-head">
             <label class="section-title" for="${baseId}">${key}</label>
             <div class="copybox-actions">
               <button class="btn small ghost" data-speak="${baseId}">🔊 Speak</button>
               <button class="btn small" data-copy="${baseId}">Copy ${key}</button>
+              ${w3wButton}
             </div>
           </div>
           <textarea class="tall plain-text" id="${baseId}" rows="8">${out[key]||''}</textarea>
@@ -711,6 +715,7 @@ CA07 | Customer | Supply specified items
 
       // Wire copy buttons
       setupCopyAndSpeakHandlers();
+      setupWhat3WordsButton();
 
       // Generate summaries
       const customerBtn = document.getElementById('genCustomer');
@@ -1116,6 +1121,60 @@ Combine points fluidly — no lists or semicolons.
       });
     }
 
+    const W3W_BASE = "https://w3w-proxy.martinbibb.workers.dev";
+    const NOTES_SELECTOR = "#box_Delivery";
+
+    async function w3wFromCoords(lat, lng) {
+      const r = await fetch(`${W3W_BASE}/to3wa?lat=${lat}&lng=${lng}`);
+      if (!r.ok) throw new Error(`W3W ${r.status}`);
+      return r.json();
+    }
+
+    function appendToNotes(text) {
+      const el = document.querySelector(NOTES_SELECTOR);
+      if (!el) {
+        alert('Delivery Notes field not found');
+        return;
+      }
+
+      if ('value' in el) {
+        el.value = (el.value ? el.value + '\n' : '') + text;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        el.textContent = (el.textContent ? el.textContent + '\n' : '') + text;
+      }
+    }
+
+    async function addW3W() {
+      try {
+        const manual = prompt('Enter What3Words (e.g. filled.jars.hill) or leave blank to use GPS:');
+        if (manual && manual.trim()) {
+          const words = manual.trim().replace(/^https?:\/\/(what3words\.com|w3w\.co)\//i, '');
+          appendToNotes(`What3Words (access): ${words} — https://what3words.com/${words}`);
+          return;
+        }
+
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 12000 })
+        );
+        const { latitude: lat, longitude: lng } = pos.coords;
+
+        const data = await w3wFromCoords(lat, lng);
+        const words = data.words || (data.map && data.map.split('/').pop()) || '';
+        appendToNotes(`What3Words (access): ${words} — https://what3words.com/${words}`);
+      } catch (err) {
+        console.error(err);
+        alert('Couldn’t add What3Words right now. Check location permission or network and try again.');
+      }
+    }
+
+    function setupWhat3WordsButton() {
+      const btn = document.getElementById('btn-w3w');
+      if (!btn || btn.dataset.w3wBound === 'true') return;
+      btn.dataset.w3wBound = 'true';
+      btn.addEventListener('click', addW3W);
+    }
+
     function copyFromTextarea(id, btn){
       const ta = document.getElementById(id);
       if (!ta) return;
@@ -1187,6 +1246,7 @@ Combine points fluidly — no lists or semicolons.
     render();
     loadOptions();
     setupCopyAndSpeakHandlers();
+    setupWhat3WordsButton();
   </script>
   
 </body>
