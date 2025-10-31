@@ -242,6 +242,28 @@ $('btnParse').onclick=()=>{
   const parseBtn=document.getElementById('btnParse');
   if(!parseBtn||parseBtn.dataset.surveyBrainInit)return;
 
+  const card=document.querySelector('#txTranscript')?.closest('.card');
+  if(card&&!document.getElementById('sbStatus')){
+    const wrap=document.createElement('div');
+    wrap.innerHTML='<h3 style="margin-top:.6rem">Survey Brain status</h3><div id="sbStatus" style="font:12px/1.4 ui-monospace,Menlo,Consolas;background:#f1f5f9;color:#0f172a;padding:.5rem;border-radius:6px;max-height:180px;overflow:auto;white-space:pre-wrap">Idle…</div>';
+    card.appendChild(wrap);
+  }
+
+  const statusBox=document.getElementById('sbStatus');
+  const log=(msg,obj)=>{
+    if(!statusBox)return;
+    const time=new Date().toLocaleTimeString();
+    statusBox.textContent+=(statusBox.textContent? '\n':'')+`[${time}] ${msg}`;
+    if(obj!==undefined){
+      try{
+        statusBox.textContent+=`\n${JSON.stringify(obj,null,2)}\n`;
+      }catch{
+        statusBox.textContent+=`\n${String(obj)}\n`;
+      }
+    }
+    statusBox.scrollTop=statusBox.scrollHeight;
+  };
+
   const parseArea=parseBtn.parentElement;
   if(!parseArea)return;
 
@@ -254,10 +276,14 @@ $('btnParse').onclick=()=>{
 
   apiBtn.addEventListener('click',async()=>{
     const transcript=document.getElementById('txTranscript').value.trim();
-    if(!transcript){ alert('Paste a transcript first'); return; }
+    if(!transcript){
+      alert('Paste a transcript first');
+      return;
+    }
 
     apiBtn.disabled=true;
     apiBtn.textContent='Analysing…';
+    log('Sending to API…');
 
     try{
       const res=await fetch('https://survey-brain-api.martinbibb.workers.dev/api/transcript/analyse',{
@@ -265,32 +291,46 @@ $('btnParse').onclick=()=>{
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({text:transcript,options:{include_quote:true}})
       });
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data=await res.json();
-      console.log('Survey Brain API response:',data);
+      const bodyText=await res.text();
+      log(`HTTP ${res.status} ${res.statusText||''}`.trim());
+      log('Raw body:', bodyText.slice(0,2000));
+
+      let data;
+      try{
+        data=JSON.parse(bodyText);
+      }catch{
+        data={raw:bodyText};
+      }
+
+      const core=data.core_model||data.core||data.model||
+        (data.result&&(data.result.core_model||data.result.core||data.result.model))||null;
+
+      const sections=data.depot_sections||data.sections||
+        (data.result&&(data.result.depot_sections||data.result.sections))||null;
+
+      const quoteChoice=data.quote_choice||
+        (data.result&&data.result.quote_choice)||null;
 
       for(let i=1;i<=13;i++){
         const ta=document.getElementById('sec_'+i);
         if(ta) ta.value='';
       }
 
-      if(data.core_model){
-        window._lastCore=data.core_model;
+      if(core){
+        window._lastCore=core;
         const txCore=document.getElementById('txCore');
-        if(txCore) txCore.value=JSON.stringify(data.core_model,null,2);
+        if(txCore) txCore.value=JSON.stringify(core,null,2);
         if(typeof populateFromCore==='function'){
-          populateFromCore(data.core_model);
+          populateFromCore(core);
         }
+        log('Applied core_model to populateFromCore().');
+      }else{
+        log('⚠️ No core_model found in response.');
       }
 
-      const sectionPayload=Array.isArray(data.depot_sections)?data.depot_sections:
-        Array.isArray(data.sections)?data.sections:
-        Array.isArray(data.notes_sections)?data.notes_sections:
-        (Array.isArray(data.notes?.sections)?data.notes.sections:null);
-
-      if(sectionPayload){
-        sectionPayload.forEach((section,i)=>{
+      if(Array.isArray(sections)){
+        sections.forEach((section,i)=>{
           const idx=Number.isInteger(section?.index)?section.index:(i+1);
           const ta=document.getElementById('sec_'+idx);
           if(!ta)return;
@@ -301,15 +341,17 @@ $('btnParse').onclick=()=>{
           }
           ta.value=text;
         });
+        log(`Applied ${sections.length} depot sections from API.`);
+      }else{
+        log('ℹ️ No depot_sections array found (relying on populateFromCore output).');
       }
 
-      if(data.quote_choice){
-        console.log('Quote choice:',data.quote_choice);
-      }
+      if(quoteChoice) log('Quote choice:', quoteChoice);
 
       alert('✅ Survey Brain parsed successfully');
     }catch(err){
       console.error(err);
+      log('❌ Error:', String(err));
       alert('❌ Parse failed: '+err.message);
     }finally{
       apiBtn.disabled=false;
