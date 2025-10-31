@@ -284,10 +284,22 @@ $('btnParse').onclick=()=>{
         }
       }
 
-      if(Array.isArray(data.depot_sections)){
-        data.depot_sections.forEach((text,i)=>{
-          const ta=document.getElementById('sec_'+(i+1));
-          if(ta) ta.value=text;
+      const sectionPayload=Array.isArray(data.depot_sections)?data.depot_sections:
+        Array.isArray(data.sections)?data.sections:
+        Array.isArray(data.notes_sections)?data.notes_sections:
+        (Array.isArray(data.notes?.sections)?data.notes.sections:null);
+
+      if(sectionPayload){
+        sectionPayload.forEach((section,i)=>{
+          const idx=Number.isInteger(section?.index)?section.index:(i+1);
+          const ta=document.getElementById('sec_'+idx);
+          if(!ta)return;
+          let text='';
+          if(typeof section==='string'){ text=section; }
+          else if(section&&typeof section==='object'){
+            text=section.text??section.value??section.note??section.content??'';
+          }
+          ta.value=text;
         });
       }
 
