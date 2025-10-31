@@ -68,6 +68,7 @@ todo: customer to clear area"></textarea>
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-ZqYp5cZtkj8i0xWaaStQVuK1RNG0NiCUNJ6JH2HNc8Fn9+rAi5fKJdAEvZkGZ7v8EHZmY/zrQwt5T5sRSvLz2w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 /* ===== Utilities ===== */
 const $=id=>document.getElementById(id);
@@ -251,6 +252,51 @@ todo: customer to clear area; move car from driveway`;
 
 /* ===== Public API (if you want to feed a Core from elsewhere) ===== */
 window.DepotMini={populateFromCore,buildDepotJSON,copyDepotJSON,downloadDepotJSON,copyNextSection};
+
+/* ===== Visit ZIP Builder ===== */
+(function initZipMaker(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  const area=document.createElement('div');
+  area.style.marginTop='1rem';
+  area.style.padding='.8rem';
+  area.style.borderTop='1px solid #ccc';
+  area.innerHTML=`
+    <h3>Bundle Visit Files</h3>
+    <input id="zipFiles" type="file" multiple
+           accept=".txt,.json,.pdf,.jpg,.jpeg,.png,.heic,.usdz,.zip"
+           style="margin:.5rem 0">
+    <button class="btn" id="btnMakeZip">Zip Visit Files</button>
+    <p class="small" id="zipStatus">Select all files for one visit (transcript, quote, photos, etc.).</p>`;
+  wrap.appendChild(area);
+
+  const input=area.querySelector('#zipFiles');
+  const status=area.querySelector('#zipStatus');
+  area.querySelector('#btnMakeZip').addEventListener('click', async()=>{
+    const files=input.files;
+    if(!files.length){ alert('No files selected'); return; }
+    status.textContent='Building ZIP…';
+    const zip=new JSZip();
+    for(const f of files){
+      const data=await f.arrayBuffer();
+      zip.file(f.name,data);
+    }
+    const blob=await zip.generateAsync({type:'blob'});
+    const dt=new Date();
+    const stamp=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+
+                 String(dt.getDate()).padStart(2,'0')+'_'+
+                 String(dt.getHours()).padStart(2,'0')+'-'+
+                 String(dt.getMinutes()).padStart(2,'0');
+    const filename=`visit_${stamp}.zip`;
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    status.textContent=`ZIP created → ${filename}`;
+  });
+})();
 </script>
 </body>
 </html>
