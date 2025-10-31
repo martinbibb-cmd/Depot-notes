@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Depot Notes Mini-App</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{font:14px/1.4 system-ui,Segoe UI,Arial;margin:0;padding:0;background:#f9f9f9;color:#111}
+.depot-wrap{max-width:1100px;margin:auto;padding:1rem}
+.depot-head{display:flex;gap:.5rem;align-items:center;justify-content:space-between;position:sticky;top:0;background:#f9f9f9;padding:.5rem 0;z-index:1;border-bottom:1px solid #ccc}
+.boxes{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:1rem}
+.box{border:1px solid #ddd;border-radius:8px;padding:8px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.box h3{margin:.2rem 0 .4rem;font-size:14px}
+.box textarea{width:100%;min-height:110px;border:1px solid #ccc;border-radius:6px;padding:8px;resize:vertical;font:13px/1.35 ui-monospace,Menlo,Consolas,monospace;background:#fcfcfc}
+.row{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+.btn{border:1px solid #aaa;border-radius:6px;padding:.35rem .6rem;background:#f7f7f7;cursor:pointer}
+.btn:active{transform:translateY(1px)}
+.muted{opacity:.7;font-size:12px;margin-top:1rem}
+</style>
+</head>
+<body>
+<div class="depot-wrap" id="depotNotes">
+  <div class="depot-head">
+    <strong>Depot Notes — Current Sections</strong>
+    <div id="headBtns">
+      <button class="btn" id="btnCopyAll">Copy All</button>
+      <button class="btn" id="btnCopyNext">Copy Next Section</button>
+      <button class="btn" id="btnCopyJSON">Copy JSON</button>
+      <button class="btn" id="btnDownloadJSON">Download JSON</button>
+      <button class="btn" id="btnDemo">Demo Fill</button>
+    </div>
+  </div>
+  <div class="boxes" id="boxes"></div>
+  <p class="muted">Use short clauses separated by semicolons; these export to JSON for your Shortcut and train the new Quote Tool.</p>
+</div>
+
+<script>
+/* ======= DEPOT MINI-APP SCRIPT ======= */
+const $ = id=>document.getElementById(id);
+const semis = arr => (arr||[]).filter(Boolean).map(s=>String(s).trim()).filter(Boolean).join('; ');
+
+/* --- 1. Section list --- */
+const SECTIONS=[
+'Needs','Working at heights','System characteristics','Components that require assistance',
+'Restrictions to work','External hazards','Delivery notes','Office notes',
+'New boiler and controls','Flue','Pipe work','Disruption','Customer actions'
+];
+
+/* --- 2. Build UI --- */
+(function buildUI(){
+ const boxes=$('boxes');
+ SECTIONS.forEach((t,i)=>{
+   const el=document.createElement('div');el.className='box';
+   el.innerHTML=`<h3>${i+1}. ${t}</h3>
+     <textarea id="sec_${i+1}" placeholder="item one; item two; item three."></textarea>
+     <div class="row"><button class="btn" data-copy="${i+1}">Copy</button></div>`;
+   boxes.appendChild(el);
+ });
+ boxes.addEventListener('click',async e=>{
+   const id=e.target?.dataset?.copy;if(!id)return;
+   const ta=$('sec_'+id);ta.select();ta.setSelectionRange(0,ta.value.length);
+   try{await navigator.clipboard.writeText(ta.value);e.target.textContent='Copied';setTimeout(()=>e.target.textContent='Copy',800);}catch{}
+ });
+ $('btnCopyAll').onclick=async()=>{
+   const all=SECTIONS.map((t,i)=>`### ${i+1}. ${t}\n${$('sec_'+(i+1)).value}`).join('\n\n');
+   await navigator.clipboard.writeText(all);
+   alert('All sections copied');
+ };
+})();
+
+/* --- 3. JSON export helpers --- */
+function buildDepotJSON(core=null){
+ const sections=SECTIONS.map((t,i)=>({index:i+1,title:t,text:($('sec_'+(i+1))?.value||'').trim()}));
+ return{
+   schema:'depot.notes.v1',
+   generated_at:new Date().toISOString(),
+   sections,
+   sections_plain:sections.map(s=>s.text),
+   core_model:core||window._lastCore||null
+ };
+}
+async function copyDepotJSON(core=null){
+ await navigator.clipboard.writeText(JSON.stringify(buildDepotJSON(core),null,2));
+ alert('Depot JSON copied to clipboard');
+}
+function downloadDepotJSON(fname='depot_notes.json',core=null){
+ const blob=new Blob([JSON.stringify(buildDepotJSON(core),null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;a.click();URL.revokeObjectURL(a.href);
+}
+let _cycleIdx=0;
+async function copyNextSection(){
+ _cycleIdx=(_cycleIdx%13)+1;
+ const ta=$('sec_'+_cycleIdx);
+ await navigator.clipboard.writeText(ta.value.trim());
+ alert('Copied section '+_cycleIdx+': '+SECTIONS[_cycleIdx-1]);
+}
+
+/* --- 4. Hook up header buttons --- */
+$('btnCopyNext').onclick=()=>copyNextSection();
+$('btnCopyJSON').onclick=()=>copyDepotJSON();
+$('btnDownloadJSON').onclick=()=>downloadDepotJSON('depot_'+Date.now()+'.json');
+
+/* --- 5. Populate from Core Model (Quote Tool shared data) --- */
+function populateFromCore(core){
+ window._lastCore=core; // keep for export
+ const A=core?.assets||{},B=A.boiler||{},F=A.flue||{},G=A.gas||{},C=A.cylinder||{},E=A.electrics||{};
+ const L=core?.locations||{},R=core?.risks||[],P=core?.customer_preferences||[],D=core?.decisions||[],
+       Re=core?.recommendations||[],T=core?.todos||[],M=core?.measurements||[],Ph=core?.photos||[];
+ $('sec_1').value=semis([...P,D.find(x=>/comfort|budget/i.test(x))]);
+ $('sec_2').value=semis([...R.filter(r=>/loft|height|roof|ladder/i.test(r))]);
+ $('sec_3').value=semis([`Boiler:${B.type||'n/a'}`,B.position?`Pos:${B.position}`:null,C?.type?`Cyl:${C.type}`:null]);
+ $('sec_4').value=semis([...R.filter(r=>/assist|two/i.test(r)),E.consumer_unit_loc?`Isolate @ ${E.consumer_unit_loc}`:null]);
+ $('sec_5').value=semis([...R.filter(r=>/access|time|permit/i.test(r)),L.parking?.note||null]);
+ $('sec_6').value=semis([...R.filter(r=>/asbestos|hazard|electrical/i.test(r)),'None noted']);
+ $('sec_7').value=semis([L.delivery?.w3w?`///${L.delivery.w3w}`:null,L.delivery?.note||null]);
+ $('sec_8').value=semis(['Paperwork: standard']);
+ $('sec_9').value=semis([...Re.filter(r=>!/flue|condensate/i.test(r)),B.brand?`Brand:${B.brand}`:null]);
+ $('sec_10').value=semis([`Flue:${F.type||'n/a'}`,F.orientation||null]);
+ $('sec_11').value=semis([`Gas run:${G.run_m||'?'}`,D.find(x=>/condensate/i.test(x))]);
+ $('sec_12').value=semis([...R.filter(r=>/decor|noise|dust/i.test(r)),Ph.length?`${Ph.length} photos`:'']);
+ $('sec_13').value=semis([...T.filter(t=>/customer|clear|move/i.test(t))]);
+}
+
+/* --- 6. Demo sample --- */
+$('btnDemo').onclick=()=>{
+ const sample={property:{type:'semi-detached'},assets:{boiler:{type:'regular',position:'kitchen'},flue:{type:'horizontal'},
+  gas:{run_m:14},electrics:{consumer_unit_loc:'under stairs'},cylinder:{type:'vented'}},
+  risks:['Loft access limited','External flue clearance borderline'],
+  customer_preferences:['Quiet boiler'],decisions:['Boiler upgrade only','Condensate to internal stack'],
+  recommendations:['Weather compensation'],locations:{delivery:{w3w:'index.home.raft',note:'Gate locked after 5 pm'}},
+  photos:['front.jpg'],todos:['Customer to clear area']};
+ populateFromCore(sample);
+ alert('Demo data loaded');
+};
+
+/* --- 7. Export API for integrations --- */
+window.DepotMini={populateFromCore,buildDepotJSON,copyDepotJSON,downloadDepotJSON,copyNextSection};
+</script>
+</body>
+</html>
