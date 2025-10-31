@@ -274,6 +274,15 @@ $('btnParse').onclick=()=>{
   parseArea.appendChild(apiBtn);
   parseBtn.dataset.surveyBrainInit='1';
 
+  const clearBoxes=()=>{ for(let i=1;i<=13;i++){ const ta=$('sec_'+i); if(ta) ta.value=''; } };
+  const setBox=(i,text)=>{ const ta=$('sec_'+i); if(ta) ta.value=(text||'').trim(); };
+  const bullets=r=>(r||[]).map(x=>{ const parts=[x.title,(x.match!=null?`${x.match}%`:null),x.desc].filter(Boolean); return parts.join(' — '); }).join('; ');
+
+  const tryJsonParse=str=>{
+    if(typeof str!=='string') return str;
+    try{ return JSON.parse(str); }catch{ return str; }
+  };
+
   apiBtn.addEventListener('click',async()=>{
     const transcript=document.getElementById('txTranscript').value.trim();
     if(!transcript){
@@ -294,28 +303,31 @@ $('btnParse').onclick=()=>{
 
       const bodyText=await res.text();
       log(`HTTP ${res.status} ${res.statusText||''}`.trim());
-      log('Raw body:', bodyText.slice(0,2000));
+      log('Raw body (first 2k):', bodyText.slice(0,2000));
 
-      let data;
-      try{
-        data=JSON.parse(bodyText);
-      }catch{
-        data={raw:bodyText};
+      let data=tryJsonParse(bodyText);
+      if(typeof data==='string' && data.includes('\\"')){
+        data=tryJsonParse(data.replace(/\\"/g,'"'));
+        log('Detected escaped JSON; decoded and parsed again.');
+      }
+      if(data && typeof data==='string' && (data.trim().startsWith('{')||data.trim().startsWith('['))){
+        data=tryJsonParse(data);
+        log('Double-parsed plain string JSON.');
       }
 
-      const core=data.core_model||data.core||data.model||
-        (data.result&&(data.result.core_model||data.result.core||data.result.model))||null;
+      const core=data?.core_model||data?.core||
+        (data?.result&&(data.result.core_model||data.result.core));
 
-      const sections=data.depot_sections||data.sections||
-        (data.result&&(data.result.depot_sections||data.result.sections))||null;
+      const sections=data?.depot_sections||data?.sections||
+        (data?.result&&(data.result.depot_sections||data.result.sections));
 
-      const quoteChoice=data.quote_choice||
-        (data.result&&data.result.quote_choice)||null;
+      const quoteChoice=data?.quote_choice||
+        (data?.result&&data.result.quote_choice)||null;
 
-      for(let i=1;i<=13;i++){
-        const ta=document.getElementById('sec_'+i);
-        if(ta) ta.value='';
-      }
+      const summary=data?.summary||data?.result?.summary;
+      const recs=data?.recommendations||data?.result?.recommendations;
+
+      clearBoxes();
 
       if(core){
         window._lastCore=core;
@@ -329,19 +341,28 @@ $('btnParse').onclick=()=>{
         log('⚠️ No core_model found in response.');
       }
 
-      if(Array.isArray(sections)){
+      if(Array.isArray(sections) && sections.length){
         sections.forEach((section,i)=>{
           const idx=Number.isInteger(section?.index)?section.index:(i+1);
           const ta=document.getElementById('sec_'+idx);
           if(!ta)return;
-          let text='';
-          if(typeof section==='string'){ text=section; }
-          else if(section&&typeof section==='object'){
-            text=section.text??section.value??section.note??section.content??'';
+          if(typeof section==='string'){
+            ta.value=section;
+            return;
           }
-          ta.value=text;
+          if(section && typeof section==='object'){
+            ta.value=section.text??section.value??section.note??section.content??'';
+          }
         });
-        log(`Applied ${sections.length} depot sections from API.`);
+        log(`Applied ${sections.length} depot_sections from API.`);
+      }else if(summary||recs){
+        if(summary){
+          setBox(1, summary.replace(/\.\s+/g,'; ').replace(/\s+/g,' ').trim());
+        }
+        if(recs){
+          setBox(9, bullets(recs));
+        }
+        log('Filled Needs + New boiler and controls from summary/recommendations.');
       }else{
         log('ℹ️ No depot_sections array found (relying on populateFromCore output).');
       }
