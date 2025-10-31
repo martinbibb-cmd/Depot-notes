@@ -237,6 +237,61 @@ $('btnParse').onclick=()=>{
   populateFromCore(core);
 };
 
+/* ===== Survey Brain API helper ===== */
+(function addSurveyBrainButton(){
+  const parseBtn=document.getElementById('btnParse');
+  if(!parseBtn||parseBtn.dataset.surveyBrainInit)return;
+
+  const apiBtn=document.createElement('button');
+  apiBtn.className='btn';
+  apiBtn.id='btnApiParse';
+  apiBtn.textContent='🧠 Parse via Survey Brain API';
+  parseBtn.parentElement.insertBefore(apiBtn, parseBtn.nextSibling);
+  parseBtn.dataset.surveyBrainInit='1';
+
+  apiBtn.addEventListener('click',async()=>{
+    const text=document.getElementById('txTranscript').value.trim();
+    if(!text){ alert('No transcript pasted'); return; }
+
+    apiBtn.disabled=true;
+    apiBtn.textContent='Parsing…';
+
+    try{
+      const res=await fetch('https://survey-brain-api.martinbibb.workers.dev/api/transcript/analyse',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text,options:{include_quote:true}})
+      });
+
+      if(!res.ok){ throw new Error('HTTP '+res.status); }
+
+      const data=await res.json();
+      console.log('Survey Brain API response:',data);
+
+      if(data.core_model){
+        window._lastCore=data.core_model;
+        document.getElementById('txCore').value=JSON.stringify(data.core_model,null,2);
+        if(typeof populateFromCore==='function'){ populateFromCore(data.core_model); }
+      }
+
+      if(data.depot_sections?.length){
+        data.depot_sections.forEach((text,i)=>{
+          const ta=document.getElementById('sec_'+(i+1));
+          if(ta) ta.value=text;
+        });
+      }
+
+      alert('Parsed successfully from Survey Brain API');
+    }catch(err){
+      console.error(err);
+      alert('Survey Brain API failed: '+err.message);
+    }finally{
+      apiBtn.disabled=false;
+      apiBtn.textContent='🧠 Parse via Survey Brain API';
+    }
+  });
+})();
+
 /* ===== Demo ===== */
 $('btnDemo').onclick=()=>{
   $('txTranscript').value=`obs: Boiler regular in kitchen SE; flue horizontal rear
