@@ -2,40 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Route Suggestion v1.1 (Brick course 75mm + Obstacles)</title>
+  <title>Route Suggestion – Image or OBJ</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    :root {
-      --bg: #f6f7fb;
-      --card: #fff;
-      --border: #d7d7d7;
-    }
     body {
       margin: 0;
-      background: var(--bg);
       font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f6f7fb;
       display: flex;
       flex-direction: column;
       gap: 10px;
       padding: 10px;
     }
-    .bar {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    button {
+    .tabs { display: flex; gap: 6px; }
+    .tabs button {
       border: 1px solid #ccc;
       background: #fff;
       border-radius: 8px;
       padding: 6px 10px;
-      font-size: 14px;
     }
-    button.active {
+    .tabs button.active {
       background: #0ea5e9;
       color: #fff;
       border-color: #0ea5e9;
     }
+    .panel { display: none; }
+    .panel.active { display: block; }
     #canvas-wrapper {
       background: #0002;
       border: 1px solid #ccc;
@@ -43,14 +35,11 @@
       overflow: hidden;
       max-width: 100%;
     }
-    canvas {
-      max-width: 100%;
-      display: block;
-    }
+    canvas { max-width: 100%; display: block; }
     #output {
       background: #111;
       color: #0f0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
       font-size: 12px;
       padding: 10px;
       border-radius: 10px;
@@ -58,29 +47,67 @@
       word-break: break-word;
     }
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: #fff;
+      border: 1px solid #d7d7d7;
       border-radius: 10px;
       padding: 10px;
     }
+    #three-container {
+      width: 100%;
+      height: 320px;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    #three-container canvas { width: 100%; height: 100%; display: block; }
+    #three-hint {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
   </style>
+  <!-- Three.js + OBJLoader from CDN -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-  <h1 style="margin-bottom:0;">Route Suggestion v1.1</h1>
-  <p style="margin-top:0;">Photo → set scale from 1 brick course (75mm) → start/end → add obstacles → get route.</p>
+  <h1 style="margin:0;">Route Suggestion</h1>
+  <p style="margin:0 0 6px 0;">Use a photo (brick course = 75mm) or load an OBJ from 3D Snap, pick start/end, add obstacles, get Depot Notes.</p>
 
-  <input type="file" id="imgLoader" accept="image/*" />
-
-  <div class="bar">
-    <button id="mode-scale" class="active">1. Set scale (75mm)</button>
-    <button id="mode-start">2. Set start</button>
-    <button id="mode-end">3. Set end</button>
-    <button id="mode-obstacle">4. Obstacle</button>
-    <button id="clear">Clear all</button>
+  <div class="tabs">
+    <button id="tab-image" class="active">Image mode</button>
+    <button id="tab-obj">3D (OBJ) mode</button>
   </div>
 
-  <div id="canvas-wrapper">
-    <canvas id="c"></canvas>
+  <!-- IMAGE PANEL -->
+  <div id="panel-image" class="panel active">
+    <input type="file" id="imgLoader" accept="image/*" />
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+      <button id="mode-scale" class="active">1. Scale (75mm)</button>
+      <button id="mode-start">2. Start</button>
+      <button id="mode-end">3. End</button>
+      <button id="mode-obstacle">4. Obstacle</button>
+      <button id="clear">Clear</button>
+    </div>
+    <div id="canvas-wrapper" style="margin-top:6px;">
+      <canvas id="c"></canvas>
+    </div>
+  </div>
+
+  <!-- 3D PANEL -->
+  <div id="panel-obj" class="panel">
+    <input type="file" id="objLoader" accept=".obj" />
+    <p style="margin:6px 0 4px 0;font-size:13px;">Click on the model to set start (first) and end (second). We assume model units are mm.</p>
+    <div id="three-container">
+      <div id="three-hint">Click to set start/end. Scroll to zoom, drag to orbit.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -90,55 +117,85 @@
 
 <script>
 (function() {
+  /* ---------------- TABS ---------------- */
+  const tabImage = document.getElementById('tab-image');
+  const tabObj = document.getElementById('tab-obj');
+  const panelImage = document.getElementById('panel-image');
+  const panelObj = document.getElementById('panel-obj');
+
+  tabImage.onclick = () => {
+    tabImage.classList.add('active');
+    tabObj.classList.remove('active');
+    panelImage.classList.add('active');
+    panelObj.classList.remove('active');
+  };
+  tabObj.onclick = () => {
+    tabObj.classList.add('active');
+    tabImage.classList.remove('active');
+    panelObj.classList.add('active');
+    panelImage.classList.remove('active');
+  };
+
+  /* ---------------- SHARED OUTPUT ---------------- */
+  const output = document.getElementById('output');
+  function setOutputFromRoute(routeDesc, lengthMm) {
+    const jsonOut = {
+      exportedAt: new Date().toISOString(),
+      sections: [
+        {
+          section: "Flue / Pipework",
+          plainText: routeDesc,
+          naturalLanguage: routeDesc + (lengthMm ? ` Approx. run: ${lengthMm.toFixed(0)} mm.` : '')
+        }
+      ]
+    };
+    output.textContent = JSON.stringify(jsonOut, null, 2);
+  }
+
+  /* ---------------- IMAGE MODE ---------------- */
   const canvas = document.getElementById('c');
   const ctx = canvas.getContext('2d');
   const imgLoader = document.getElementById('imgLoader');
-
   const btnScale = document.getElementById('mode-scale');
   const btnStart = document.getElementById('mode-start');
   const btnEnd = document.getElementById('mode-end');
   const btnObstacle = document.getElementById('mode-obstacle');
   const btnClear = document.getElementById('clear');
-  const output = document.getElementById('output');
 
   let img = new Image();
-  let currentMode = 'scale';
+  let imgMode = 'scale';
   let scaleLine = null;
   let tempScaleStart = null;
   let pxPerMm = null;
-
   let startPt = null;
   let endPt = null;
-
-  let obstacles = []; // {x,y,w,h}
+  let obstacles = [];
   let draggingObstacle = false;
   let obstacleStart = null;
 
-  // set current mode
-  function setMode(m) {
-    currentMode = m;
+  function setImgMode(m) {
+    imgMode = m;
     [btnScale, btnStart, btnEnd, btnObstacle].forEach(b => b.classList.remove('active'));
     if (m === 'scale') btnScale.classList.add('active');
     if (m === 'start') btnStart.classList.add('active');
     if (m === 'end') btnEnd.classList.add('active');
     if (m === 'obstacle') btnObstacle.classList.add('active');
-    redraw();
+    redrawImage();
   }
-
-  btnScale.onclick = () => setMode('scale');
-  btnStart.onclick = () => setMode('start');
-  btnEnd.onclick = () => setMode('end');
-  btnObstacle.onclick = () => setMode('obstacle');
+  btnScale.onclick = () => setImgMode('scale');
+  btnStart.onclick = () => setImgMode('start');
+  btnEnd.onclick = () => setImgMode('end');
+  btnObstacle.onclick = () => setImgMode('obstacle');
 
   btnClear.onclick = () => {
     scaleLine = null;
-    pxPerMm = null;
     tempScaleStart = null;
+    pxPerMm = null;
     startPt = null;
     endPt = null;
     obstacles = [];
-    output.textContent = '{"sections":[]}';
-    redraw();
+    setOutputFromRoute('', 0);
+    redrawImage();
   };
 
   imgLoader.addEventListener('change', (e) => {
@@ -149,7 +206,7 @@
       img.onload = function() {
         canvas.width = img.width;
         canvas.height = img.height;
-        redraw();
+        redrawImage();
       };
       img.src = ev.target.result;
     };
@@ -166,17 +223,16 @@
 
   canvas.addEventListener('mousedown', (evt) => {
     const pos = canvasPos(evt);
-    if (currentMode === 'obstacle') {
+    if (imgMode === 'obstacle') {
       draggingObstacle = true;
       obstacleStart = pos;
     }
   });
 
   canvas.addEventListener('mousemove', (evt) => {
-    if (currentMode === 'obstacle' && draggingObstacle) {
+    if (imgMode === 'obstacle' && draggingObstacle) {
       const pos = canvasPos(evt);
-      redraw();
-      // draw temp obstacle
+      redrawImage();
       const x = Math.min(obstacleStart.x, pos.x);
       const y = Math.min(obstacleStart.y, pos.y);
       const w = Math.abs(pos.x - obstacleStart.x);
@@ -190,35 +246,34 @@
   canvas.addEventListener('mouseup', (evt) => {
     const pos = canvasPos(evt);
 
-    if (currentMode === 'scale') {
+    if (imgMode === 'scale') {
       if (!tempScaleStart) {
         tempScaleStart = pos;
       } else {
         scaleLine = { x1: tempScaleStart.x, y1: tempScaleStart.y, x2: pos.x, y2: pos.y };
-        // assume 1 course = 75mm
         const COURSE_MM = 75;
         const dx = scaleLine.x2 - scaleLine.x1;
         const dy = scaleLine.y2 - scaleLine.y1;
         const distPx = Math.sqrt(dx*dx + dy*dy);
         pxPerMm = distPx / COURSE_MM;
         tempScaleStart = null;
-        redraw();
+        redrawImage();
       }
     }
 
-    if (currentMode === 'start') {
+    if (imgMode === 'start') {
       startPt = pos;
-      redraw();
-      tryMakeSuggestion();
+      redrawImage();
+      tryMakeImageRoute();
     }
 
-    if (currentMode === 'end') {
+    if (imgMode === 'end') {
       endPt = pos;
-      redraw();
-      tryMakeSuggestion();
+      redrawImage();
+      tryMakeImageRoute();
     }
 
-    if (currentMode === 'obstacle' && draggingObstacle) {
+    if (imgMode === 'obstacle' && draggingObstacle) {
       draggingObstacle = false;
       const x = Math.min(obstacleStart.x, pos.x);
       const y = Math.min(obstacleStart.y, pos.y);
@@ -226,18 +281,15 @@
       const h = Math.abs(pos.y - obstacleStart.y);
       obstacles.push({ x, y, w, h });
       obstacleStart = null;
-      redraw();
-      tryMakeSuggestion();
+      redrawImage();
+      tryMakeImageRoute();
     }
   });
 
-  function redraw(route) {
+  function redrawImage(route) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (img && img.src) {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    }
+    if (img && img.src) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // scale line
     if (scaleLine) {
       ctx.strokeStyle = 'yellow';
       ctx.lineWidth = 3;
@@ -246,7 +298,6 @@
       ctx.lineTo(scaleLine.x2, scaleLine.y2);
       ctx.stroke();
       ctx.fillStyle = 'yellow';
-      ctx.font = '18px sans-serif';
       ctx.fillText('75mm', scaleLine.x2 + 5, scaleLine.y2);
     } else if (tempScaleStart) {
       ctx.fillStyle = 'yellow';
@@ -255,17 +306,14 @@
       ctx.fill();
     }
 
-    // obstacles
     obstacles.forEach(o => {
       ctx.strokeStyle = 'red';
       ctx.lineWidth = 2;
       ctx.strokeRect(o.x, o.y, o.w, o.h);
       ctx.fillStyle = 'red';
-      ctx.font = '14px sans-serif';
       ctx.fillText('OBST', o.x + 3, o.y + 14);
     });
 
-    // start / end
     if (startPt) {
       ctx.fillStyle = 'lime';
       ctx.beginPath();
@@ -281,8 +329,7 @@
       ctx.fillText('END', endPt.x + 8, endPt.y);
     }
 
-    // draw route if provided
-    if (route && route.points && route.points.length > 1) {
+    if (route && route.points) {
       ctx.strokeStyle = '#0ea5e9';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -294,25 +341,20 @@
     }
   }
 
-  // helper: line vs rect intersection
   function lineIntersectsRect(x1, y1, x2, y2, rect) {
-    // check if either point is inside
     if (x1 >= rect.x && x1 <= rect.x + rect.w && y1 >= rect.y && y1 <= rect.y + rect.h) return true;
     if (x2 >= rect.x && x2 <= rect.x + rect.w && y2 >= rect.y && y2 <= rect.y + rect.h) return true;
-
-    // check intersection with all 4 edges
     const edges = [
-      { x1: rect.x, y1: rect.y, x2: rect.x + rect.w, y2: rect.y }, // top
-      { x1: rect.x, y1: rect.y + rect.h, x2: rect.x + rect.w, y2: rect.y + rect.h }, // bottom
-      { x1: rect.x, y1: rect.y, x2: rect.x, y2: rect.y + rect.h }, // left
-      { x1: rect.x + rect.w, y1: rect.y, x2: rect.x + rect.w, y2: rect.y + rect.h }  // right
+      { x1: rect.x, y1: rect.y, x2: rect.x + rect.w, y2: rect.y },
+      { x1: rect.x, y1: rect.y + rect.h, x2: rect.x + rect.w, y2: rect.y + rect.h },
+      { x1: rect.x, y1: rect.y, x2: rect.x, y2: rect.y + rect.h },
+      { x1: rect.x + rect.w, y1: rect.y, x2: rect.x + rect.w, y2: rect.y + rect.h }
     ];
     for (let e of edges) {
-      if (segmentsIntersect(x1, y1, x2, y2, e.x1, e.y1, e.x2, e.y2)) return true;
+      if (segmentsIntersect(x1,y1,x2,y2,e.x1,e.y1,e.x2,e.y2)) return true;
     }
     return false;
   }
-
   function segmentsIntersect(x1,y1,x2,y2,x3,y3,x4,y4) {
     function ccw(ax,ay,bx,by,cx,cy) {
       return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
@@ -321,77 +363,156 @@
            (ccw(x1,y1,x2,y2,x3,y3) !== ccw(x1,y1,x2,y2,x4,y4));
   }
 
-  // build a route that avoids obstacles
-  function buildRoute() {
+  function buildImageRoute() {
     if (!startPt || !endPt) return null;
 
-    // 1. straight
-    let straightHits = obstacles.some(o => lineIntersectsRect(startPt.x, startPt.y, endPt.x, endPt.y, o));
-    if (!straightHits) {
+    const obstructsStraight = obstacles.some(o => lineIntersectsRect(startPt.x, startPt.y, endPt.x, endPt.y, o));
+    if (!obstructsStraight) {
       return { points: [startPt, endPt], pattern: 'straight' };
     }
 
-    // 2. L shape: horizontal then vertical
     const corner1 = { x: endPt.x, y: startPt.y };
-    let hits1 = obstacles.some(o =>
+    const hits1 = obstacles.some(o =>
       lineIntersectsRect(startPt.x, startPt.y, corner1.x, corner1.y, o) ||
       lineIntersectsRect(corner1.x, corner1.y, endPt.x, endPt.y, o)
     );
-    if (!hits1) {
-      return { points: [startPt, corner1, endPt], pattern: 'L1' };
-    }
+    if (!hits1) return { points: [startPt, corner1, endPt], pattern: 'L1' };
 
-    // 3. L shape: vertical then horizontal
     const corner2 = { x: startPt.x, y: endPt.y };
-    let hits2 = obstacles.some(o =>
+    const hits2 = obstacles.some(o =>
       lineIntersectsRect(startPt.x, startPt.y, corner2.x, corner2.y, o) ||
       lineIntersectsRect(corner2.x, corner2.y, endPt.x, endPt.y, o)
     );
-    if (!hits2) {
-      return { points: [startPt, corner2, endPt], pattern: 'L2' };
-    }
+    if (!hits2) return { points: [startPt, corner2, endPt], pattern: 'L2' };
 
-    // 4. give up, return straight anyway
     return { points: [startPt, endPt], pattern: 'straight-obstructed' };
   }
 
-  function tryMakeSuggestion() {
+  function tryMakeImageRoute() {
     if (!startPt || !endPt || !pxPerMm) return;
-    const route = buildRoute();
-    redraw(route);
-
-    // measure total length
+    const route = buildImageRoute();
+    redrawImage(route);
     let totalPx = 0;
     for (let i = 0; i < route.points.length - 1; i++) {
-      const a = route.points[i];
-      const b = route.points[i+1];
+      const a = route.points[i], b = route.points[i+1];
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       totalPx += Math.sqrt(dx*dx + dy*dy);
     }
     const totalMm = totalPx / pxPerMm;
-
-    // basic text based on pattern
-    let suggestion = '';
-    if (route.pattern === 'straight') {
-      suggestion = 'Straight run to target, secure/clamp to vertical.';
-    } else {
-      // user scenario: tight → 45 + short → secure
-      suggestion = '45° or swept change to clear obstacle, short length, then secure/clamp to vertical.';
-    }
-
-    const jsonOut = {
-      exportedAt: new Date().toISOString(),
-      sections: [
-        {
-          section: "Flue / Pipework",
-          plainText: suggestion,
-          naturalLanguage: suggestion + ` Approx. run: ${totalMm.toFixed(0)} mm. Obstacles marked on survey photo.`
-        }
-      ]
-    };
-    output.textContent = JSON.stringify(jsonOut, null, 2);
+    const text = route.pattern === 'straight'
+      ? 'Straight run to target, secure/clamp to vertical.'
+      : '45° / swept change to clear obstacle, short length, then secure/clamp to vertical.';
+    setOutputFromRoute(text, totalMm);
   }
+
+  /* ---------------- OBJ MODE ---------------- */
+  const objLoaderInput = document.getElementById('objLoader');
+  const threeContainer = document.getElementById('three-container');
+
+  let scene, camera, renderer, controls, raycaster, mouse;
+  let objStart = null;
+  let objEnd = null;
+
+  function initThree() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);
+
+    camera = new THREE.PerspectiveCamera(50, threeContainer.clientWidth / threeContainer.clientHeight, 1, 10000);
+    camera.position.set(500, 500, 500);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+    threeContainer.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+    scene.add(light);
+
+    const grid = new THREE.GridHelper(1000, 20);
+    scene.add(grid);
+
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('click', onThreeClick);
+
+    animate();
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  }
+
+  function onThreeClick(event) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = - ((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    if (intersects.length > 0) {
+      const p = intersects[0].point.clone();
+      if (!objStart) {
+        objStart = p;
+      } else if (!objEnd) {
+        objEnd = p;
+      } else {
+        // third click resets
+        objStart = p;
+        objEnd = null;
+      }
+      buildObjRoute();
+    }
+  }
+
+  function buildObjRoute() {
+    if (!objStart || !objEnd) return;
+
+    // simple straight line distance in 3D
+    const dx = objEnd.x - objStart.x;
+    const dy = objEnd.y - objStart.y;
+    const dz = objEnd.z - objStart.z;
+    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz); // assume mm
+
+    // for now, no 3D obstacle in this minimal version
+    const text = 'Straight run between 3D points, secure/clamp at termination.';
+    setOutputFromRoute(text, dist);
+
+    // optional: draw helper line
+    // remove old helper if any
+    const oldHelper = scene.getObjectByName('routeLine');
+    if (oldHelper) scene.remove(oldHelper);
+
+    const material = new THREE.LineBasicMaterial({ color: 0x0ea5e9 });
+    const points = [];
+    points.push(objStart);
+    points.push(objEnd);
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const line = new THREE.Line(geometry, material);
+    line.name = 'routeLine';
+    scene.add(line);
+  }
+
+  objLoaderInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const objText = ev.target.result;
+      const loader = new THREE.OBJLoader();
+      const object = loader.parse(objText);
+      scene.add(object);
+      // centre it a bit
+      object.position.set(0,0,0);
+    };
+    reader.readAsText(file);
+  });
+
+  // init three when the 3D tab is available
+  initThree();
 
 })();
 </script>
