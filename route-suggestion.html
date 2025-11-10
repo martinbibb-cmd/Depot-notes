@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Route Suggestion v1.1 (Brick course 75mm + Obstacles)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #fff;
+      --border: #d7d7d7;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+    }
+    .bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+    button.active {
+      background: #0ea5e9;
+      color: #fff;
+      border-color: #0ea5e9;
+    }
+    #canvas-wrapper {
+      background: #0002;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    canvas {
+      max-width: 100%;
+      display: block;
+    }
+    #output {
+      background: #111;
+      color: #0f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="margin-bottom:0;">Route Suggestion v1.1</h1>
+  <p style="margin-top:0;">Photo → set scale from 1 brick course (75mm) → start/end → add obstacles → get route.</p>
+
+  <input type="file" id="imgLoader" accept="image/*" />
+
+  <div class="bar">
+    <button id="mode-scale" class="active">1. Set scale (75mm)</button>
+    <button id="mode-start">2. Set start</button>
+    <button id="mode-end">3. Set end</button>
+    <button id="mode-obstacle">4. Obstacle</button>
+    <button id="clear">Clear all</button>
+  </div>
+
+  <div id="canvas-wrapper">
+    <canvas id="c"></canvas>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Depot Notes JSON</h3>
+    <div id="output">{"sections":[]}</div>
+  </div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const imgLoader = document.getElementById('imgLoader');
+
+  const btnScale = document.getElementById('mode-scale');
+  const btnStart = document.getElementById('mode-start');
+  const btnEnd = document.getElementById('mode-end');
+  const btnObstacle = document.getElementById('mode-obstacle');
+  const btnClear = document.getElementById('clear');
+  const output = document.getElementById('output');
+
+  let img = new Image();
+  let currentMode = 'scale';
+  let scaleLine = null;
+  let tempScaleStart = null;
+  let pxPerMm = null;
+
+  let startPt = null;
+  let endPt = null;
+
+  let obstacles = []; // {x,y,w,h}
+  let draggingObstacle = false;
+  let obstacleStart = null;
+
+  // set current mode
+  function setMode(m) {
+    currentMode = m;
+    [btnScale, btnStart, btnEnd, btnObstacle].forEach(b => b.classList.remove('active'));
+    if (m === 'scale') btnScale.classList.add('active');
+    if (m === 'start') btnStart.classList.add('active');
+    if (m === 'end') btnEnd.classList.add('active');
+    if (m === 'obstacle') btnObstacle.classList.add('active');
+    redraw();
+  }
+
+  btnScale.onclick = () => setMode('scale');
+  btnStart.onclick = () => setMode('start');
+  btnEnd.onclick = () => setMode('end');
+  btnObstacle.onclick = () => setMode('obstacle');
+
+  btnClear.onclick = () => {
+    scaleLine = null;
+    pxPerMm = null;
+    tempScaleStart = null;
+    startPt = null;
+    endPt = null;
+    obstacles = [];
+    output.textContent = '{"sections":[]}';
+    redraw();
+  };
+
+  imgLoader.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        redraw();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function canvasPos(evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+      y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  }
+
+  canvas.addEventListener('mousedown', (evt) => {
+    const pos = canvasPos(evt);
+    if (currentMode === 'obstacle') {
+      draggingObstacle = true;
+      obstacleStart = pos;
+    }
+  });
+
+  canvas.addEventListener('mousemove', (evt) => {
+    if (currentMode === 'obstacle' && draggingObstacle) {
+      const pos = canvasPos(evt);
+      redraw();
+      // draw temp obstacle
+      const x = Math.min(obstacleStart.x, pos.x);
+      const y = Math.min(obstacleStart.y, pos.y);
+      const w = Math.abs(pos.x - obstacleStart.x);
+      const h = Math.abs(pos.y - obstacleStart.y);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, w, h);
+    }
+  });
+
+  canvas.addEventListener('mouseup', (evt) => {
+    const pos = canvasPos(evt);
+
+    if (currentMode === 'scale') {
+      if (!tempScaleStart) {
+        tempScaleStart = pos;
+      } else {
+        scaleLine = { x1: tempScaleStart.x, y1: tempScaleStart.y, x2: pos.x, y2: pos.y };
+        // assume 1 course = 75mm
+        const COURSE_MM = 75;
+        const dx = scaleLine.x2 - scaleLine.x1;
+        const dy = scaleLine.y2 - scaleLine.y1;
+        const distPx = Math.sqrt(dx*dx + dy*dy);
+        pxPerMm = distPx / COURSE_MM;
+        tempScaleStart = null;
+        redraw();
+      }
+    }
+
+    if (currentMode === 'start') {
+      startPt = pos;
+      redraw();
+      tryMakeSuggestion();
+    }
+
+    if (currentMode === 'end') {
+      endPt = pos;
+      redraw();
+      tryMakeSuggestion();
+    }
+
+    if (currentMode === 'obstacle' && draggingObstacle) {
+      draggingObstacle = false;
+      const x = Math.min(obstacleStart.x, pos.x);
+      const y = Math.min(obstacleStart.y, pos.y);
+      const w = Math.abs(pos.x - obstacleStart.x);
+      const h = Math.abs(pos.y - obstacleStart.y);
+      obstacles.push({ x, y, w, h });
+      obstacleStart = null;
+      redraw();
+      tryMakeSuggestion();
+    }
+  });
+
+  function redraw(route) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (img && img.src) {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    }
+
+    // scale line
+    if (scaleLine) {
+      ctx.strokeStyle = 'yellow';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(scaleLine.x1, scaleLine.y1);
+      ctx.lineTo(scaleLine.x2, scaleLine.y2);
+      ctx.stroke();
+      ctx.fillStyle = 'yellow';
+      ctx.font = '18px sans-serif';
+      ctx.fillText('75mm', scaleLine.x2 + 5, scaleLine.y2);
+    } else if (tempScaleStart) {
+      ctx.fillStyle = 'yellow';
+      ctx.beginPath();
+      ctx.arc(tempScaleStart.x, tempScaleStart.y, 5, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // obstacles
+    obstacles.forEach(o => {
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(o.x, o.y, o.w, o.h);
+      ctx.fillStyle = 'red';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('OBST', o.x + 3, o.y + 14);
+    });
+
+    // start / end
+    if (startPt) {
+      ctx.fillStyle = 'lime';
+      ctx.beginPath();
+      ctx.arc(startPt.x, startPt.y, 6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillText('START', startPt.x + 8, startPt.y);
+    }
+    if (endPt) {
+      ctx.fillStyle = 'aqua';
+      ctx.beginPath();
+      ctx.arc(endPt.x, endPt.y, 6, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillText('END', endPt.x + 8, endPt.y);
+    }
+
+    // draw route if provided
+    if (route && route.points && route.points.length > 1) {
+      ctx.strokeStyle = '#0ea5e9';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(route.points[0].x, route.points[0].y);
+      for (let i = 1; i < route.points.length; i++) {
+        ctx.lineTo(route.points[i].x, route.points[i].y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // helper: line vs rect intersection
+  function lineIntersectsRect(x1, y1, x2, y2, rect) {
+    // check if either point is inside
+    if (x1 >= rect.x && x1 <= rect.x + rect.w && y1 >= rect.y && y1 <= rect.y + rect.h) return true;
+    if (x2 >= rect.x && x2 <= rect.x + rect.w && y2 >= rect.y && y2 <= rect.y + rect.h) return true;
+
+    // check intersection with all 4 edges
+    const edges = [
+      { x1: rect.x, y1: rect.y, x2: rect.x + rect.w, y2: rect.y }, // top
+      { x1: rect.x, y1: rect.y + rect.h, x2: rect.x + rect.w, y2: rect.y + rect.h }, // bottom
+      { x1: rect.x, y1: rect.y, x2: rect.x, y2: rect.y + rect.h }, // left
+      { x1: rect.x + rect.w, y1: rect.y, x2: rect.x + rect.w, y2: rect.y + rect.h }  // right
+    ];
+    for (let e of edges) {
+      if (segmentsIntersect(x1, y1, x2, y2, e.x1, e.y1, e.x2, e.y2)) return true;
+    }
+    return false;
+  }
+
+  function segmentsIntersect(x1,y1,x2,y2,x3,y3,x4,y4) {
+    function ccw(ax,ay,bx,by,cx,cy) {
+      return (cy - ay) * (bx - ax) > (by - ay) * (cx - ax);
+    }
+    return (ccw(x1,y1,x3,y3,x4,y4) !== ccw(x2,y2,x3,y3,x4,y4)) &&
+           (ccw(x1,y1,x2,y2,x3,y3) !== ccw(x1,y1,x2,y2,x4,y4));
+  }
+
+  // build a route that avoids obstacles
+  function buildRoute() {
+    if (!startPt || !endPt) return null;
+
+    // 1. straight
+    let straightHits = obstacles.some(o => lineIntersectsRect(startPt.x, startPt.y, endPt.x, endPt.y, o));
+    if (!straightHits) {
+      return { points: [startPt, endPt], pattern: 'straight' };
+    }
+
+    // 2. L shape: horizontal then vertical
+    const corner1 = { x: endPt.x, y: startPt.y };
+    let hits1 = obstacles.some(o =>
+      lineIntersectsRect(startPt.x, startPt.y, corner1.x, corner1.y, o) ||
+      lineIntersectsRect(corner1.x, corner1.y, endPt.x, endPt.y, o)
+    );
+    if (!hits1) {
+      return { points: [startPt, corner1, endPt], pattern: 'L1' };
+    }
+
+    // 3. L shape: vertical then horizontal
+    const corner2 = { x: startPt.x, y: endPt.y };
+    let hits2 = obstacles.some(o =>
+      lineIntersectsRect(startPt.x, startPt.y, corner2.x, corner2.y, o) ||
+      lineIntersectsRect(corner2.x, corner2.y, endPt.x, endPt.y, o)
+    );
+    if (!hits2) {
+      return { points: [startPt, corner2, endPt], pattern: 'L2' };
+    }
+
+    // 4. give up, return straight anyway
+    return { points: [startPt, endPt], pattern: 'straight-obstructed' };
+  }
+
+  function tryMakeSuggestion() {
+    if (!startPt || !endPt || !pxPerMm) return;
+    const route = buildRoute();
+    redraw(route);
+
+    // measure total length
+    let totalPx = 0;
+    for (let i = 0; i < route.points.length - 1; i++) {
+      const a = route.points[i];
+      const b = route.points[i+1];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      totalPx += Math.sqrt(dx*dx + dy*dy);
+    }
+    const totalMm = totalPx / pxPerMm;
+
+    // basic text based on pattern
+    let suggestion = '';
+    if (route.pattern === 'straight') {
+      suggestion = 'Straight run to target, secure/clamp to vertical.';
+    } else {
+      // user scenario: tight → 45 + short → secure
+      suggestion = '45° or swept change to clear obstacle, short length, then secure/clamp to vertical.';
+    }
+
+    const jsonOut = {
+      exportedAt: new Date().toISOString(),
+      sections: [
+        {
+          section: "Flue / Pipework",
+          plainText: suggestion,
+          naturalLanguage: suggestion + ` Approx. run: ${totalMm.toFixed(0)} mm. Obstacles marked on survey photo.`
+        }
+      ]
+    };
+    output.textContent = JSON.stringify(jsonOut, null, 2);
+  }
+
+})();
+</script>
+
+</body>
+</html>
