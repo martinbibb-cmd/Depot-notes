@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simplified Depot Notes Picker</title>
+<style>
+  /* Basic dark theme similar to the original app */
+  body { margin:0; font-family: ui-sans-serif, system-ui; background:#0b0d10; color:#e9eef5; }
+  h1 { font-size:18px; margin:0; padding:16px; }
+  #search { width:100%; padding:8px 12px; border-radius:8px; border:1px solid #2a3644; background:#0f141a; color:inherit; }
+  .accordion { margin: 0; padding: 0; }
+  details { background:#151a1f; border:1px solid #1f2630; border-radius:12px; margin-bottom:12px; }
+  summary { cursor:pointer; padding:12px 16px; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  summary span { display:flex; gap:8px; }
+  summary button { font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid #2a3644; background:#1a2634; color:inherit; cursor:pointer; }
+  summary button:hover { background:#243446; }
+  .items { padding:0 16px 12px 16px; }
+  .item { display:flex; align-items:center; gap:8px; padding:4px 0; }
+  .outputs { margin-top:20px; }
+  .output { margin-bottom:16px; }
+  textarea { width:100%; min-height:80px; resize:vertical; padding:8px; border-radius:8px; border:1px solid #243041; background:#0e141a; color:inherit; }
+  button { padding:8px 12px; margin-top:8px; border-radius:8px; border:1px solid #2a3644; background:#152233; color:inherit; cursor:pointer; }
+  button.accent { background:#4aa3ff; border-color:#2a73cc; color:#081019; }
+  button:hover { filter:brightness(1.05); }
+  .summary-tools { display:flex; flex-direction:column; gap:8px; margin-top:24px; }
+</style>
+</head>
+<body>
+  <h1>Simplified Depot Notes Picker</h1>
+  <input id="search" placeholder="Search all categories..." />
+  <div id="accordion" class="accordion"></div>
+  <div id="outputs" class="outputs"></div>
+  <div class="summary-tools">
+    <button id="genSummary" class="accent">Generate summary</button>
+    <textarea id="summaryBox" placeholder="Summary will appear here..."></textarea>
+    <button id="copySummary">Copy summary</button>
+  </div>
+<script>
+  // Parse Options.txt and build UI
+  async function loadOptions() {
+    const res = await fetch('Options.txt', {cache:'no-store'});
+    const text = await res.text();
+    const sections = {};
+    let current = '';
+    text.split(/\r?\n/).forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      const match = line.match(/^\[(.+)\]$/);
+      if (match) { current = match[1].trim(); sections[current] = []; return; }
+      const parts = line.split('|').map(s => s.trim());
+      const code = parts[0];
+      const note = parts.slice(1).join(' | ');
+      if (!sections[current]) sections[current] = [];
+      sections[current].push({ code, note });
+    });
+    return sections;
+  }
+
+  // Build accordion with checkboxes
+  function buildAccordion(sections) {
+    const container = document.getElementById('accordion');
+    container.innerHTML = '';
+    Object.entries(sections).forEach(([section, items]) => {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = section;
+
+      const tools = document.createElement('span');
+      const selAll = document.createElement('button');
+      selAll.type = 'button';
+      selAll.textContent = 'Select all';
+      selAll.addEventListener('click', e => {
+        e.stopPropagation();
+        items.forEach(item => {
+          const cb = document.getElementById(section + '_' + item.code);
+          if (cb) cb.checked = true;
+        });
+        updateOutputs(section);
+      });
+      const clrAll = document.createElement('button');
+      clrAll.type = 'button';
+      clrAll.textContent = 'Clear';
+      clrAll.addEventListener('click', e => {
+        e.stopPropagation();
+        items.forEach(item => {
+          const cb = document.getElementById(section + '_' + item.code);
+          if (cb) cb.checked = false;
+        });
+        updateOutputs(section);
+      });
+      tools.append(selAll, clrAll);
+      summary.appendChild(tools);
+      details.appendChild(summary);
+
+      const listDiv = document.createElement('div');
+      listDiv.className = 'items';
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = section + '_' + item.code;
+        cb.addEventListener('change', () => updateOutputs(section));
+        const label = document.createElement('label');
+        label.htmlFor = cb.id;
+        label.textContent = `${item.code} — ${item.note}`;
+        div.append(cb, label);
+        listDiv.appendChild(div);
+      });
+      details.appendChild(listDiv);
+      container.appendChild(details);
+    });
+  }
+
+  // Update output areas when checkboxes change
+  function updateOutputs(section) {
+    const out = document.getElementById('out_' + section);
+    if (!out) return;
+    const selected = Array.from(document.querySelectorAll(`input[id^="${section}_"]:checked`))
+      .map(cb => {
+        const note = cb.nextSibling.textContent.split('—').slice(1).join('—').trim();
+        return `✅ ${note};`;
+      });
+    out.value = selected.join('\n');
+  }
+
+  // Build output textareas for each section
+  function buildOutputs(sections) {
+    const container = document.getElementById('outputs');
+    container.innerHTML = '';
+    Object.keys(sections).forEach(section => {
+      const div = document.createElement('div');
+      div.className = 'output';
+      const h = document.createElement('h3');
+      h.textContent = section;
+      const ta = document.createElement('textarea');
+      ta.id = 'out_' + section;
+      ta.placeholder = `Selected notes for ${section}...`;
+      const copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.textContent = 'Copy';
+      copyBtn.addEventListener('click', () => {
+        ta.select();
+        document.execCommand('copy');
+      });
+      div.append(h, ta, copyBtn);
+      container.appendChild(div);
+    });
+  }
+
+  // Global search across all categories
+  function attachSearch() {
+    const search = document.getElementById('search');
+    search.addEventListener('input', () => {
+      const query = search.value.toLowerCase();
+      document.querySelectorAll('.accordion details').forEach(det => {
+        const section = det.querySelector('summary').childNodes[0].textContent.trim();
+        let matched = false;
+        det.querySelectorAll('div.item').forEach(div => {
+          const text = div.textContent.toLowerCase();
+          if (text.includes(query)) {
+            div.style.display = '';
+            matched = true;
+          } else {
+            div.style.display = 'none';
+          }
+        });
+        if (query && matched) {
+          det.open = true;
+          det.style.display = '';
+        } else if (query && !matched) {
+          det.style.display = 'none';
+        } else {
+          det.style.display = '';
+        }
+      });
+    });
+  }
+
+  // Generate a natural-language summary
+  function attachSummary() {
+    const genBtn = document.getElementById('genSummary');
+    const summaryBox = document.getElementById('summaryBox');
+    genBtn.addEventListener('click', () => {
+      const allNotes = Array.from(document.querySelectorAll('#outputs textarea'))
+        .map(ta => ta.value)
+        .filter(Boolean)
+        .join('\n');
+      if (!allNotes) { summaryBox.value = ''; return; }
+      const lines = allNotes.split('\n').map(l => l.replace(/^✅\s*/, '').replace(/;$/, '').trim()).filter(Boolean);
+      if (!lines.length) { summaryBox.value = ''; return; }
+      summaryBox.value = lines.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join('. ') + '.';
+    });
+    document.getElementById('copySummary').addEventListener('click', () => {
+      summaryBox.select();
+      document.execCommand('copy');
+    });
+  }
+
+  // Initialize app
+  loadOptions().then(sections => {
+    buildAccordion(sections);
+    buildOutputs(sections);
+    attachSearch();
+    attachSummary();
+  });
+</script>
+</body>
+</html>
