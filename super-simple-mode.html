@@ -64,6 +64,28 @@
       background: var(--accent);
       color: #021427;
     }
+    .export-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 163, 255, 0.4);
+      background: rgba(74, 163, 255, 0.18);
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+    .export-button:hover {
+      background: var(--accent);
+      border-color: rgba(74, 163, 255, 0.7);
+      color: #021427;
+    }
+    .export-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     main {
       flex: 1;
       display: grid;
@@ -215,6 +237,7 @@
     <a class="home-link" href="welcome.html">🏠 Back to welcome</a>
     <h1>Super Simple Mode</h1>
     <p>Tick the relevant notes and copy everything you need in one go.</p>
+    <button id="exportJson" class="export-button" type="button">⬇️ Export selected notes (JSON)</button>
   </header>
   <main>
     <section class="panel">
@@ -232,6 +255,7 @@
   <script>
     const sectionList = document.getElementById('sectionList');
     const outputsContainer = document.getElementById('outputs');
+    const exportButton = document.getElementById('exportJson');
 
     let sections = [];
 
@@ -356,6 +380,8 @@
         checkbox.value = formatItem(code, category, description);
         checkbox.dataset.section = section.id;
         checkbox.dataset.code = code || '';
+        checkbox.dataset.category = category || '';
+        checkbox.dataset.description = description || '';
 
         const text = document.createElement('div');
         const strong = document.createElement('strong');
@@ -436,6 +462,71 @@
       });
     };
 
+    const normalizeNewlines = (str) => String(str || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    const getSelectedItems = (sectionId) => {
+      const checkboxes = sectionList.querySelectorAll(`input[type="checkbox"][data-section="${sectionId}"]`);
+      return Array.from(checkboxes)
+        .filter((input) => input.checked)
+        .map((input) => ({
+          code: input.dataset.code || '',
+          category: input.dataset.category || '',
+          description: input.dataset.description || '',
+        }))
+        .filter((item) => item.code || item.description);
+    };
+
+    const collectSectionsForExport = () => {
+      if (!sections.length) return [];
+      return sections.map((section) => {
+        const items = getSelectedItems(section.id);
+        const plainText = normalizeNewlines(items
+          .map((item) => formatItem(item.code, item.category, item.description))
+          .filter(Boolean)
+          .join('\n')).trim();
+        if (!items.length && !plainText) return null;
+        return {
+          section: section.title,
+          items,
+          plainText,
+        };
+      }).filter(Boolean);
+    };
+
+    const buildExportPayload = () => {
+      return {
+        exportedAt: new Date().toISOString(),
+        sections: collectSectionsForExport(),
+      };
+    };
+
+    const downloadJson = (data, filename) => {
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 0);
+    };
+
+    const exportFilename = (base) => `${base}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+
+    const indicateExport = (btn) => {
+      if (!btn) return;
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Exported ✓';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.disabled = false;
+      }, 1400);
+    };
+
     sectionList.addEventListener('change', (event) => {
       if (event.target.matches('input[type="checkbox"]')) {
         updateOutputs();
@@ -443,6 +534,18 @@
     });
 
     loadSections();
+
+    if (exportButton) {
+      exportButton.addEventListener('click', () => {
+        const payload = buildExportPayload();
+        if (!payload.sections.length) {
+          alert('Select some notes before exporting.');
+          return;
+        }
+        downloadJson(payload, exportFilename('depot-notes-super-simple'));
+        indicateExport(exportButton);
+      });
+    }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
